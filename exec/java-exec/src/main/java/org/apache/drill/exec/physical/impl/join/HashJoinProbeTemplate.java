@@ -155,7 +155,7 @@ public abstract class HashJoinProbeTemplate implements HashJoinProbe {
 
       // Check if we need to drain the next row in the probe side
       if (getNextRecord) {
-        if (hashTable != null) {
+        if (hashTable != null && !hashTable.isEmpty()) {
           probeIndex = hashTable.containsKey(recordsProcessed, true);
         }
 

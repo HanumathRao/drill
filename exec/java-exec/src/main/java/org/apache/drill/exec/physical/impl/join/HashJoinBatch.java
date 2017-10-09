@@ -306,7 +306,7 @@ public class HashJoinBatch extends AbstractBinaryRecordBatch<HashJoinPOP> {
     //Setup the underlying hash table
 
     // skip first batch if count is zero, as it may be an empty schema batch
-    if (right.getRecordCount() == 0) {
+    if (isFurtherProcessingRequired(rightUpstream) && right.getRecordCount() == 0) {
       for (final VectorWrapper<?> w : right) {
         w.clear();
       }
@@ -535,5 +535,26 @@ public class HashJoinBatch extends AbstractBinaryRecordBatch<HashJoinPOP> {
       hashTable.clear();
     }
     super.close();
+  }
+
+  @Override
+  protected boolean checkForEarlyFinish() {
+    if (joinType == JoinRelType.INNER &&
+        (leftUpstream == IterOutcome.NONE || rightUpstream == IterOutcome.NONE) ||
+        joinType != JoinRelType.INNER &&
+        (leftUpstream == IterOutcome.NONE && rightUpstream == IterOutcome.NONE)) {
+      return true;
+    }
+    return false;
+  }
+
+  private boolean isFurtherProcessingRequired(IterOutcome upStream) {
+    if (upStream == IterOutcome.OUT_OF_MEMORY ||
+        upStream == IterOutcome.NONE ||
+        upStream == IterOutcome.NOT_YET ||
+        upStream == IterOutcome.STOP) {
+      return false;
+    }
+    return true;
   }
 }

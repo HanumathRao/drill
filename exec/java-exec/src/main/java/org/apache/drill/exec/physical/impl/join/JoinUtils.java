@@ -137,7 +137,7 @@ public class JoinUtils {
       return true;
     }
 
-    return false;
+    return true;
   }
 
   /**

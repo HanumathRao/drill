@@ -419,4 +419,15 @@ public class NestedLoopJoinBatch extends AbstractBinaryRecordBatch<NestedLoopJoi
   public int getRecordCount() {
     return outputRecords;
   }
+
+  @Override
+  protected boolean checkForEarlyFinish() {
+    if (popConfig.getJoinType() == JoinRelType.INNER &&
+        (leftUpstream == IterOutcome.NONE || rightUpstream == IterOutcome.NONE) ||
+        popConfig.getJoinType() != JoinRelType.INNER &&
+            (leftUpstream == IterOutcome.NONE && rightUpstream == IterOutcome.NONE)) {
+      return true;
+    }
+    return false;
+  }
 }

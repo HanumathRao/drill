@@ -152,7 +152,8 @@ public class MergeJoinBatch extends AbstractRecordBatch<MergeJoinPOP> {
       return;
     }
 
-    if (leftOutcome == IterOutcome.NONE && rightOutcome == IterOutcome.NONE) {
+    if (joinType == JoinRelType.INNER && (leftOutcome == IterOutcome.NONE || rightOutcome == IterOutcome.NONE) ||
+        joinType != JoinRelType.INNER && (leftOutcome == IterOutcome.NONE && rightOutcome == IterOutcome.NONE)) {
       state = BatchState.DONE;
       return;
     }
@@ -500,5 +501,4 @@ public class MergeJoinBatch extends AbstractRecordBatch<MergeJoinPOP> {
     }
     return materializedExpr;
   }
-
 }

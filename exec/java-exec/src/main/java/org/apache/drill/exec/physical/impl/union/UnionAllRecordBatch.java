@@ -98,6 +98,14 @@ public class UnionAllRecordBatch extends AbstractBinaryRecordBatch<UnionAll> {
   }
 
   @Override
+  protected boolean checkForEarlyFinish() {
+    if (leftUpstream == IterOutcome.NONE && rightUpstream == IterOutcome.NONE) {
+      return true;
+    }
+    return false;
+  }
+
+  @Override
   public IterOutcome innerNext() {
     try {
       while (true) {

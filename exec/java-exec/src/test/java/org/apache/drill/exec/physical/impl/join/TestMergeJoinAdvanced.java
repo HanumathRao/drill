@@ -21,6 +21,10 @@ import org.apache.drill.BaseTestQuery;
 import org.apache.drill.common.util.TestTools;
 import org.apache.drill.exec.ExecConstants;
 import org.apache.drill.exec.planner.physical.PlannerSettings;
+import org.apache.drill.exec.store.easy.text.TextFormatPlugin;
+import org.apache.drill.test.ClientFixture;
+import org.apache.drill.test.ClusterFixture;
+import org.apache.drill.test.FixtureBuilder;
 import org.apache.drill.test.OperatorFixture;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -32,8 +36,8 @@ import org.junit.rules.TestRule;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
-import java.io.IOException;
-import java.util.Random;
+import java.io.PrintWriter;
+import java.io.IOException;import java.util.Random;
 
 public class TestMergeJoinAdvanced extends BaseTestQuery {
   @Rule
@@ -245,5 +249,45 @@ public class TestMergeJoinAdvanced extends BaseTestQuery {
       .baselineColumns("c1")
       .baselineValues(6000*800L)
       .go();
+  }
+
+  private void buildFile(String fileName, String[] data, File testDir) throws IOException {
+    try(PrintWriter out = new PrintWriter(new FileWriter(new File(testDir, fileName)))) {
+      for (String line : data) {
+        out.println(line);
+      }
+    }
+  }
+
+  @Test
+  public void testMergeJoinWithEmptyTable() throws Exception {
+    FixtureBuilder builder = ClusterFixture.builder();
+//        .configProperty(ExecConstants.USER_RPC_TIMEOUT, 0)
+//        .sessionOption(PlannerSettings.HASHJOIN.getOptionName(), false)
+//        .sessionOption(PlannerSettings.MERGEJOIN.getOptionName(), false)
+//        .sessionOption(PlannerSettings.NESTEDLOOPJOIN.getOptionName(), true)
+//        .sessionOption(PlannerSettings.NLJOIN_FOR_SCALAR.getOptionName(), false)
+//        ;
+    File testDir = null;
+    try {
+      ClusterFixture cluster = builder.build();
+      ClientFixture client = cluster.clientFixture();
+      testDir = cluster.makeTempDir("csv");
+      TextFormatPlugin.TextFormatConfig csvFormat = new TextFormatPlugin.TextFormatConfig();
+      csvFormat.fieldDelimiter = ',';
+      csvFormat.skipFirstLine = false;
+      csvFormat.extractHeader = true;
+      cluster.defineWorkspace("dfs", "data", testDir.getAbsolutePath(), "csv", csvFormat);
+      buildFile("dept.csv", new String[0], testDir);
+//    try (ClusterFixture cluster = builder.build();
+//         ClientFixture client = cluster.clientFixture()) {
+      client.queryBuilder().sql("select * from cp.`employee.json` emp left outer join dfs.data.`dept.csv` as dept on dept.manager = emp.`last_name`").printCsv();
+    } catch (RuntimeException ex) {
+      throw ex;
+    } finally {
+      if (testDir != null) {
+        testDir.delete();
+      }
+    }
   }
 }
