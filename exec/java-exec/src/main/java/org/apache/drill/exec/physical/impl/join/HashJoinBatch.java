@@ -169,6 +169,10 @@ public class HashJoinBatch extends AbstractBinaryRecordBatch<HashJoinPOP> {
       return;
     }
 
+    if (joinType != JoinRelType.INNER && !isFurtherProcessingRequired(rightUpstream)) {
+      return;
+    }
+
     // Initialize the hash join helper context
     hjHelper = new HashJoinHelper(context, oContext.getAllocator());
     try {
@@ -299,9 +303,7 @@ public class HashJoinBatch extends AbstractBinaryRecordBatch<HashJoinPOP> {
     // Create the chained hash table
     final ChainedHashTable ht =
         new ChainedHashTable(htConfig, context, oContext.getAllocator(), this.right, this.left, null);
-    if (right.getRecordCount() > 0) {
-      hashTable = ht.createAndSetupHashTable(null, 1);
-    }
+    hashTable = ht.createAndSetupHashTable(null, 1);
   }
 
   public void executeBuildPhase() throws SchemaChangeException, ClassTransformationException, IOException {
