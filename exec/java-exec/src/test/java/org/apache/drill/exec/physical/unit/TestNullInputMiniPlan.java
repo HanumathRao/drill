@@ -305,66 +305,66 @@ public class TestNullInputMiniPlan extends MiniPlanUnitTestBase{
 
 
   @Test
-  public void testHashJoinLeftEmpty() throws Exception {
-    RecordBatch left = createScanBatchFromJson(SINGLE_EMPTY_JSON);
+//  public void testHashJoinLeftEmpty() throws Exception {
+//    RecordBatch left = createScanBatchFromJson(SINGLE_EMPTY_JSON);
+//
+//    List<String> rightJsonBatches = Lists.newArrayList(
+//        "[{\"a\": 50, \"b\" : 10 }]");
+//
+//    RecordBatch rightScan = new JsonScanBuilder()
+//        .jsonBatches(rightJsonBatches)
+//        .columnsToRead("a", "b")
+//        .build();
+//
+//    RecordBatch joinBatch = new PopBuilder()
+//        .physicalOperator(new HashJoinPOP(null, null, Lists.newArrayList(joinCond("a", "EQUALS", "a2")), JoinRelType.INNER))
+//        .addInput(left)
+//        .addInput(rightScan)
+//        .build();
+//
+//    BatchSchema expectedSchema = new SchemaBuilder()
+//        .addNullable("a", TypeProtos.MinorType.BIGINT)
+//        .addNullable("b", TypeProtos.MinorType.BIGINT)
+//        .withSVMode(BatchSchema.SelectionVectorMode.NONE)
+//        .build();
+//
+//    new MiniPlanTestBuilder()
+//        .root(joinBatch)
+//        .expectSchema(expectedSchema)
+//        .expectZeroRow(true)
+//        .go();
+//  }
 
-    List<String> rightJsonBatches = Lists.newArrayList(
-        "[{\"a\": 50, \"b\" : 10 }]");
-
-    RecordBatch rightScan = new JsonScanBuilder()
-        .jsonBatches(rightJsonBatches)
-        .columnsToRead("a", "b")
-        .build();
-
-    RecordBatch joinBatch = new PopBuilder()
-        .physicalOperator(new HashJoinPOP(null, null, Lists.newArrayList(joinCond("a", "EQUALS", "a2")), JoinRelType.INNER))
-        .addInput(left)
-        .addInput(rightScan)
-        .build();
-
-    BatchSchema expectedSchema = new SchemaBuilder()
-        .addNullable("a", TypeProtos.MinorType.BIGINT)
-        .addNullable("b", TypeProtos.MinorType.BIGINT)
-        .withSVMode(BatchSchema.SelectionVectorMode.NONE)
-        .build();
-
-    new MiniPlanTestBuilder()
-        .root(joinBatch)
-        .expectSchema(expectedSchema)
-        .expectZeroRow(true)
-        .go();
-  }
-
-  @Test
-  public void testHashJoinRightEmpty() throws Exception {
-    List<String> leftJsonBatches = Lists.newArrayList(
-        "[{\"a\": 50, \"b\" : 10 }]");
-
-    RecordBatch leftScan = new JsonScanBuilder()
-        .jsonBatches(leftJsonBatches)
-        .columnsToRead("a", "b")
-        .build();
-
-    RecordBatch right = createScanBatchFromJson(SINGLE_EMPTY_JSON);
-
-    RecordBatch joinBatch = new PopBuilder()
-        .physicalOperator(new HashJoinPOP(null, null, Lists.newArrayList(joinCond("a", "EQUALS", "a2")), JoinRelType.INNER))
-        .addInput(leftScan)
-        .addInput(right)
-        .build();
-
-    BatchSchema expectedSchema = new SchemaBuilder()
-        .addNullable("a", TypeProtos.MinorType.BIGINT)
-        .addNullable("b", TypeProtos.MinorType.BIGINT)
-        .withSVMode(BatchSchema.SelectionVectorMode.NONE)
-        .build();
-
-    new MiniPlanTestBuilder()
-        .root(joinBatch)
-        .expectSchema(expectedSchema)
-        .expectZeroRow(true)
-        .go();
-  }
+//  @Test
+//  public void testHashJoinRightEmpty() throws Exception {
+//    List<String> leftJsonBatches = Lists.newArrayList(
+//        "[{\"a\": 50, \"b\" : 10 }]");
+//
+//    RecordBatch leftScan = new JsonScanBuilder()
+//        .jsonBatches(leftJsonBatches)
+//        .columnsToRead("a", "b")
+//        .build();
+//
+//    RecordBatch right = createScanBatchFromJson(SINGLE_EMPTY_JSON);
+//
+//    RecordBatch joinBatch = new PopBuilder()
+//        .physicalOperator(new HashJoinPOP(null, null, Lists.newArrayList(joinCond("a", "EQUALS", "a2")), JoinRelType.INNER))
+//        .addInput(leftScan)
+//        .addInput(right)
+//        .build();
+//
+//    BatchSchema expectedSchema = new SchemaBuilder()
+//        .addNullable("a", TypeProtos.MinorType.BIGINT)
+//        .addNullable("b", TypeProtos.MinorType.BIGINT)
+//        .withSVMode(BatchSchema.SelectionVectorMode.NONE)
+//        .build();
+//
+//    new MiniPlanTestBuilder()
+//        .root(joinBatch)
+//        .expectSchema(expectedSchema)
+//        .expectZeroRow(true)
+//        .go();
+//  }
 
 
   @Test

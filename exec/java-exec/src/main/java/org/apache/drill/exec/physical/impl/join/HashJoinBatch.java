@@ -213,7 +213,7 @@ public class HashJoinBatch extends AbstractBinaryRecordBatch<HashJoinPOP> {
       }
 
       // Store the number of records projected
-      if (!hashTable.isEmpty() || joinType != JoinRelType.INNER) {
+      if (joinType != JoinRelType.INNER) {
 
         // Allocate the memory for the vectors in the output container
         allocateVectors();
@@ -299,7 +299,9 @@ public class HashJoinBatch extends AbstractBinaryRecordBatch<HashJoinPOP> {
     // Create the chained hash table
     final ChainedHashTable ht =
         new ChainedHashTable(htConfig, context, oContext.getAllocator(), this.right, this.left, null);
-    hashTable = ht.createAndSetupHashTable(null, 1);
+    if (right.getRecordCount() > 0) {
+      hashTable = ht.createAndSetupHashTable(null, 1);
+    }
   }
 
   public void executeBuildPhase() throws SchemaChangeException, ClassTransformationException, IOException {
