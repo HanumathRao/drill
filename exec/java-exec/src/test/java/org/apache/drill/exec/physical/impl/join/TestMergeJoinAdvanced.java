@@ -94,7 +94,7 @@ public class TestMergeJoinAdvanced extends BaseTestQuery {
   }
 
   @Test
-  @Ignore // TODO file JIRA to fix this
+//  @Ignore // TODO file JIRA to fix this
   public void testFix2967() throws Exception {
     setSessionOption(PlannerSettings.BROADCAST.getOptionName(), "false");
     setSessionOption(PlannerSettings.HASHJOIN.getOptionName(), "false");
@@ -180,7 +180,7 @@ public class TestMergeJoinAdvanced extends BaseTestQuery {
 
   // Following tests can take some time.
   @Test
-  @Ignore
+//  @Ignore
   public void testMergeInnerJoinRandomized() throws Exception {
     final Random r = new Random();
     final long right = r.nextInt(10001) + 1l;
@@ -189,7 +189,7 @@ public class TestMergeJoinAdvanced extends BaseTestQuery {
   }
 
   @Test
-  @Ignore
+//  @Ignore
   public void testMergeLeftJoinRandomized() throws Exception {
     final Random r = new Random();
     final long right = r.nextInt(10001) + 1l;
@@ -198,7 +198,7 @@ public class TestMergeJoinAdvanced extends BaseTestQuery {
   }
 
   @Test
-  @Ignore
+//  @Ignore
   public void testMergeRightJoinRandomized() throws Exception {
     final Random r = new Random();
     final long right = r.nextInt(10001) + 1l;

@@ -169,9 +169,9 @@ public class HashJoinBatch extends AbstractBinaryRecordBatch<HashJoinPOP> {
       return;
     }
 
-    if (joinType != JoinRelType.INNER && !isFurtherProcessingRequired(rightUpstream)) {
-      return;
-    }
+//    if (joinType != JoinRelType.INNER && !isFurtherProcessingRequired(rightUpstream)) {
+//      return;
+//    }
 
     // Initialize the hash join helper context
     hjHelper = new HashJoinHelper(context, oContext.getAllocator());
@@ -186,7 +186,9 @@ public class HashJoinBatch extends AbstractBinaryRecordBatch<HashJoinPOP> {
       hyperContainer = new ExpandableHyperContainer(vectors);
       hjHelper.addNewBatch(0);
       buildBatchIndex++;
-      setupHashTable();
+      if (isFurtherProcessingRequired(rightUpstream)) {
+        setupHashTable();
+      }
       hashJoinProbe = setupHashJoinProbe();
       // Build the container schema and set the counts
       for (final VectorWrapper<?> w : container) {

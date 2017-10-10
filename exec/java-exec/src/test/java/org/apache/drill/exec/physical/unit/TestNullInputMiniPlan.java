@@ -398,36 +398,36 @@ public class TestNullInputMiniPlan extends MiniPlanUnitTestBase{
         .go();
   }
 
-  @Test
-  public void testLeftHashJoinRightEmpty() throws Exception {
-    List<String> leftJsonBatches = Lists.newArrayList(
-        "[{\"a\": 50, \"b\" : 10 }]");
-
-    RecordBatch leftScan = new JsonScanBuilder()
-        .jsonBatches(leftJsonBatches)
-        .columnsToRead("a", "b")
-        .build();
-
-    RecordBatch right = createScanBatchFromJson(SINGLE_EMPTY_JSON);
-
-    RecordBatch joinBatch = new PopBuilder()
-        .physicalOperator(new HashJoinPOP(null, null, Lists.newArrayList(joinCond("a", "EQUALS", "a2")), JoinRelType.LEFT))
-        .addInput(leftScan)
-        .addInput(right)
-        .build();
-
-    BatchSchema expectedSchema = new SchemaBuilder()
-        .addNullable("a", TypeProtos.MinorType.BIGINT)
-        .addNullable("b", TypeProtos.MinorType.BIGINT)
-        .withSVMode(BatchSchema.SelectionVectorMode.NONE)
-        .build();
-
-    new MiniPlanTestBuilder()
-        .root(joinBatch)
-        .expectSchema(expectedSchema)
-        .baselineValues(50L, 10L)
-        .go();
-  }
+//  @Test
+//  public void testLeftHashJoinRightEmpty() throws Exception {
+//    List<String> leftJsonBatches = Lists.newArrayList(
+//        "[{\"a\": 50, \"b\" : 10 }]");
+//
+//    RecordBatch leftScan = new JsonScanBuilder()
+//        .jsonBatches(leftJsonBatches)
+//        .columnsToRead("a", "b")
+//        .build();
+//
+//    RecordBatch right = createScanBatchFromJson(SINGLE_EMPTY_JSON);
+//
+//    RecordBatch joinBatch = new PopBuilder()
+//        .physicalOperator(new HashJoinPOP(null, null, Lists.newArrayList(joinCond("a", "EQUALS", "a2")), JoinRelType.LEFT))
+//        .addInput(leftScan)
+//        .addInput(right)
+//        .build();
+//
+//    BatchSchema expectedSchema = new SchemaBuilder()
+//        .addNullable("a", TypeProtos.MinorType.BIGINT)
+//        .addNullable("b", TypeProtos.MinorType.BIGINT)
+//        .withSVMode(BatchSchema.SelectionVectorMode.NONE)
+//        .build();
+//
+//    new MiniPlanTestBuilder()
+//        .root(joinBatch)
+//        .expectSchema(expectedSchema)
+//        .baselineValues(50L, 10L)
+//        .go();
+//  }
 
   @Test
   public void testUnionFilterAll() throws Exception {
