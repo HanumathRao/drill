@@ -304,7 +304,7 @@ public class TestNullInputMiniPlan extends MiniPlanUnitTestBase{
   }
 
 
-  @Test
+//  @Test
 //  public void testHashJoinLeftEmpty() throws Exception {
 //    RecordBatch left = createScanBatchFromJson(SINGLE_EMPTY_JSON);
 //
