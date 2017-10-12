@@ -19,6 +19,7 @@ package org.apache.drill.exec.store.mapr.db.json;
 
 import static org.ojai.DocumentConstants.ID_KEY;
 import static org.ojai.DocumentConstants.ID_FIELD;
+import com.google.common.collect.Lists;
 
 import java.nio.ByteBuffer;
 import java.util.Collection;
@@ -27,6 +28,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.Stack;
 import java.util.concurrent.TimeUnit;
+import java.util.BitSet;
 
 import org.apache.drill.common.exceptions.ExecutionSetupException;
 import org.apache.drill.common.exceptions.UserException;
@@ -45,6 +47,8 @@ import org.apache.drill.exec.util.Utilities;
 import org.apache.drill.exec.vector.BaseValueVector;
 import org.apache.drill.exec.vector.complex.impl.MapOrListWriterImpl;
 import org.apache.drill.exec.vector.complex.impl.VectorContainerWriter;
+import org.apache.drill.exec.vector.complex.writer.BaseWriter;
+
 import org.ojai.DocumentReader;
 import org.ojai.DocumentReader.EventType;
 import org.ojai.DocumentStream;
@@ -167,6 +171,65 @@ public class MaprDBJsonRecordReader extends AbstractRecordReader {
 
     return transformed;
   }
+
+  public void ensureAtLeastOneField(BaseWriter.ComplexWriter writer) {
+    List<BaseWriter.MapWriter> writerList = Lists.newArrayList();
+    List<PathSegment> fieldPathList = Lists.newArrayList();
+    BitSet emptyStatus = new BitSet(this.getColumns().size());
+
+    // first pass: collect which fields are empty
+    Iterator<SchemaPath> iter = this.getColumns().iterator();
+    for (int i = 0; i < this.getColumns().size(); i++) {
+      SchemaPath sp = iter.next();
+      PathSegment fieldPath = sp.getRootSegment();
+      BaseWriter.MapWriter fieldWriter = writer.rootAsMap();
+      while (fieldPath.getChild() != null && !fieldPath.getChild().isArray()) {
+        fieldWriter = fieldWriter.map(fieldPath.getNameSegment().getPath());
+        fieldPath = fieldPath.getChild();
+      }
+      writerList.add(fieldWriter);
+      fieldPathList.add(fieldPath);
+      if (fieldWriter.isEmptyMap()) {
+        emptyStatus.set(i, true);
+      }
+      if (i == 0 && !allTextMode) {
+        // when allTextMode is false, there is not much benefit to producing all
+        // the empty
+        // fields; just produce 1 field. The reason is that the type of the
+        // fields is
+        // unknown, so if we produce multiple Integer fields by default, a
+        // subsequent batch
+        // that contains non-integer fields will error out in any case. Whereas,
+        // with
+        // allTextMode true, we are sure that all fields are going to be treated
+        // as varchar,
+        // so it makes sense to produce all the fields, and in fact is necessary
+        // in order to
+        // avoid schema change exceptions by downstream operators.
+        break;
+      }
+
+    }
+
+    // second pass: create default typed vectors corresponding to empty fields
+    // Note: this is not easily do-able in 1 pass because the same fieldWriter
+    // may be
+    // shared by multiple fields whereas we want to keep track of all fields
+    // independently,
+    // so we rely on the emptyStatus.
+    for (int j = 0; j < fieldPathList.size(); j++) {
+      BaseWriter.MapWriter fieldWriter = writerList.get(j);
+      PathSegment fieldPath = fieldPathList.get(j);
+      if (emptyStatus.get(j)) {
+        if (allTextMode) {
+          fieldWriter.varChar(fieldPath.getNameSegment().getPath());
+        } else {
+          fieldWriter.integer(fieldPath.getNameSegment().getPath());
+        }
+      }
+    }
+  }
+
 
   @Override
   public void setup(OperatorContext context, OutputMutator output) throws ExecutionSetupException {
