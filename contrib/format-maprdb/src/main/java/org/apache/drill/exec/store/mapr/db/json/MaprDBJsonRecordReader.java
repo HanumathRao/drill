@@ -293,6 +293,9 @@ public class MaprDBJsonRecordReader extends AbstractRecordReader {
       }
     }
 
+    if (recordCount > 0) {
+      this.ensureAtLeastOneField(vectorWriter);
+    }
     vectorWriter.setValueCount(recordCount);
     logger.debug("Took {} ms to get {} records", watch.elapsed(TimeUnit.MILLISECONDS), recordCount);
     return recordCount;
