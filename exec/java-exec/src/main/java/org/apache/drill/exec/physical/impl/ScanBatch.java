@@ -327,7 +327,7 @@ public class ScanBatch implements CloseableRecordBatch {
       this.oContext = oContext;
       this.allocator = allocator;
       this.container = container;
-      this.schemaChanged = true;
+      this.schemaChanged = false;
     }
 
     public Map<String, ValueVector> fieldVectorMap() {
