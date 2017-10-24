@@ -46,6 +46,7 @@ import org.apache.drill.common.expression.PathSegment.ArraySegment;
 import org.apache.drill.common.expression.PathSegment.NameSegment;
 import org.apache.drill.common.expression.SchemaPath;
 import org.apache.drill.common.logical.data.Order.Ordering;
+import org.apache.drill.exec.planner.StarColumnHelper;
 import org.apache.drill.exec.record.BatchSchema.SelectionVectorMode;
 
 import com.carrotsearch.hppc.IntIntHashMap;
@@ -54,6 +55,14 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 public class PrelUtil {
+
+  private static SchemaPath normalize(SchemaPath path) {
+    if (path.getRootSegment().getPath().equals("*") &&
+        path.getRootSegment().getChild() != null) {
+      return new SchemaPath(path.getRootSegment().getChild().getNameSegment());
+    }
+    return path;
+  }
 
   public static List<Ordering> getOrdering(RelCollation collation, RelDataType rowType) {
     List<Ordering> orderExpr = Lists.newArrayList();
@@ -211,7 +220,7 @@ public class PrelUtil {
 
     public boolean isStarQuery() {
       for (SchemaPath column : columns) {
-        if (column.getRootSegment().getPath().startsWith("*")) {
+        if (StarColumnHelper.isStarColumn(column.getRootSegment().getPath())) {
           return true;
         }
       }
@@ -266,7 +275,7 @@ public class PrelUtil {
 
     public void addColumn(PathSegment segment) {
       if (segment != null && segment instanceof NameSegment) {
-        columns.add(new SchemaPath((NameSegment)segment));
+        columns.add(normalize(new SchemaPath((NameSegment)segment)));
       }
     }
 
