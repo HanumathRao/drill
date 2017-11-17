@@ -17,6 +17,7 @@
  */
 package org.apache.drill.exec.client;
 
+import org.apache.drill.common.config.DrillProperties;
 import org.apache.drill.common.exceptions.DrillIOException;
 import org.apache.drill.exec.DrillSystemTestBase;
 import org.apache.drill.exec.ExecConstants;
@@ -38,6 +39,9 @@ import java.util.concurrent.ExecutionException;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.util.Properties;
+
+//should run this individually before we move to exclusive runs of the tests that start cluster
 public class TestDrillClusterClient extends DrillSystemTestBase {
 //  private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestDrillClusterClient.class);
   final ZookeeperHelper zkHelper = new ZookeeperHelper();
@@ -136,7 +140,19 @@ public class TestDrillClusterClient extends DrillSystemTestBase {
       throws DrillIOException, InterruptedException {
     DrillSession session = null;
     try {
-      session = connection.newSession(null);
+      final Properties sessionProperties = new Properties();
+
+      // impersonation options
+      sessionProperties.setProperty(DrillProperties.USER, "root");
+
+      // query optimization options
+      sessionProperties.setProperty("exec.query.progress.update", "false");
+      sessionProperties.setProperty("exec.udf.use_dynamic", "false");
+      sessionProperties.setProperty("exec.query_profile.save", "false");
+      sessionProperties.setProperty("planner.use_simple_optimizer", "true");
+
+      session = connection.newSession(sessionProperties);
+
       assertTrue(runSampleQuery(session)
           .get()
           .succeeded());

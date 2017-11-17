@@ -41,6 +41,7 @@ import org.apache.drill.exec.rpc.ResponseSender;
 import org.apache.drill.exec.rpc.RpcException;
 import org.apache.drill.exec.rpc.RpcOutcomeListener;
 import org.apache.drill.exec.rpc.UserClientConnection;
+import org.apache.drill.exec.server.options.OptionValue;
 import org.apache.drill.exec.work.user.UserWorker;
 
 import java.net.SocketAddress;
@@ -76,9 +77,10 @@ public class MultiUserServerRequestHandler implements RequestHandler<UserServer.
       }
 
       final DrillProperties properties = DrillProperties.createEmpty();
-      final UserSession connectionSession = connection.getSession();
-      properties.merge(connectionSession.getProperties());
-      properties.merge(DrillProperties.createFromProperties(request.getProperties(), false));
+      final DrillProperties requestedProperties = DrillProperties.createFromProperties(request.getProperties(), false);
+      final UserSession connectionSession = connection.getSession(); // default session for the underlying connection
+      properties.merge(connectionSession.getProperties()); // merge with underlying connection properties
+      properties.merge(requestedProperties); // merge with requested session properties
 
       final UserSession userSession = UserSession.Builder.newBuilder()
           .withCredentials(UserCredentials.newBuilder()
@@ -89,6 +91,20 @@ public class MultiUserServerRequestHandler implements RequestHandler<UserServer.
           .withUserProperties(properties)
           .setSupportComplexTypes(connectionSession.isSupportComplexTypes())
           .build();
+
+      // With multiplexing, new sessions can set options through properties.
+      // Go through the properties list and add session options.
+      for (Map.Entry entry : requestedProperties.entrySet()) {
+        // Check if the property is known.
+        if (!DrillProperties.ACCEPTED_BY_SERVER.contains(entry.getKey().toString())) {
+          // If property is not known, check if it is a known valid system option.
+          OptionValue optionValue = worker.getSystemOptions().getOption(entry.getKey().toString());
+          if (optionValue != null) {
+            // As per user request, set new value as session option.
+            userSession.setSessionOption(optionValue.kind, entry.getKey().toString(), entry.getValue().toString());
+          }
+        }
+      }
 
       if (config.getImpersonationManager() != null && userSession.getTargetUserName() != null) {
         config.getImpersonationManager()
