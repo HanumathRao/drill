@@ -22,6 +22,7 @@ import org.apache.drill.common.exceptions.DrillIOException;
 import org.apache.drill.exec.DrillSystemTestBase;
 import org.apache.drill.exec.ExecConstants;
 import org.apache.drill.exec.ZookeeperHelper;
+import org.apache.drill.exec.rpc.RpcException;
 import org.apache.drill.exec.rpc.user.clusterclient.ClusterClientBuilders;
 import org.apache.drill.exec.rpc.user.clusterclient.DrillConnection;
 import org.apache.drill.exec.rpc.user.clusterclient.DrillSession;
@@ -153,6 +154,16 @@ public class TestDrillClusterClient extends DrillSystemTestBase {
 
       session = connection.newSession(sessionProperties);
 
+      // Verify all session options are set as above.
+      try {
+        assertTrue(verifyQueryProgressOption(session).get().recordCount() == 1);
+        assertTrue(verifyDynamicUDFOption(session).get().recordCount() == 1);
+        assertTrue(verifyQueryProfileOption(session).get().recordCount() == 1);
+        assertTrue(verifySimpleOptimizerOption(session).get().recordCount() == 1);
+      } catch (AssertionError e) {
+        fail(e.getMessage());
+      }
+
       assertTrue(runSampleQuery(session)
           .get()
           .succeeded());
@@ -166,9 +177,41 @@ public class TestDrillClusterClient extends DrillSystemTestBase {
   }
 
   private static QuerySummaryFuture runSampleQuery(final DrillSession session)
-      throws ExecutionException, InterruptedException {
+      throws ExecutionException, InterruptedException, RpcException {
     final QuerySummaryFuture future = new QuerySummaryFuture();
     session.executeStatement("select * from sys.drillbits", new SummaryOnlyQueryEventListener(future));
+    return future;
+  }
+
+  private static QuerySummaryFuture verifyQueryProgressOption(final DrillSession session)
+      throws ExecutionException, InterruptedException, RpcException {
+    final QuerySummaryFuture future = new QuerySummaryFuture();
+    session.executeStatement("select * from sys.options where name like 'exec.query.progress.update' and optionScope like 'SESSION' and bool_val like 'false'",
+        new SummaryOnlyQueryEventListener(future));
+    return future;
+  }
+
+  private static QuerySummaryFuture verifyDynamicUDFOption(final DrillSession session)
+      throws ExecutionException, InterruptedException, RpcException {
+    final QuerySummaryFuture future = new QuerySummaryFuture();
+    session.executeStatement("select * from sys.options where name like 'exec.udf.use_dynamic' and optionScope like 'SESSION' and bool_val like 'false'",
+        new SummaryOnlyQueryEventListener(future));
+    return future;
+  }
+
+  private static QuerySummaryFuture verifyQueryProfileOption(final DrillSession session)
+      throws ExecutionException, InterruptedException, RpcException {
+    final QuerySummaryFuture future = new QuerySummaryFuture();
+    session.executeStatement("select * from sys.options where name like 'exec.query_profile.save' and optionScope like 'SESSION' and bool_val like 'false'",
+        new SummaryOnlyQueryEventListener(future));
+    return future;
+  }
+
+  private static QuerySummaryFuture verifySimpleOptimizerOption(final DrillSession session)
+      throws ExecutionException, InterruptedException, RpcException {
+    final QuerySummaryFuture future = new QuerySummaryFuture();
+    session.executeStatement("select * from sys.options where name like 'planner.use_simple_optimizer' and optionScope like 'SESSION' and bool_val like 'true'",
+        new SummaryOnlyQueryEventListener(future));
     return future;
   }
 }
