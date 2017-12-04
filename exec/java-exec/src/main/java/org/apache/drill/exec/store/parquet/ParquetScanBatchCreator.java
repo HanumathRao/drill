@@ -109,7 +109,29 @@ public class ParquetScanBatchCreator implements BatchCreator<ParquetRowGroupScan
         Stopwatch timer = Stopwatch.createUnstarted();
         if (!footers.containsKey(e.getPath())){
           timer.start();
-          ParquetMetadata footer = ParquetFileReader.readFooter(conf, new Path(e.getPath()));
+          ParquetMetadata footer = null;
+          int retry =
+              context.getOptions().getOption(ExecConstants.PARQUET_ENABLE_FS_RETRY).bool_val ? 3 : 1;
+          while (footer == null && retry > 0) {
+            try {
+              footer = ParquetFileReader.readFooter(conf, new Path(e.getPath()));
+              retry--;
+            } catch (RuntimeException exception) {
+              retry--;
+              if (retry <= 0 ) {
+                throw exception; // rethrow if the exception still occurs after a retry
+              }
+            }
+            if (footer == null && retry > 0) {
+              try {
+                Thread.sleep(100);
+                logger.debug("Got an exception while trying to fetch parquet metadata. Retrying.");
+              } catch (InterruptedException e1) {
+                // Do nothing
+              }
+            }
+          }
+
           long timeToRead = timer.elapsed(TimeUnit.MICROSECONDS);
           logger.trace("ParquetTrace,Read Footer,{},{},{},{},{},{},{}", "", e.getPath(), "", 0, 0, 0, timeToRead);
           footers.put(e.getPath(), footer );

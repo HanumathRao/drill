@@ -50,9 +50,9 @@ public class ParquetRecordReader extends AbstractRecordReader {
 
 /*
   // this value has been inflated to read in multiple value vectors at once, and then break them up into smaller vectors
-  private static final int NUMBER_OF_VECTORS                  = 1;
-  private static final long DEFAULT_BATCH_LENGTH              = 256 * 1024 * NUMBER_OF_VECTORS; // 256kb
-  private static final long DEFAULT_BATCH_LENGTH_IN_BITS      = DEFAULT_BATCH_LENGTH * 8; // 256kb
+  private static final int NUMBER_OF_VECTORS = 1;
+  private static final long DEFAULT_BATCH_LENGTH = 256 * 1024 * NUMBER_OF_VECTORS; // 256kb
+  private static final long DEFAULT_BATCH_LENGTH_IN_BITS = DEFAULT_BATCH_LENGTH * 8; // 256kb
   static final char DEFAULT_RECORDS_TO_READ_IF_VARIABLE_WIDTH = 32 * 1024; // 32K
   static final int DEFAULT_RECORDS_TO_READ_IF_FIXED_WIDTH     = 64 * 1024 - 1; // 64K - 1, max SV2 can address
 */
@@ -104,6 +104,7 @@ public class ParquetRecordReader extends AbstractRecordReader {
   public boolean enforceTotalSize;
   public long readQueueSize;
   public boolean useBulkReader;
+  public boolean enableFSRetry;
 
   @SuppressWarnings("unused")
   private String name;
@@ -177,23 +178,40 @@ public class ParquetRecordReader extends AbstractRecordReader {
       List<SchemaPath> columns,
       ParquetReaderUtility.DateCorruptionStatus dateCorruptionStatus) throws ExecutionSetupException {
 
-    this.name                 = path;
-    this.hadoopPath           = new Path(path);
-    this.fileSystem           = fs;
-    this.codecFactory         = codecFactory;
-    this.rowGroupIndex        = rowGroupIndex;
-    this.footer               = footer;
+    this.name = path;
+    this.hadoopPath = new Path(path);
+    this.fileSystem = fs;
+    this.codecFactory = codecFactory;
+    this.rowGroupIndex = rowGroupIndex;
+    this.footer = footer;
     this.dateCorruptionStatus = dateCorruptionStatus;
-    this.fragmentContext      = fragmentContext;
-    this.numRecordsToRead     = numRecordsToRead;
-    this.useAsyncColReader    = fragmentContext.getOptions().getOption(ExecConstants.PARQUET_COLUMNREADER_ASYNC).bool_val;
-    this.useAsyncPageReader   = fragmentContext.getOptions().getOption(ExecConstants.PARQUET_PAGEREADER_ASYNC).bool_val;
-    this.useBufferedReader    = fragmentContext.getOptions().getOption(ExecConstants.PARQUET_PAGEREADER_USE_BUFFERED_READ).bool_val;
-    this.bufferedReadSize     = fragmentContext.getOptions().getOption(ExecConstants.PARQUET_PAGEREADER_BUFFER_SIZE).num_val.intValue();
-    this.useFadvise           = fragmentContext.getOptions().getOption(ExecConstants.PARQUET_PAGEREADER_USE_FADVISE).bool_val;
-    this.readQueueSize        = fragmentContext.getOptions().getOption(ExecConstants.PARQUET_PAGEREADER_QUEUE_SIZE).num_val;
-    this.enforceTotalSize     = fragmentContext.getOptions().getOption(ExecConstants.PARQUET_PAGEREADER_ENFORCETOTALSIZE).bool_val;
-    this.useBulkReader        = fragmentContext.getOptions().getOption(ExecConstants.PARQUET_FLAT_READER_BULK).bool_val;
+    this.fragmentContext = fragmentContext;
+    // Callers can pass -1 if they want to read all rows.
+    if (numRecordsToRead == NUM_RECORDS_TO_READ_NOT_SPECIFIED) {
+      this.numRecordsToRead = footer.getBlocks().get(rowGroupIndex).getRowCount();
+    } else {
+      assert (numRecordsToRead >= 0);
+      this.numRecordsToRead = Math.min(numRecordsToRead, footer.getBlocks().get(rowGroupIndex).getRowCount());
+    }
+    useAsyncColReader =
+        fragmentContext.getOptions().getOption(ExecConstants.PARQUET_COLUMNREADER_ASYNC).bool_val;
+    useAsyncPageReader =
+        fragmentContext.getOptions().getOption(ExecConstants.PARQUET_PAGEREADER_ASYNC).bool_val;
+    useBufferedReader =
+        fragmentContext.getOptions().getOption(ExecConstants.PARQUET_PAGEREADER_USE_BUFFERED_READ).bool_val;
+    bufferedReadSize =
+        fragmentContext.getOptions().getOption(ExecConstants.PARQUET_PAGEREADER_BUFFER_SIZE).num_val.intValue();
+    useFadvise =
+        fragmentContext.getOptions().getOption(ExecConstants.PARQUET_PAGEREADER_USE_FADVISE).bool_val;
+    readQueueSize =
+        fragmentContext.getOptions().getOption(ExecConstants.PARQUET_PAGEREADER_QUEUE_SIZE).num_val;
+    enforceTotalSize =
+        fragmentContext.getOptions().getOption(ExecConstants.PARQUET_PAGEREADER_ENFORCETOTALSIZE).bool_val;
+    enableFSRetry =
+        fragmentContext.getOptions().getOption(ExecConstants.PARQUET_ENABLE_FS_RETRY).bool_val;
+    useBulkReader =
+        fragmentContext.getOptions().getOption(ExecConstants.PARQUET_FLAT_READER_BULK).bool_val;
+
 
     setColumns(columns);
   }
@@ -245,14 +263,14 @@ public class ParquetRecordReader extends AbstractRecordReader {
    */
   public boolean useBulkReader() {
     return useBulkReader;
-  }
+      }
 
   /**
    * @return record batch stats context object
    */
   public RecordBatchStatsContext getRecordBatchStatsContext() {
     return batchStatsLogging;
-  }
+      }
 
   /**
    * Prepare the Parquet reader. First determine the set of columns to read (the schema
@@ -280,17 +298,17 @@ public class ParquetRecordReader extends AbstractRecordReader {
       readState.buildReader(this, output);
     } catch (Exception e) {
       throw handleException("Failure in setting up reader", e);
-    }
+      }
 
     ColumnReader<?> firstColumnStatus = readState.getFirstColumnReader();
     if (firstColumnStatus == null) {
       batchReader = new BatchReader.MockBatchReader(readState);
     } else if (schema.allFieldsFixedLength()) {
       batchReader = new BatchReader.FixedWidthReader(readState);
-    } else {
+        } else {
       batchReader = new BatchReader.VariableWidthReader(readState);
-    }
-  }
+        }
+      }
 
   protected DrillRuntimeException handleException(String s, Exception e) {
     String message = "Error in parquet record reader.\nMessage: " + s +
@@ -301,7 +319,7 @@ public class ParquetRecordReader extends AbstractRecordReader {
   @Override
   public void allocate(Map<String, ValueVector> vectorMap) throws OutOfMemoryException {
     batchSizerMgr.allocate(vectorMap);
-  }
+      }
 
   /**
    * Read the next record batch from the file using the reader and read state
@@ -336,7 +354,7 @@ public class ParquetRecordReader extends AbstractRecordReader {
     if (readState != null) {
       readState.close();
       readState = null;
-    }
+      }
 
     if (batchSizerMgr != null) {
       batchSizerMgr.close();
@@ -347,16 +365,16 @@ public class ParquetRecordReader extends AbstractRecordReader {
 
     if (batchStatsLogging.isEnableFgBatchSzLogging()) {
       logger.info(RecordBatchStats.printAllocatorStats(operatorContext.getAllocator()));
-    }
+      }
 
-    if (parquetReaderStats != null) {
+    if(parquetReaderStats != null) {
       updateStats();
       parquetReaderStats.logStats(logger, hadoopPath);
-      parquetReaderStats = null;
+      parquetReaderStats=null;
     }
   }
 
-  private void updateStats() {
+  private void updateStats(){
     parquetReaderStats.update(operatorContext.getStats());
   }
 

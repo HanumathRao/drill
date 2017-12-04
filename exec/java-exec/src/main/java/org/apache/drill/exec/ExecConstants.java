@@ -278,6 +278,9 @@ public final class ExecConstants {
   public static final String PARQUET_PAGEREADER_USE_FADVISE = "store.parquet.reader.pagereader.usefadvise";
   public static final OptionValidator PARQUET_PAGEREADER_USE_FADVISE_VALIDATOR = new  BooleanValidator(PARQUET_PAGEREADER_USE_FADVISE);
 
+  public static final String PARQUET_ENABLE_FS_RETRY = "store.parquet.reader.enableFSRetry";
+  public static final OptionValidator PARQUET_ENABLE_FS_RETRY_VALIDATOR = new  BooleanValidator(PARQUET_ENABLE_FS_RETRY);
+
   public static final OptionValidator COMPILE_SCALAR_REPLACEMENT = new BooleanValidator("exec.compile.scalar_replacement");
 
   // Controls whether to enable bulk parquet reader processing

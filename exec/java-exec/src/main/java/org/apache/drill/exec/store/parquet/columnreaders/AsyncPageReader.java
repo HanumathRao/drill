@@ -94,11 +94,11 @@ class AsyncPageReader extends PageReader {
   AsyncPageReader(ColumnReader<?> parentStatus, FileSystem fs, Path path,
       ColumnChunkMetaData columnChunkMetaData) throws ExecutionSetupException {
     super(parentStatus, fs, path, columnChunkMetaData);
-    threadPool = parentColumnReader.parentReader.getOperatorContext().getScanExecutor();
-    queueSize = parentColumnReader.parentReader.readQueueSize;
-    pageQueue = new LinkedBlockingQueue<>((int) queueSize);
-    asyncPageRead = new ConcurrentLinkedQueue<>();
-  }
+      threadPool = parentColumnReader.parentReader.getOperatorContext().getScanExecutor();
+      queueSize  = parentColumnReader.parentReader.readQueueSize;
+      pageQueue = new LinkedBlockingQueue<>((int)queueSize);
+      asyncPageRead = new ConcurrentLinkedQueue<>();
+      }
 
   @Override
   protected void loadDictionaryIfExists(final ColumnReader<?> parentStatus,
@@ -132,10 +132,10 @@ class AsyncPageReader extends PageReader {
   @Override protected void init() throws IOException {
     super.init();
     //Avoid Init if a shutdown is already in progress even if init() is called once
-    if (!parentColumnReader.isShuttingDown) {
-      asyncPageRead.offer(threadPool.submit(new AsyncPageReaderTask(debugName, pageQueue)));
-    }
-  }
+        if (!parentColumnReader.isShuttingDown) {
+          asyncPageRead.offer(threadPool.submit(new AsyncPageReaderTask(debugName, pageQueue)));
+        }
+      }
 
   private DrillBuf getDecompressedPageData(ReadStatus readStatus) {
     DrillBuf data;
@@ -222,19 +222,19 @@ class AsyncPageReader extends PageReader {
       try {
         waitForExecutionResult(); // get the result of execution
         synchronized (pageQueueSyncronize) {
-          boolean pageQueueFull = pageQueue.remainingCapacity() == 0;
-          readStatus = pageQueue.take(); // get the data if no exception has been thrown
-          if (readStatus.pageData == null || readStatus == ReadStatus.EMPTY) {
-            throw new DrillRuntimeException("Unexpected end of data");
-          }
-          //if the queue was full before we took a page out, then there would
-          // have been no new read tasks scheduled. In that case, schedule a new read.
-          if (!parentColumnReader.isShuttingDown && pageQueueFull) {
-            asyncPageRead.offer(threadPool.submit(new AsyncPageReaderTask(debugName, pageQueue)));
-          }
+        boolean pageQueueFull = pageQueue.remainingCapacity() == 0;
+        readStatus = pageQueue.take(); // get the data if no exception has been thrown
+        if (readStatus.pageData == null || readStatus == ReadStatus.EMPTY) {
+          throw new DrillRuntimeException("Unexpected end of data");
         }
+        //if the queue was full before we took a page out, then there would
+        // have been no new read tasks scheduled. In that case, schedule a new read.
+        if (!parentColumnReader.isShuttingDown && pageQueueFull) {
+          asyncPageRead.offer(threadPool.submit(new AsyncPageReaderTask(debugName, pageQueue)));
+        }
+      }
       } finally {
-        parentColumnReader.parentReader.getOperatorContext().getStats().stopWait();
+      parentColumnReader.parentReader.getOperatorContext().getStats().stopWait();
       }
       long timeBlocked = timer.elapsed(TimeUnit.NANOSECONDS);
       stats.timeDiskScanWait.addAndGet(timeBlocked);
@@ -248,8 +248,8 @@ class AsyncPageReader extends PageReader {
       }
       pageHeader = readStatus.getPageHeader();
 
-      // TODO - figure out if we need multiple dictionary pages, I believe it may be limited to one
-      // I think we are clobbering parts of the dictionary if there can be multiple pages of dictionary
+    // TODO - figure out if we need multiple dictionary pages, I believe it may be limited to one
+    // I think we are clobbering parts of the dictionary if there can be multiple pages of dictionary
 
       do {
         if (pageHeader.getType() == PageType.DICTIONARY_PAGE) {
@@ -271,14 +271,14 @@ class AsyncPageReader extends PageReader {
         }
       } while (pageHeader.getType() == PageType.DICTIONARY_PAGE);
 
-      pageHeader = readStatus.getPageHeader();
-      pageData = getDecompressedPageData(readStatus);
-      assert (pageData != null);
+    pageHeader = readStatus.getPageHeader();
+    pageData = getDecompressedPageData(readStatus);
+    assert(pageData != null);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
     } catch (RuntimeException e) { // Catch this explicitly to satisfy findbugs
       handleAndThrowException(e, "Error reading page data");
-    } catch (Exception e) {
+    } catch (Exception e){
       handleAndThrowException(e, "Error reading page data");
     }
 
@@ -426,9 +426,11 @@ class AsyncPageReader extends PageReader {
       DrillBuf pageData = null;
       timer.reset();
       try {
+        //long s = parent.dataReader.getPos();
         PageHeader pageHeader = Util.readPageHeader(parent.dataReader);
         int compressedSize = pageHeader.getCompressed_page_size();
-        if ( parent.parentColumnReader.isShuttingDown ) { return null; } //Opportunity to skip expensive Parquet processing
+        if (parent.parentColumnReader.isShuttingDown) { return null; } //Opportunity to skip expensive Parquet processing
+        //s = parent.dataReader.getPos();
         pageData = parent.dataReader.getNext(compressedSize);
         bytesRead = compressedSize;
 

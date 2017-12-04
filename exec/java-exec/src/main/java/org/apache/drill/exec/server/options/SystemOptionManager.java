@@ -159,6 +159,7 @@ public class SystemOptionManager extends BaseOptionManager implements AutoClosea
       new OptionDefinition(ExecConstants.PARQUET_PAGEREADER_BUFFER_SIZE_VALIDATOR),
       new OptionDefinition(ExecConstants.PARQUET_PAGEREADER_USE_FADVISE_VALIDATOR),
       new OptionDefinition(ExecConstants.PARQUET_READER_INT96_AS_TIMESTAMP_VALIDATOR),
+      new OptionDefinition(ExecConstants.PARQUET_ENABLE_FS_RETRY_VALIDATOR),
       new OptionDefinition(ExecConstants.PARQUET_FLAT_READER_BULK_VALIDATOR),
       new OptionDefinition(ExecConstants.PARQUET_FLAT_BATCH_NUM_RECORDS_VALIDATOR),
       new OptionDefinition(ExecConstants.PARQUET_FLAT_BATCH_MEMORY_SZ_VALIDATOR),
@@ -243,6 +244,7 @@ public class SystemOptionManager extends BaseOptionManager implements AutoClosea
       new OptionDefinition(ExecConstants.QUERY_ROWKEYJOIN_BATCHSIZE)
     };
 
+
     final CaseInsensitiveMap<OptionDefinition> map = CaseInsensitiveMap.newHashMap();
 
     for (final OptionDefinition definition: definitions) {
@@ -277,8 +279,8 @@ public class SystemOptionManager extends BaseOptionManager implements AutoClosea
                              final DrillConfig bootConfig, final CaseInsensitiveMap<OptionDefinition> definitions) {
     this.provider = provider;
     this.config = PersistentStoreConfig.newJacksonBuilder(lpPersistence.getMapper(), PersistedOptionValue.class)
-          .name("sys.options")
-          .build();
+        .name("sys.options")
+        .build();
     this.definitions = definitions;
     this.defaults = populateDefaultValues(definitions, bootConfig);
   }
@@ -480,7 +482,7 @@ public class SystemOptionManager extends BaseOptionManager implements AutoClosea
     // been created. Gracefully handle that case.
 
     if (options != null) {
-      options.close();
-    }
+    options.close();
   }
+}
 }

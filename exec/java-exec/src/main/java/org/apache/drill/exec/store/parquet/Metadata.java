@@ -31,6 +31,9 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.drill.common.expression.SchemaPath;
 import org.apache.drill.common.util.DrillVersionInfo;
+import org.apache.drill.exec.ExecConstants;
+import org.apache.drill.exec.ops.QueryContext;
+import org.apache.drill.exec.store.AbstractRecordReader;
 import org.apache.drill.exec.store.TimedRunnable;
 import org.apache.drill.exec.util.DrillFileSystemUtil;
 import org.apache.drill.exec.store.dfs.MetadataContext;
@@ -110,7 +113,7 @@ public class Metadata {
    * @param path
    * @throws IOException
    */
-  public static void createMeta(FileSystem fs, String path, ParquetFormatConfig formatConfig) throws IOException {
+  public static void createMeta(FileSystem fs, String path, ParquetFormatConfig formatConfig ) throws IOException {
     Metadata metadata = new Metadata(fs, formatConfig);
     metadata.createMetaFilesRecursively(path);
   }
@@ -123,8 +126,8 @@ public class Metadata {
    * @return
    * @throws IOException
    */
-  public static ParquetTableMetadata_v3 getParquetTableMetadata(FileSystem fs, String path, ParquetFormatConfig formatConfig)
-      throws IOException {
+  public static ParquetTableMetadata_v3 getParquetTableMetadata(FileSystem fs, String path,
+      ParquetFormatConfig formatConfig) throws IOException {
     Metadata metadata = new Metadata(fs, formatConfig);
     return metadata.getParquetTableMetadata(path);
   }
@@ -139,7 +142,7 @@ public class Metadata {
    */
   public static ParquetTableMetadata_v3 getParquetTableMetadata(FileSystem fs,
       List<FileStatus> fileStatuses, ParquetFormatConfig formatConfig) throws IOException {
-    Metadata metadata = new Metadata(fs, formatConfig);
+    Metadata metadata = new Metadata(fs, formatConfig );
     return metadata.getParquetTableMetadata(fileStatuses);
   }
 
@@ -424,7 +427,29 @@ public class Metadata {
     try {
       metadata = processUserUgi.doAs(new PrivilegedExceptionAction<ParquetMetadata>() {
         public ParquetMetadata run() throws Exception {
-          return ParquetFileReader.readFooter(fs.getConf(), file);
+
+          ParquetMetadata meta = null;
+          int retry = 2; //context.getOptions().getOption(ExecConstants.PARQUET_ENABLE_FS_RETRY).bool_val ? 3 : 1;
+          while (meta == null && retry > 0) {
+            try {
+              meta = ParquetFileReader.readFooter(fs.getConf(), file);
+              retry--;
+            } catch (RuntimeException exception) {
+              retry--;
+              if (retry <= 0 ) {
+                throw exception; // rethrow if the exception still occurs after a retry
+              }
+            }
+            if (meta == null && retry > 0) {
+              try {
+                Thread.sleep(100);
+                logger.debug("Got an exception while trying to fetch parquet metadata. Retrying.");
+              } catch (InterruptedException e1) {
+                // Do nothing
+              }
+            }
+          }
+          return meta;
         }
       });
     } catch(Exception e) {
@@ -605,54 +630,54 @@ public class Metadata {
     mapper.registerModule(module);
     mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     try (FSDataInputStream is = fs.open(path)) {
-      boolean alreadyCheckedModification = false;
-      boolean newMetadata = false;
+    boolean alreadyCheckedModification = false;
+    boolean newMetadata = false;
         alreadyCheckedModification = metaContext.getStatus(metadataParentDirPath);
 
-      if (dirsOnly) {
-        parquetTableMetadataDirs = mapper.readValue(is, ParquetTableMetadataDirs.class);
-        logger.info("Took {} ms to read directories from directory cache file", timer.elapsed(TimeUnit.MILLISECONDS));
-        timer.stop();
+    if (dirsOnly) {
+      parquetTableMetadataDirs = mapper.readValue(is, ParquetTableMetadataDirs.class);
+      logger.info("Took {} ms to read directories from directory cache file", timer.elapsed(TimeUnit.MILLISECONDS));
+      timer.stop();
         parquetTableMetadataDirs.updateRelativePaths(metadataParentDirPath);
         if (!alreadyCheckedModification && tableModified(parquetTableMetadataDirs.getDirectories(), path, metadataParentDir, metaContext)) {
-          parquetTableMetadataDirs =
+        parquetTableMetadataDirs =
               (createMetaFilesRecursively(Path.getPathWithoutSchemeAndAuthority(path.getParent()).toString())).getRight();
-          newMetadata = true;
-        }
-      } else {
-        parquetTableMetadata = mapper.readValue(is, ParquetTableMetadataBase.class);
-        logger.info("Took {} ms to read metadata from cache file", timer.elapsed(TimeUnit.MILLISECONDS));
-        timer.stop();
+        newMetadata = true;
+      }
+    } else {
+      parquetTableMetadata = mapper.readValue(is, ParquetTableMetadataBase.class);
+      logger.info("Took {} ms to read metadata from cache file", timer.elapsed(TimeUnit.MILLISECONDS));
+      timer.stop();
         if (new MetadataVersion(parquetTableMetadata.getMetadataVersion()).compareTo(new MetadataVersion(3, 0)) >= 0) {
           ((ParquetTableMetadata_v3) parquetTableMetadata).updateRelativePaths(metadataParentDirPath);
         }
         if (!alreadyCheckedModification && tableModified(parquetTableMetadata.getDirectories(), path, metadataParentDir, metaContext)) {
-          parquetTableMetadata =
+        parquetTableMetadata =
               (createMetaFilesRecursively(Path.getPathWithoutSchemeAndAuthority(path.getParent()).toString())).getLeft();
-          newMetadata = true;
-        }
+        newMetadata = true;
+      }
 
-        // DRILL-5009: Remove the RowGroup if it is empty
-        List<? extends ParquetFileMetadata> files = parquetTableMetadata.getFiles();
-        for (ParquetFileMetadata file : files) {
-          List<? extends RowGroupMetadata> rowGroups = file.getRowGroups();
-          for (Iterator<? extends RowGroupMetadata> iter = rowGroups.iterator(); iter.hasNext(); ) {
-            RowGroupMetadata r = iter.next();
-            if (r.getRowCount() == 0) {
-              iter.remove();
-            }
+      // DRILL-5009: Remove the RowGroup if it is empty
+      List<? extends ParquetFileMetadata> files = parquetTableMetadata.getFiles();
+      for (ParquetFileMetadata file : files) {
+        List<? extends RowGroupMetadata> rowGroups = file.getRowGroups();
+        for (Iterator<? extends RowGroupMetadata> iter = rowGroups.iterator(); iter.hasNext(); ) {
+          RowGroupMetadata r = iter.next();
+          if (r.getRowCount() == 0) {
+            iter.remove();
           }
         }
+      }
 
-      }
+    }
       if (newMetadata) {
-        // if new metadata files were created, invalidate the existing metadata context
-        metaContext.clear();
-      }
+      // if new metadata files were created, invalidate the existing metadata context
+      metaContext.clear();
+    }
     } catch (IOException e) {
       logger.error("Failed to read '{}' metadata file", path, e);
       metaContext.setMetadataCacheCorrupted(true);
-    }
+  }
   }
 
   /**
@@ -682,7 +707,7 @@ public class Metadata {
     }
     for (String directory : directories) {
       numDirs++;
-      metaContext.setStatus(directory);
+        metaContext.setStatus(directory);
       directoryStatus = fs.getFileStatus(new Path(directory));
       if (directoryStatus.getModificationTime() > metaFileModifyTime) {
         logger.info("Directory {} was modified. Took {} ms to check modification time of {} directories", directoryStatus.getPath().toString(),
@@ -820,7 +845,7 @@ public class Metadata {
      */
     @JsonIgnore public void updateRelativePaths(String baseDir) {
       this.directories = MetadataPathUtils.convertToAbsolutePaths(directories, baseDir);
-    }
+  }
   }
 
   @JsonTypeName(V1)
@@ -889,7 +914,7 @@ public class Metadata {
 
     @JsonIgnore @Override public String getMetadataVersion() {
       return metadataVersion;
-    }
+  }
   }
 
 
@@ -1098,7 +1123,7 @@ public class Metadata {
           return Objects.deepEquals(min, max) && (nulls == 0 || nulls == rowCount);
         } else {
           return nulls == rowCount && max == null;
-        }
+    }
       }
       return false;
     }
@@ -1209,7 +1234,7 @@ public class Metadata {
 
     @JsonIgnore @Override public String getMetadataVersion() {
       return metadataVersion;
-    }
+  }
 
   }
 
@@ -1750,7 +1775,7 @@ public class Metadata {
 
       @Override public String toString() {
         return name.toString();
-      }
+          }
 
       public static class DeSerializer extends KeyDeserializer {
 
@@ -1840,7 +1865,7 @@ public class Metadata {
           return Objects.deepEquals(minValue, maxValue) && (nulls == 0 || nulls == rowCount);
         } else {
           return nulls == rowCount && maxValue == null;
-        }
+    }
       }
       return false;
     }
@@ -1929,7 +1954,7 @@ public class Metadata {
           String absolutePath = (new Path(relativePath).isAbsolute()) ? relativePath
               : new Path(baseDir, relativePath).toUri().getPath();
           absolutePaths.add(absolutePath);
-        }
+}
         return absolutePaths;
       }
       return paths;
