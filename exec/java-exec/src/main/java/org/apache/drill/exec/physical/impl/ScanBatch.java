@@ -183,7 +183,7 @@ public class ScanBatch implements CloseableRecordBatch {
                                 // and fetch next reader in next loop iterator if required.
         }
 
-        if (isNewSchema) {
+        if (recordCount != 0 && isNewSchema) {
           // Even when recordCount = 0, we should return return OK_NEW_SCHEMA if current reader presents a new schema.
           // This could happen when data sources have a non-trivial schema with 0 row.
           container.buildSchema(SelectionVectorMode.NONE);
