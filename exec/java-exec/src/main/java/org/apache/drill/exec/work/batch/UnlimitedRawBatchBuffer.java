@@ -25,7 +25,7 @@ import org.apache.drill.exec.record.RawFragmentBatch;
 
 import com.google.common.collect.Queues;
 
-public class UnlimitedRawBatchBuffer extends BaseRawBatchBuffer<RawFragmentBatch> {
+public class UnlimitedRawBatchBuffer extends BaseBatchBuffer<RawFragmentBatch> {
   private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(UnlimitedRawBatchBuffer.class);
 
   private final int softlimit;
@@ -43,7 +43,7 @@ public class UnlimitedRawBatchBuffer extends BaseRawBatchBuffer<RawFragmentBatch
     private final LinkedBlockingDeque<RawFragmentBatch> buffer = Queues.newLinkedBlockingDeque();;
 
     @Override
-    public void addOomBatch(RawFragmentBatch batch) {
+    public void addOnBatch(RawFragmentBatch batch) {
       buffer.addFirst(batch);
     }
 

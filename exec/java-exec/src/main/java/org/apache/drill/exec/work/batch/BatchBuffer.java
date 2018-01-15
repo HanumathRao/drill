@@ -15,12 +15,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.drill.exec.record;
+package org.apache.drill.exec.work.batch;
 
 import java.io.IOException;
 
-public interface RawFragmentBatchProvider extends BatchProvider<RawFragmentBatch>{
+import org.apache.drill.exec.record.BatchProvider;
+import org.apache.drill.exec.record.RawFragmentBatch;
+import org.apache.drill.exec.record.RawFragmentBatchProvider;
 
-  RawFragmentBatch getNext() throws IOException, InterruptedException;
+/**
+ * A batch buffer is responsible for queuing incoming batches until a consumer is ready to receive them. It will also
+ * inform upstream if the batch cannot be accepted.
+ */
+public interface BatchBuffer<T> extends BatchProvider<T> {
+  org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(BatchBuffer.class);
 
+  /**
+   * Add the next new raw fragment batch to the buffer.
+   *
+   * @param batch
+   *          Batch to enqueue
+   * @throws IOException
+   * @return Whether response should be returned.
+   */
+  void enqueue(T batch) throws IOException;
 }

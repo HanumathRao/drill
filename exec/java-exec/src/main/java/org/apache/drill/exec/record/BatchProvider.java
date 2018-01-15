@@ -17,10 +17,16 @@
  */
 package org.apache.drill.exec.record;
 
+import org.apache.drill.exec.ops.FragmentContext;
+
 import java.io.IOException;
 
-public interface RawFragmentBatchProvider extends BatchProvider<RawFragmentBatch>{
+public interface BatchProvider<T> extends AutoCloseable {
 
-  RawFragmentBatch getNext() throws IOException, InterruptedException;
+  T getNext() throws IOException, InterruptedException;
 
+  void kill(FragmentContext context);
+
+  @Override
+  void close();
 }

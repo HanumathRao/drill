@@ -15,27 +15,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.drill.exec.work.batch;
+package org.apache.drill.exec.record;
 
-import java.io.IOException;
+import io.netty.buffer.DrillBuf;
+import org.apache.drill.exec.proto.BitData.FragmentRecordBatch;
+import org.apache.drill.exec.rpc.data.AckSender;
 
-import org.apache.drill.exec.record.RawFragmentBatch;
-import org.apache.drill.exec.record.RawFragmentBatchProvider;
+public interface FragmentBatch {
 
-/**
- * A batch buffer is responsible for queuing incoming batches until a consumer is ready to receive them. It will also
- * inform upstream if the batch cannot be accepted.
- */
-public interface RawBatchBuffer extends RawFragmentBatchProvider {
-  static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(RawBatchBuffer.class);
+  FragmentRecordBatch getHeader();
 
-  /**
-   * Add the next new raw fragment batch to the buffer.
-   *
-   * @param batch
-   *          Batch to enqueue
-   * @throws IOException
-   * @return Whether response should be returned.
-   */
-  public void enqueue(RawFragmentBatch batch) throws IOException;
+  DrillBuf getBody();
+
+  @Override
+  String toString();
+
+  void release();
+
+  AckSender getSender();
+
+  void sendOk();
+
+  long getByteCount();
+
+  boolean isAckSent();
 }

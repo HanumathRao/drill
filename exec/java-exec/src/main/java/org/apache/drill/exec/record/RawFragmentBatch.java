@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.drill.exec.proto.BitData.FragmentRecordBatch;
 import org.apache.drill.exec.rpc.data.AckSender;
 
-public class RawFragmentBatch {
+public class RawFragmentBatch implements FragmentBatch{
   //private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(RawFragmentBatch.class);
 
   private final FragmentRecordBatch header;

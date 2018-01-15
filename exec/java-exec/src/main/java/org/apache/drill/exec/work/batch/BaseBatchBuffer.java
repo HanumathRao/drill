@@ -19,14 +19,13 @@ package org.apache.drill.exec.work.batch;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.apache.drill.common.exceptions.DrillRuntimeException;
 import org.apache.drill.exec.ExecConstants;
 import org.apache.drill.exec.ops.FragmentContext;
-import org.apache.drill.exec.record.RawFragmentBatch;
+import org.apache.drill.exec.record.FragmentBatch;
 
-public abstract class BaseRawBatchBuffer<T> implements RawBatchBuffer {
-  private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(BaseRawBatchBuffer.class);
+public abstract class BaseBatchBuffer<T extends FragmentBatch> implements BatchBuffer<T> {
+  private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(BaseBatchBuffer.class);
 
   private enum BufferState {
     INIT,
@@ -35,13 +34,13 @@ public abstract class BaseRawBatchBuffer<T> implements RawBatchBuffer {
   }
 
   protected interface BufferQueue<T> {
-    public void addOomBatch(RawFragmentBatch batch);
-    public RawFragmentBatch poll() throws IOException;
-    public RawFragmentBatch take() throws IOException, InterruptedException;
-    public boolean checkForOutOfMemory();
-    public int size();
-    public boolean isEmpty();
-    public void add(T obj);
+    void addOnBatch(T batch);
+    T poll() throws IOException;
+    T take() throws IOException, InterruptedException;
+    boolean checkForOutOfMemory();
+    int size();
+    boolean isEmpty();
+    void add(T obj);
   }
 
   protected BufferQueue<T> bufferQueue;
@@ -52,7 +51,7 @@ public abstract class BaseRawBatchBuffer<T> implements RawBatchBuffer {
   private final int fragmentCount;
   protected final FragmentContext context;
 
-  public BaseRawBatchBuffer(final FragmentContext context, final int fragmentCount) {
+  public BaseBatchBuffer(final FragmentContext context, final int fragmentCount) {
     bufferSizePerSocket = context.getConfig().getInt(ExecConstants.INCOMING_BUFFER_SIZE);
 
     this.fragmentCount = fragmentCount;
@@ -70,7 +69,7 @@ public abstract class BaseRawBatchBuffer<T> implements RawBatchBuffer {
   }
 
   @Override
-  public synchronized void enqueue(final RawFragmentBatch batch) throws IOException {
+  public synchronized void enqueue(final T batch) throws IOException {
 
     // if this fragment is already canceled or failed, we shouldn't need any or more stuff. We do the null check to
     // ensure that tests run.
@@ -97,7 +96,7 @@ public abstract class BaseRawBatchBuffer<T> implements RawBatchBuffer {
    * @param batch
    * @throws IOException
    */
-  protected abstract void enqueueInner(final RawFragmentBatch batch) throws IOException;
+  protected abstract void enqueueInner(final T batch) throws IOException;
 
 //  ## Add assertion that all acks have been sent. TODO
   @Override
@@ -128,7 +127,7 @@ public abstract class BaseRawBatchBuffer<T> implements RawBatchBuffer {
    */
   private void clearBufferWithBody() {
     while (!bufferQueue.isEmpty()) {
-      final RawFragmentBatch batch;
+      final T batch;
       try {
         batch = bufferQueue.poll();
         assertAckSent(batch);
@@ -153,7 +152,7 @@ public abstract class BaseRawBatchBuffer<T> implements RawBatchBuffer {
   }
 
   @Override
-  public RawFragmentBatch getNext() throws IOException {
+  public T getNext() throws IOException {
 
     if (outOfMemory.get()) {
       if (bufferQueue.size() < 10) {
@@ -161,7 +160,7 @@ public abstract class BaseRawBatchBuffer<T> implements RawBatchBuffer {
       }
     }
 
-    RawFragmentBatch b;
+    T b;
     try {
       b = bufferQueue.poll();
 
@@ -215,7 +214,7 @@ public abstract class BaseRawBatchBuffer<T> implements RawBatchBuffer {
 
   }
 
-  private void assertAckSent(RawFragmentBatch batch) {
+  private void assertAckSent(T batch) {
     assert batch == null || batch.isAckSent() : "Ack not sent for batch";
   }
 
@@ -231,9 +230,11 @@ public abstract class BaseRawBatchBuffer<T> implements RawBatchBuffer {
   /**
    * Handle miscellaneous tasks after batch retrieval
    */
-  protected abstract void upkeep(RawFragmentBatch batch);
+  protected abstract void upkeep(T batch);
 
-  protected boolean isTerminated() {
-    return (state == BufferState.KILLED || state == BufferState.STREAMS_FINISHED);
+  protected
+  boolean isTerminated() {
+    return (state == BufferState.KILLED ||
+            state == BufferState.STREAMS_FINISHED);
   }
 }
