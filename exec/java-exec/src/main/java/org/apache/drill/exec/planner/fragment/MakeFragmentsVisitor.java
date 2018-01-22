@@ -19,6 +19,7 @@ package org.apache.drill.exec.planner.fragment;
 
 import org.apache.drill.exec.physical.base.AbstractPhysicalVisitor;
 import org.apache.drill.exec.physical.base.Exchange;
+import org.apache.drill.exec.physical.config.SingleMergeExchange;
 import org.apache.drill.exec.physical.base.PhysicalOperator;
 import org.apache.drill.exec.work.foreman.ForemanSetupException;
 

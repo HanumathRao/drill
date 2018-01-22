@@ -24,6 +24,7 @@ import org.apache.drill.exec.physical.config.HashAggregate;
 import org.apache.drill.exec.physical.config.HashJoinPOP;
 import org.apache.drill.exec.physical.config.HashPartitionSender;
 import org.apache.drill.exec.physical.config.HashToRandomExchange;
+import org.apache.drill.exec.physical.config.SingleMergeExchange;
 import org.apache.drill.exec.physical.config.IteratorValidator;
 import org.apache.drill.exec.physical.config.Limit;
 import org.apache.drill.exec.physical.config.MergeJoinPOP;
@@ -50,6 +51,11 @@ public abstract class AbstractPhysicalVisitor<T, X, E extends Throwable> impleme
   @Override
   public T visitExchange(Exchange exchange, X value) throws E{
     return visitOp(exchange, value);
+  }
+
+  @Override
+  public T visitSingleMergeExchange(SingleMergeExchange exchange, X value) throws E {
+    return visitExchange(exchange, value);
   }
 
   @Override

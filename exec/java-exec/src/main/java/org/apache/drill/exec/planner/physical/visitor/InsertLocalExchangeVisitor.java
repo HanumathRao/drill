@@ -25,6 +25,10 @@ import org.apache.drill.exec.planner.physical.HashPrelUtil.HashExpressionCreator
 import org.apache.drill.exec.planner.physical.HashToRandomExchangePrel;
 import org.apache.drill.exec.planner.physical.PlannerSettings;
 import org.apache.drill.exec.planner.physical.Prel;
+import org.apache.drill.exec.planner.physical.SingleMergeExchangePrel;
+import org.apache.drill.exec.planner.physical.HashToMergeExchangePrel;
+import org.apache.drill.exec.planner.physical.OrderedMuxExchangePrel;
+import org.apache.drill.exec.planner.physical.PrelUtil;
 import org.apache.drill.exec.planner.physical.ProjectPrel;
 import org.apache.drill.exec.planner.physical.DrillDistributionTrait.DistributionField;
 import org.apache.drill.exec.planner.physical.UnorderedDeMuxExchangePrel;
@@ -81,12 +85,83 @@ public class InsertLocalExchangeVisitor extends BasePrelVisitor<Prel, Void, Runt
   @Override
   public Prel visitExchange(ExchangePrel prel, Void value) throws RuntimeException {
     Prel child = ((Prel)prel.getInput()).accept(this, null);
-    // Whenever we encounter a HashToRandomExchangePrel
-    //   If MuxExchange is enabled, insert a UnorderedMuxExchangePrel before HashToRandomExchangePrel.
-    //   If DeMuxExchange is enabled, insert a UnorderedDeMuxExchangePrel after HashToRandomExchangePrel.
-    if (!(prel instanceof HashToRandomExchangePrel)) {
-      return (Prel)prel.copy(prel.getTraitSet(), Collections.singletonList(((RelNode)child)));
+    return (Prel)prel.copy(prel.getTraitSet(), Collections.singletonList(((RelNode)child)));
+  }
+
+  @Override
+  public Prel visitHashToMergeExchange(HashToMergeExchangePrel prel, Void value) throws RuntimeException {
+    Prel child = ((Prel)prel.getInput()).accept(this, null);
+
+    Prel newPrel = child;
+
+    final HashToMergeExchangePrel hashPrel = prel;
+    final List<String> childFields = child.getRowType().getFieldNames();
+
+    List <RexNode> removeUpdatedExpr = null;
+
+    if (isMuxEnabled) {
+      // Insert Project Operator with new column that will be a hash for HashToRandomExchange fields
+      final List<DistributionField> distFields = hashPrel.getDistFields();
+      final List<String> outputFieldNames = Lists.newArrayList(childFields);
+      final RexBuilder rexBuilder = prel.getCluster().getRexBuilder();
+      final List<RelDataTypeField> childRowTypeFields = child.getRowType().getFieldList();
+
+      final HashExpressionCreatorHelper<RexNode> hashHelper = new RexNodeBasedHashExpressionCreatorHelper(rexBuilder);
+      final List<RexNode> distFieldRefs = Lists.newArrayListWithExpectedSize(distFields.size());
+      for(int i=0; i<distFields.size(); i++) {
+        final int fieldId = distFields.get(i).getFieldId();
+        distFieldRefs.add(rexBuilder.makeInputRef(childRowTypeFields.get(fieldId).getType(), fieldId));
+      }
+
+      final List <RexNode> updatedExpr = Lists.newArrayListWithExpectedSize(childRowTypeFields.size());
+      removeUpdatedExpr = Lists.newArrayListWithExpectedSize(childRowTypeFields.size());
+      for ( RelDataTypeField field : childRowTypeFields) {
+        RexNode rex = rexBuilder.makeInputRef(field.getType(), field.getIndex());
+        updatedExpr.add(rex);
+        removeUpdatedExpr.add(rex);
+      }
+
+      outputFieldNames.add(HashPrelUtil.HASH_EXPR_NAME);
+      final RexNode distSeed = rexBuilder.makeBigintLiteral(BigDecimal.valueOf(HashPrelUtil.DIST_SEED));
+      updatedExpr.add(HashPrelUtil.createHashBasedPartitionExpression(distFieldRefs, distSeed, hashHelper));
+
+      RelDataType rowType = RexUtil.createStructType(prel.getCluster().getTypeFactory(), updatedExpr, outputFieldNames);
+
+      ProjectPrel addColumnprojectPrel = new ProjectPrel(child.getCluster(), child.getTraitSet(), child, updatedExpr, rowType);
+
+      newPrel = new OrderedMuxExchangePrel(addColumnprojectPrel.getCluster(), addColumnprojectPrel.getTraitSet(),
+          addColumnprojectPrel, prel.getCollation());
     }
+
+    newPrel = new HashToMergeExchangePrel(prel.getCluster(),
+        prel.getTraitSet(), newPrel, prel.getDistFields(), prel.getCollation(), PrelUtil.getSettings(prel.getCluster()).numEndPoints());
+
+    if ( isMuxEnabled ) {
+      // remove earlier inserted Project Operator - since it creates issues down the road in HashJoin
+      RelDataType removeRowType = RexUtil.createStructType(newPrel.getCluster().getTypeFactory(), removeUpdatedExpr, childFields);
+
+      ProjectPrel removeColumnProjectPrel = new ProjectPrel(newPrel.getCluster(), newPrel.getTraitSet(), newPrel, removeUpdatedExpr, removeRowType);
+      return removeColumnProjectPrel;
+    }
+    return newPrel;
+  }
+
+  @Override
+  public Prel visitSingleMergeExchange(SingleMergeExchangePrel prel, Void value) throws RuntimeException {
+    Prel child = ((Prel)prel.getInput()).accept(this, null);
+
+    Prel newPrel = child;
+    if (isMuxEnabled) {
+      newPrel = new OrderedMuxExchangePrel(prel.getCluster(), prel.getTraitSet(), prel.getInput(), prel.getCollation());
+    }
+
+    newPrel = new SingleMergeExchangePrel(prel.getCluster(),prel.getTraitSet(), newPrel, prel.getCollation());
+    return newPrel;
+  }
+
+  @Override
+  public Prel visitHashToRandomExchange(HashToRandomExchangePrel prel, Void value) throws RuntimeException {
+    Prel child = ((Prel)prel.getInput()).accept(this, null);
 
     Prel newPrel = child;
 

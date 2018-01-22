@@ -101,6 +101,8 @@ public final class ExecConstants {
   public static final LongValidator HASHAGG_NUM_PARTITIONS_VALIDATOR = new RangeLongValidator(HASHAGG_NUM_PARTITIONS_KEY, 1, 128); // 1 means - no spilling
   public static final String HASHAGG_MAX_MEMORY_KEY = "exec.hashagg.mem_limit";
   public static final LongValidator HASHAGG_MAX_MEMORY_VALIDATOR = new RangeLongValidator(HASHAGG_MAX_MEMORY_KEY, 0, Integer.MAX_VALUE);
+  public static final String ENABLE_HASHAGG = "planner.enable_hashagg";
+  BooleanValidator ENABLE_HASHAGG_VALIDATOR = new BooleanValidator(ENABLE_HASHAGG);
   // min batches is used for tuning (each partition needs so many batches when planning the number of partitions,
   // or reserve this number when calculating whether the remaining available memory is too small and requires a spill.)
   // Low value may OOM (e.g., when incoming rows become wider), higher values use fewer partitions but are safer

@@ -258,6 +258,59 @@ public class ExampleTest {
     }
   }
 
+
+  /**
+   * Example of a more realistic test that limits parallization, saves the query
+   * profile, parses it, and displays the runtime timing results per operator.
+   *
+   * @throws Exception if anything goes wrong
+   */
+
+  @Test
+  public void sixthTest() throws Exception {
+    ClusterFixtureBuilder builder = ClusterFixture.builder(dirTestWatcher)
+        .maxParallelization(1)
+        .configProperty(ExecConstants.SYS_STORE_PROVIDER_LOCAL_ENABLE_WRITE, true)
+        ;
+
+    try (ClusterFixture cluster = builder.build();
+         ClientFixture client = cluster.clientFixture()) {
+      client.alterSession(ExecConstants.SLICE_TARGET, 10);
+      String sql = "SELECT id_i, name_s10 FROM `mock`.`employees_10K` ORDER BY id_i limit 100";
+
+      QuerySummary summary = client.queryBuilder().sql(sql).run();
+      System.out.println(String.format("Results: %,d records, %d batches, %,d ms", summary.recordCount(), summary.batchCount(), summary.runTimeMs() ) );
+
+      System.out.println("Query ID: " + summary.queryIdString());
+      ProfileParser profile = client.parseProfile(summary.queryIdString());
+      profile.print();
+      client.queryBuilder().sql(sql).printCsv();
+    }
+  }
+
+  @Test
+  public void seventhTest() throws Exception {
+    ClusterFixtureBuilder builder = ClusterFixture.builder(dirTestWatcher)
+        .maxParallelization(1)
+        .configProperty(ExecConstants.SYS_STORE_PROVIDER_LOCAL_ENABLE_WRITE, true)
+        ;
+
+    try (ClusterFixture cluster = builder.build();
+         ClientFixture client = cluster.clientFixture()) {
+      client.alterSession(ExecConstants.SLICE_TARGET, 10);
+      client.alterSession(ExecConstants.ENABLE_HASHAGG, false);
+      String sql = "SELECT name_s10, max(id_i) FROM `mock`.`employees_10K` group by name_s10";
+
+      QuerySummary summary = client.queryBuilder().sql(sql).run();
+      System.out.println(String.format("Results: %,d records, %d batches, %,d ms", summary.recordCount(), summary.batchCount(), summary.runTimeMs() ) );
+
+      System.out.println("Query ID: " + summary.queryIdString());
+      ProfileParser profile = client.parseProfile(summary.queryIdString());
+      profile.print();
+      client.queryBuilder().sql(sql).printCsv();
+    }
+  }
+
   /**
    * Example of running a specific test as Java program. Handy if you want to
    * run the test from the command line, or if your test runs so long that JUnit

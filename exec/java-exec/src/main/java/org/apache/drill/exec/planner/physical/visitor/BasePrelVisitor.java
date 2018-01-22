@@ -18,6 +18,9 @@
 package org.apache.drill.exec.planner.physical.visitor;
 
 import org.apache.drill.exec.planner.physical.ExchangePrel;
+import org.apache.drill.exec.planner.physical.HashToMergeExchangePrel;
+import org.apache.drill.exec.planner.physical.HashToRandomExchangePrel;
+import org.apache.drill.exec.planner.physical.SingleMergeExchangePrel;
 import org.apache.drill.exec.planner.physical.JoinPrel;
 import org.apache.drill.exec.planner.physical.Prel;
 import org.apache.drill.exec.planner.physical.ProjectPrel;
@@ -36,6 +39,21 @@ public class BasePrelVisitor<RETURN, EXTRA, EXCEP extends Throwable> implements 
   @Override
   public RETURN visitExchange(ExchangePrel prel, EXTRA value) throws EXCEP {
     return visitPrel(prel, value);
+  }
+
+  @Override
+  public RETURN visitHashToRandomExchange(HashToRandomExchangePrel prel, EXTRA value) throws EXCEP {
+    return visitExchange(prel, value);
+  }
+
+  @Override
+  public RETURN visitSingleMergeExchange(SingleMergeExchangePrel prel, EXTRA value) throws EXCEP {
+    return visitExchange(prel, value);
+  }
+
+  @Override
+  public RETURN visitHashToMergeExchange(HashToMergeExchangePrel prel, EXTRA value) throws EXCEP {
+    return visitExchange(prel, value);
   }
 
   @Override

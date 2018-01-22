@@ -40,6 +40,7 @@ import org.apache.drill.exec.physical.config.StreamingAggregate;
 import org.apache.drill.exec.physical.config.Trace;
 import org.apache.drill.exec.physical.config.UnionAll;
 import org.apache.drill.exec.physical.config.UnionExchange;
+import org.apache.drill.exec.physical.config.SingleMergeExchange;
 import org.apache.drill.exec.physical.config.UnorderedReceiver;
 import org.apache.drill.exec.physical.config.Values;
 import org.apache.drill.exec.physical.config.WindowPOP;
@@ -55,10 +56,10 @@ public interface PhysicalVisitor<RETURN, EXTRA, EXCEP extends Throwable> {
 
 
   public RETURN visitExchange(Exchange exchange, EXTRA value) throws EXCEP;
+  public RETURN visitSingleMergeExchange(SingleMergeExchange exchange, EXTRA value) throws EXCEP;
   public RETURN visitGroupScan(GroupScan groupScan, EXTRA value) throws EXCEP;
   public RETURN visitSubScan(SubScan subScan, EXTRA value) throws EXCEP;
   public RETURN visitStore(Store store, EXTRA value) throws EXCEP;
-
   public RETURN visitFilter(Filter filter, EXTRA value) throws EXCEP;
   public RETURN visitUnion(UnionAll union, EXTRA value) throws EXCEP;
   public RETURN visitProject(Project project, EXTRA value) throws EXCEP;

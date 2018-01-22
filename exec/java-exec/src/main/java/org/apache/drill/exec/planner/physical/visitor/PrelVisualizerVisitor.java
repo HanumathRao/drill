@@ -24,6 +24,9 @@ import org.apache.drill.exec.planner.physical.ProjectPrel;
 import org.apache.drill.exec.planner.physical.ScanPrel;
 import org.apache.drill.exec.planner.physical.ScreenPrel;
 import org.apache.drill.exec.planner.physical.WriterPrel;
+import org.apache.drill.exec.planner.physical.HashToMergeExchangePrel;
+import org.apache.drill.exec.planner.physical.HashToRandomExchangePrel;
+import org.apache.drill.exec.planner.physical.SingleMergeExchangePrel;
 
 /**
  * Debug-time class that prints a PRel tree to the console for
@@ -216,6 +219,21 @@ public class PrelVisualizerVisitor
     visitBasePrel(prel, value);
     endNode(prel, value);
     return null;
+  }
+
+  @Override
+  public Void visitHashToRandomExchange(HashToRandomExchangePrel prel, VisualizationState value) throws Exception {
+    return visitExchange(prel, value);
+  }
+
+  @Override
+  public Void visitSingleMergeExchange(SingleMergeExchangePrel prel, VisualizationState value) throws Exception {
+    return visitExchange(prel, value);
+  }
+
+  @Override
+  public Void visitHashToMergeExchange(HashToMergeExchangePrel prel, VisualizationState value) throws Exception {
+    return visitExchange(prel, value);
   }
 
   @Override

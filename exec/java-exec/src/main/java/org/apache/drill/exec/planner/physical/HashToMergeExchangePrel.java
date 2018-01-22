@@ -25,6 +25,7 @@ import org.apache.drill.exec.physical.config.HashToMergeExchange;
 import org.apache.drill.exec.planner.cost.DrillCostBase;
 import org.apache.drill.exec.planner.cost.DrillCostBase.DrillCostFactory;
 import org.apache.drill.exec.planner.physical.DrillDistributionTrait.DistributionField;
+import org.apache.drill.exec.planner.physical.visitor.PrelVisitor;
 import org.apache.drill.exec.record.BatchSchema.SelectionVectorMode;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelNode;
@@ -88,6 +89,10 @@ public class HashToMergeExchangePrel extends ExchangePrel {
         PrelUtil.getOrdering(this.collation, getInput().getRowType()));
     return creator.addMetadata(this, g);
 
+  }
+
+  public <T, X, E extends Throwable> T accept(PrelVisitor<T, X, E> logicalVisitor, X value) throws E {
+    return logicalVisitor.visitHashToMergeExchange(this, value);
   }
 
   public List<DistributionField> getDistFields() {
