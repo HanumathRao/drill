@@ -25,6 +25,10 @@ import org.apache.drill.exec.planner.physical.HashPrelUtil.HashExpressionCreator
 import org.apache.drill.exec.planner.physical.HashToRandomExchangePrel;
 import org.apache.drill.exec.planner.physical.PlannerSettings;
 import org.apache.drill.exec.planner.physical.Prel;
+import org.apache.drill.exec.planner.physical.SingleMergeExchangePrel;
+import org.apache.drill.exec.planner.physical.HashToMergeExchangePrel;
+import org.apache.drill.exec.planner.physical.OrderedMuxExchangePrel;
+import org.apache.drill.exec.planner.physical.PrelUtil;
 import org.apache.drill.exec.planner.physical.ProjectPrel;
 import org.apache.drill.exec.planner.physical.DrillDistributionTrait.DistributionField;
 import org.apache.drill.exec.planner.physical.UnorderedDeMuxExchangePrel;
@@ -81,12 +85,24 @@ public class InsertLocalExchangeVisitor extends BasePrelVisitor<Prel, Void, Runt
   @Override
   public Prel visitExchange(ExchangePrel prel, Void value) throws RuntimeException {
     Prel child = ((Prel)prel.getInput()).accept(this, null);
-    // Whenever we encounter a HashToRandomExchangePrel
-    //   If MuxExchange is enabled, insert a UnorderedMuxExchangePrel before HashToRandomExchangePrel.
-    //   If DeMuxExchange is enabled, insert a UnorderedDeMuxExchangePrel after HashToRandomExchangePrel.
-    if (!(prel instanceof HashToRandomExchangePrel)) {
-      return (Prel)prel.copy(prel.getTraitSet(), Collections.singletonList(((RelNode)child)));
+    return (Prel)prel.copy(prel.getTraitSet(), Collections.singletonList(((RelNode)child)));
+  }
+
+  @Override
+  public Prel visitSingleMergeExchange(SingleMergeExchangePrel prel, Void value) throws RuntimeException {
+    Prel outPrel = ((Prel)prel.getInput()).accept(this, null);
+
+    if (isMuxEnabled) {
+      outPrel = new OrderedMuxExchangePrel(prel.getCluster(), prel.getTraitSet(), prel.getInput(), prel.getCollation());
     }
+
+    outPrel = new SingleMergeExchangePrel(prel.getCluster(),prel.getTraitSet(), outPrel, prel.getCollation());
+    return outPrel;
+  }
+
+  @Override
+  public Prel visitHashToRandomExchange(HashToRandomExchangePrel prel, Void value) throws RuntimeException {
+    Prel child = ((Prel)prel.getInput()).accept(this, null);
 
     Prel newPrel = child;
 

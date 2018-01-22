@@ -24,6 +24,7 @@ import org.apache.calcite.linq4j.Ord;
 
 import org.apache.drill.exec.physical.base.PhysicalOperator;
 import org.apache.drill.exec.physical.config.SingleMergeExchange;
+import org.apache.drill.exec.planner.physical.visitor.PrelVisitor;
 import org.apache.drill.exec.planner.cost.DrillCostBase;
 import org.apache.drill.exec.planner.cost.DrillCostBase.DrillCostFactory;
 import org.apache.drill.exec.record.BatchSchema.SelectionVectorMode;
@@ -94,6 +95,11 @@ public class SingleMergeExchangePrel extends ExchangePrel {
   }
 
   @Override
+  public <T, X, E extends Throwable> T accept(PrelVisitor<T, X, E> logicalVisitor, X value) throws E {
+    return logicalVisitor.visitSingleMergeExchange(this, value);
+  }
+
+  @Override
   public RelWriter explainTerms(RelWriter pw) {
     super.explainTerms(pw);
     if (pw.nest()) {
@@ -104,6 +110,10 @@ public class SingleMergeExchangePrel extends ExchangePrel {
       }
     }
     return pw;
+  }
+
+  public RelCollation getCollation() {
+    return this.collation;
   }
 
   @Override

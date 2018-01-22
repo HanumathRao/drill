@@ -27,6 +27,7 @@ import org.apache.drill.exec.physical.config.HashToRandomExchange;
 import org.apache.drill.exec.planner.cost.DrillCostBase;
 import org.apache.drill.exec.planner.cost.DrillCostBase.DrillCostFactory;
 import org.apache.drill.exec.planner.physical.DrillDistributionTrait.DistributionField;
+import org.apache.drill.exec.planner.physical.visitor.PrelVisitor;
 import org.apache.drill.exec.record.BatchSchema.SelectionVectorMode;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
@@ -110,6 +111,10 @@ public class HashToRandomExchangePrel extends ExchangePrel {
         pw.item("dist" + ord.i, ord.e);
       }
     return pw;
+  }
+
+  public <T, X, E extends Throwable> T accept(PrelVisitor<T, X, E> visitor, X value) throws E {
+    return visitor.visitHashToRandomExchange(this, value);
   }
 
   @Override
