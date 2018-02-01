@@ -125,7 +125,7 @@ public class IncomingBuffers implements AutoCloseable {
     return rem;
   }
 
-  public RawBatchBuffer[] getBuffers(int senderMajorFragmentId) {
+  public BatchBuffer[] getBuffers(int senderMajorFragmentId) {
     return collectorMap.get(senderMajorFragmentId).getBuffers();
   }
 

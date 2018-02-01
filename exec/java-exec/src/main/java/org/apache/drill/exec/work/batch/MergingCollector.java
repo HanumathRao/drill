@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.drill.exec.ops.FragmentContext;
 import org.apache.drill.exec.proto.BitControl.Collector;
+import org.apache.drill.exec.record.RawFragmentBatch;
 
 public class MergingCollector extends AbstractDataCollector{
 
@@ -29,7 +30,7 @@ public class MergingCollector extends AbstractDataCollector{
   }
 
   @Override
-  protected RawBatchBuffer getBuffer(int minorFragmentId) {
+  protected BatchBuffer<RawFragmentBatch> getBuffer(int minorFragmentId) {
     return buffers[0];
   }
 }

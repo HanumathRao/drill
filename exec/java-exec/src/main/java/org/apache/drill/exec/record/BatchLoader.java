@@ -17,10 +17,12 @@
  */
 package org.apache.drill.exec.record;
 
-import java.io.IOException;
+import io.netty.buffer.DrillBuf;
+import org.apache.drill.exec.exception.SchemaChangeException;
+import org.apache.drill.exec.proto.UserBitShared;
 
-public interface RawFragmentBatchProvider extends BatchProvider<RawFragmentBatch>{
+public abstract class BatchLoader implements VectorAccessible, Iterable<VectorWrapper<?>>{
+  public abstract boolean load(UserBitShared.RecordBatchDef def, DrillBuf buf) throws SchemaChangeException;
 
-  RawFragmentBatch getNext() throws IOException, InterruptedException;
-
+  public abstract void clear();
 }

@@ -37,12 +37,11 @@ public abstract class AbstractDataCollector implements DataCollector{
   private final AtomicInteger remainingRequired;
   private final AtomicInteger parentAccounter;
   private final int incomingStreams;
-  protected final RawBatchBuffer[] buffers;
+  protected final BatchBuffer[] buffers;
   protected final ArrayWrappedIntIntMap fragmentMap;
 
   /**
    * @param parentAccounter
-   * @param receiver
    * @param numBuffers Number of RawBatchBuffer inputs required to store the incoming data
    * @param bufferCapacity Capacity of each RawBatchBuffer.
    * @param context
@@ -65,7 +64,7 @@ public abstract class AbstractDataCollector implements DataCollector{
       index++;
     }
 
-    buffers = new RawBatchBuffer[numBuffers];
+    buffers = new BatchBuffer[numBuffers];
     remainingRequired = new AtomicInteger(numBuffers);
 
     final boolean spooling = collector.getIsSpooling();
@@ -85,7 +84,7 @@ public abstract class AbstractDataCollector implements DataCollector{
   }
 
   @Override
-  public RawBatchBuffer[] getBuffers(){
+  public BatchBuffer[] getBuffers(){
     return buffers;
   }
 
@@ -112,7 +111,7 @@ public abstract class AbstractDataCollector implements DataCollector{
     return incomingStreams;
   }
 
-  protected abstract RawBatchBuffer getBuffer(int minorFragmentId);
+  protected abstract BatchBuffer<RawFragmentBatch> getBuffer(int minorFragmentId);
 
   @Override
   public void close() throws Exception {

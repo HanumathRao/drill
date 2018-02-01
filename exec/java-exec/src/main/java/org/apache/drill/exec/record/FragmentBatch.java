@@ -18,6 +18,7 @@
 package org.apache.drill.exec.record;
 
 import io.netty.buffer.DrillBuf;
+import org.apache.drill.exec.memory.BufferAllocator;
 import org.apache.drill.exec.proto.BitData.FragmentRecordBatch;
 import org.apache.drill.exec.rpc.data.AckSender;
 
@@ -39,4 +40,8 @@ public interface FragmentBatch {
   long getByteCount();
 
   boolean isAckSent();
+
+  <BL extends BatchLoader> BL getBatchLoader(BufferAllocator allocator);
+
+  <FB extends FragmentBatch> FB getEmptyBatch(FragmentRecordBatch header, DrillBuf body, AckSender sender);
 }

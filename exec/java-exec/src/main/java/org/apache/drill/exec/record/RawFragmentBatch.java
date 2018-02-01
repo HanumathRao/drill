@@ -21,11 +21,12 @@ import io.netty.buffer.DrillBuf;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.apache.drill.exec.memory.BufferAllocator;
 import org.apache.drill.exec.proto.BitData.FragmentRecordBatch;
 import org.apache.drill.exec.rpc.data.AckSender;
 
-public class RawFragmentBatch implements FragmentBatch{
-  //private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(RawFragmentBatch.class);
+public class RawFragmentBatch implements FragmentBatch {
+  private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(RawFragmentBatch.class);
 
   private final FragmentRecordBatch header;
   private final DrillBuf body;
@@ -77,4 +78,15 @@ public class RawFragmentBatch implements FragmentBatch{
   public boolean isAckSent() {
     return ackSent.get();
   }
+
+  @Override
+  public RecordBatchLoader getBatchLoader(BufferAllocator allocator) {
+    return new RecordBatchLoader(allocator);
+  }
+
+  @Override
+  public RawFragmentBatch getEmptyBatch(FragmentRecordBatch header, DrillBuf body, AckSender sender) {
+    return new RawFragmentBatch(header, body, sender);
+  }
+
 }

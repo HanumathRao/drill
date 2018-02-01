@@ -23,9 +23,10 @@ import org.apache.drill.common.exceptions.ExecutionSetupException;
 import org.apache.drill.exec.ops.FragmentContext;
 import org.apache.drill.exec.physical.config.UnorderedReceiver;
 import org.apache.drill.exec.physical.impl.BatchCreator;
+import org.apache.drill.exec.record.RawFragmentBatch;
 import org.apache.drill.exec.record.RecordBatch;
 import org.apache.drill.exec.work.batch.IncomingBuffers;
-import org.apache.drill.exec.work.batch.RawBatchBuffer;
+import org.apache.drill.exec.work.batch.BatchBuffer;
 
 public class UnorderedReceiverCreator implements BatchCreator<UnorderedReceiver>{
 
@@ -37,9 +38,9 @@ public class UnorderedReceiverCreator implements BatchCreator<UnorderedReceiver>
     IncomingBuffers bufHolder = context.getBuffers();
     assert bufHolder != null : "IncomingBuffers must be defined for any place a receiver is declared.";
 
-    RawBatchBuffer[] buffers = bufHolder.getBuffers(receiver.getOppositeMajorFragmentId());
+    BatchBuffer<RawFragmentBatch>[] buffers = bufHolder.getBuffers(receiver.getOppositeMajorFragmentId());
     assert buffers.length == 1;
-    RawBatchBuffer buffer = buffers[0];
+    BatchBuffer<RawFragmentBatch> buffer = buffers[0];
     return new UnorderedReceiverBatch(context, buffer, receiver);
   }
 }

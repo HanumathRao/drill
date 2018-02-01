@@ -38,7 +38,7 @@ import org.apache.drill.exec.proto.UserBitShared.RecordBatchDef;
 import org.apache.drill.exec.record.BatchSchema;
 import org.apache.drill.exec.record.CloseableRecordBatch;
 import org.apache.drill.exec.record.RawFragmentBatch;
-import org.apache.drill.exec.record.RawFragmentBatchProvider;
+import org.apache.drill.exec.work.batch.BatchBuffer;
 import org.apache.drill.exec.record.RecordBatchLoader;
 import org.apache.drill.exec.record.TypedFieldId;
 import org.apache.drill.exec.record.VectorContainer;
@@ -56,7 +56,7 @@ public class UnorderedReceiverBatch implements CloseableRecordBatch {
   private static final ControlsInjector injector = ControlsInjectorFactory.getInjector(UnorderedReceiverBatch.class);
 
   private final RecordBatchLoader batchLoader;
-  private final RawFragmentBatchProvider fragProvider;
+  private final BatchBuffer<RawFragmentBatch> fragProvider;
   private final FragmentContext context;
   private BatchSchema schema;
   private final OperatorStats stats;
@@ -74,7 +74,7 @@ public class UnorderedReceiverBatch implements CloseableRecordBatch {
     }
   }
 
-  public UnorderedReceiverBatch(final FragmentContext context, final RawFragmentBatchProvider fragProvider, final UnorderedReceiver config) throws OutOfMemoryException {
+  public UnorderedReceiverBatch(final FragmentContext context, final BatchBuffer<RawFragmentBatch> fragProvider, final UnorderedReceiver config) throws OutOfMemoryException {
     this.fragProvider = fragProvider;
     this.context = context;
     // In normal case, batchLoader does not require an allocator. However, in case of splitAndTransfer of a value vector,

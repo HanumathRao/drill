@@ -31,9 +31,11 @@ import java.util.concurrent.TimeUnit;
 import org.apache.drill.exec.ExecConstants;
 import org.apache.drill.exec.memory.BufferAllocator;
 import org.apache.drill.exec.ops.FragmentContext;
+import org.apache.drill.exec.proto.BitData.FragmentRecordBatch;
 import org.apache.drill.exec.proto.BitData;
 import org.apache.drill.exec.proto.ExecProtos;
 import org.apache.drill.exec.proto.helper.QueryIdHelper;
+import org.apache.drill.exec.record.BatchLoader;
 import org.apache.drill.exec.record.RawFragmentBatch;
 import org.apache.drill.exec.rpc.data.AckSender;
 import org.apache.drill.exec.store.LocalSyncableFileSystem;
@@ -501,6 +503,16 @@ public class SpoolingRawBatchBuffer extends BaseBatchBuffer<RawFragmentBatchWrap
     @Override
     public boolean isAckSent() {
       return false;
+    }
+
+    @Override
+    public <BL extends BatchLoader> BL getBatchLoader(BufferAllocator allocator) {
+      return null;
+    }
+
+    @Override
+    public RawFragmentBatchWrapper getEmptyBatch(FragmentRecordBatch header, DrillBuf body, AckSender sender) {
+      return null;
     }
   }
 

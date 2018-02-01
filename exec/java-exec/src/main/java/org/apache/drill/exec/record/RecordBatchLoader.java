@@ -46,7 +46,7 @@ import com.google.common.base.Preconditions;
 /**
  * Holds record batch loaded from record batch message.
  */
-public class RecordBatchLoader implements VectorAccessible, Iterable<VectorWrapper<?>>{
+public class RecordBatchLoader extends BatchLoader {
   private final static Logger logger = LoggerFactory.getLogger(RecordBatchLoader.class);
 
   private final BufferAllocator allocator;

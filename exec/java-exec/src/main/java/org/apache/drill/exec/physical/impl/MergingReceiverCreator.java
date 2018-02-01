@@ -24,9 +24,11 @@ import org.apache.drill.exec.exception.OutOfMemoryException;
 import org.apache.drill.exec.ops.FragmentContext;
 import org.apache.drill.exec.physical.config.MergingReceiverPOP;
 import org.apache.drill.exec.physical.impl.mergereceiver.MergingRecordBatch;
+import org.apache.drill.exec.physical.impl.mergereceiver.MergingRemoteRecordBatch;
+import org.apache.drill.exec.record.RawFragmentBatch;
 import org.apache.drill.exec.record.RecordBatch;
 import org.apache.drill.exec.work.batch.IncomingBuffers;
-import org.apache.drill.exec.work.batch.RawBatchBuffer;
+import org.apache.drill.exec.work.batch.BatchBuffer;
 
 public class MergingReceiverCreator implements BatchCreator<MergingReceiverPOP> {
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(MergingReceiverCreator.class);
@@ -42,8 +44,8 @@ public class MergingReceiverCreator implements BatchCreator<MergingReceiverPOP> 
     IncomingBuffers bufHolder = context.getBuffers();
 
     assert bufHolder != null : "IncomingBuffers must be defined for any place a receiver is declared.";
-    RawBatchBuffer[] buffers = bufHolder.getBuffers(receiver.getOppositeMajorFragmentId());
+    BatchBuffer<RawFragmentBatch>[] buffers = bufHolder.getBuffers(receiver.getOppositeMajorFragmentId());
 
-    return new MergingRecordBatch(context, receiver, buffers);
+    return new MergingRemoteRecordBatch(context, receiver, buffers);
   }
 }

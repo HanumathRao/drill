@@ -57,6 +57,4 @@ public interface VectorAccessible extends Iterable<VectorWrapper<?>> {
 
   SelectionVector4 getSelectionVector4();
 
-  void clear();
-
 }
