@@ -63,7 +63,7 @@ public class TestSortSpillWithException extends ClusterTest {
         .sessionOption(ExecConstants.MAX_QUERY_MEMORY_PER_NODE_KEY, 60 * 1024 * 1024) // Spill early
         // Prevent the percent-based memory rule from second-guessing the above.
         .sessionOption(ExecConstants.PERCENT_MEMORY_PER_QUERY_KEY, 0.0)
-        .configProperty(ExecConstants.EXTERNAL_SORT_DISABLE_MANAGED, true)
+        .configProperty(ExecConstants.EXTERNAL_SORT_DISABLE_MANAGED, false)
         .maxParallelization(1);
     startCluster(builder);
   }
@@ -109,6 +109,7 @@ public class TestSortSpillWithException extends ClusterTest {
     ControlsInjectionUtil.setControls(client.client(), controls);
     // run a simple order by query
     try {
+      System.out.println(client.queryBuilder().sql("SELECT id_i, name_s250 FROM `mock`.`employee_500K` ORDER BY id_i").explainJson());
       client.queryBuilder().sql("SELECT id_i, name_s250 FROM `mock`.`employee_500K` ORDER BY id_i").run();
       fail("Query should have failed!");
     } catch (UserRemoteException e) {
