@@ -32,6 +32,7 @@ import org.apache.drill.exec.testing.Controls;
 import org.apache.drill.exec.testing.ControlsInjectionUtil;
 import org.apache.drill.test.BaseDirTestWatcher;
 import org.apache.drill.test.ClusterFixture;
+import org.apache.drill.test.ClientFixture;
 import org.apache.drill.test.ClusterTest;
 import org.apache.drill.test.ClusterFixtureBuilder;
 import org.junit.BeforeClass;
@@ -62,14 +63,16 @@ public class TestSortSpillWithException extends ClusterTest {
         .sessionOption(ExecConstants.MAX_QUERY_MEMORY_PER_NODE_KEY, 60 * 1024 * 1024) // Spill early
         // Prevent the percent-based memory rule from second-guessing the above.
         .sessionOption(ExecConstants.PERCENT_MEMORY_PER_QUERY_KEY, 0.0)
-        .configProperty(ExecConstants.EXTERNAL_SORT_DISABLE_MANAGED, false)
+        .configProperty(ExecConstants.EXTERNAL_SORT_DISABLE_MANAGED, true)
         .maxParallelization(1);
     startCluster(builder);
   }
 
   @Test
   public void testSpillLeakLegacy() throws Exception {
+    ClientFixture client = cluster.clientBuilder().build();
     client.alterSession(ExecConstants.EXTERNAL_SORT_DISABLE_MANAGED_OPTION.getOptionName(), true);
+    client.alterSession("planner.enable_mux_exchange", false);
     // inject exception in sort while spilling
     final String controls = Controls.newBuilder()
       .addExceptionOnBit(
@@ -78,10 +81,10 @@ public class TestSortSpillWithException extends ClusterTest {
           IOException.class,
           cluster.drillbit().getContext().getEndpoint())
       .build();
-    ControlsInjectionUtil.setControls(cluster.client(), controls);
+    ControlsInjectionUtil.setControls(client.client(), controls);
     // run a simple order by query
     try {
-      test("select employee_id from dfs.`xsort/2batches` order by employee_id");
+      client.queryBuilder().sql("select employee_id from dfs.`xsort/2batches` order by employee_id").run();
       fail("Query should have failed!");
     } catch (UserRemoteException e) {
       assertEquals(ErrorType.RESOURCE, e.getErrorType());
@@ -92,7 +95,9 @@ public class TestSortSpillWithException extends ClusterTest {
 
   @Test
   public void testSpillLeakManaged() throws Exception {
+    ClientFixture client = cluster.clientBuilder().build();
     client.alterSession(ExecConstants.EXTERNAL_SORT_DISABLE_MANAGED_OPTION.getOptionName(), false);
+    client.alterSession("planner.enable_mux_exchange", false);
     // inject exception in sort while spilling
     final String controls = Controls.newBuilder()
       .addExceptionOnBit(
@@ -101,10 +106,10 @@ public class TestSortSpillWithException extends ClusterTest {
           IOException.class,
           cluster.drillbit().getContext().getEndpoint())
       .build();
-    ControlsInjectionUtil.setControls(cluster.client(), controls);
+    ControlsInjectionUtil.setControls(client.client(), controls);
     // run a simple order by query
     try {
-      test("SELECT id_i, name_s250 FROM `mock`.`employee_500K` ORDER BY id_i");
+      client.queryBuilder().sql("SELECT id_i, name_s250 FROM `mock`.`employee_500K` ORDER BY id_i").run();
       fail("Query should have failed!");
     } catch (UserRemoteException e) {
       assertEquals(ErrorType.RESOURCE, e.getErrorType());
