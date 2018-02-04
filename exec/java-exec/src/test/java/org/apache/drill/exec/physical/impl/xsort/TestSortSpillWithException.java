@@ -32,7 +32,6 @@ import org.apache.drill.exec.testing.Controls;
 import org.apache.drill.exec.testing.ControlsInjectionUtil;
 import org.apache.drill.test.BaseDirTestWatcher;
 import org.apache.drill.test.ClusterFixture;
-import org.apache.drill.test.ClientFixture;
 import org.apache.drill.test.ClusterTest;
 import org.apache.drill.test.ClusterFixtureBuilder;
 import org.junit.BeforeClass;
@@ -58,68 +57,62 @@ public class TestSortSpillWithException extends ClusterTest {
     dirTestWatcher.copyResourceToRoot(Paths.get("xsort"));
 
     ClusterFixtureBuilder builder = ClusterFixture.builder(dirTestWatcher)
-        .configProperty(ExecConstants.EXTERNAL_SORT_SPILL_THRESHOLD, 1) // Unmanaged
-        .configProperty(ExecConstants.EXTERNAL_SORT_SPILL_GROUP_SIZE, 1) // Unmanaged
-//        .configProperty(ExecConstants.EXTERNAL_SORT_BATCH_LIMIT, 60*1024*1024)
-        .sessionOption(ExecConstants.MAX_QUERY_MEMORY_PER_NODE_KEY, 60 * 1024 * 1024) // Spill early
-        // Prevent the percent-based memory rule from second-guessing the above.
-        .sessionOption(ExecConstants.PERCENT_MEMORY_PER_QUERY_KEY, 0.0)
-        .configProperty(ExecConstants.EXTERNAL_SORT_DISABLE_MANAGED, false)
-        .maxParallelization(1);
+            .configProperty(ExecConstants.EXTERNAL_SORT_SPILL_THRESHOLD, 1) // Unmanaged
+            .configProperty(ExecConstants.EXTERNAL_SORT_SPILL_GROUP_SIZE, 1) // Unmanaged
+            .sessionOption(ExecConstants.MAX_QUERY_MEMORY_PER_NODE_KEY, 60 * 1024 * 1024) // Spill early
+            // Prevent the percent-based memory rule from second-guessing the above.
+            .sessionOption(ExecConstants.PERCENT_MEMORY_PER_QUERY_KEY, 0.0)
+            .configProperty(ExecConstants.EXTERNAL_SORT_DISABLE_MANAGED, false);
     startCluster(builder);
   }
 
   @Test
   public void testSpillLeakLegacy() throws Exception {
-    ClientFixture client = cluster.clientBuilder().build();
     client.alterSession(ExecConstants.EXTERNAL_SORT_DISABLE_MANAGED_OPTION.getOptionName(), true);
-    client.alterSession("planner.enable_mux_exchange", false);
+    client.alterSession(ExecConstants.SLICE_TARGET, 1000000);
     client.alterSession(ExecConstants.MAX_QUERY_MEMORY_PER_NODE_KEY, 60 * 1024 * 1024);
     // inject exception in sort while spilling
     final String controls = Controls.newBuilder()
-      .addExceptionOnBit(
-          ExternalSortBatch.class,
-          ExternalSortBatch.INTERRUPTION_WHILE_SPILLING,
-          IOException.class,
-          cluster.drillbit().getContext().getEndpoint())
-      .build();
-    ControlsInjectionUtil.setControls(client.client(), controls);
+            .addExceptionOnBit(
+                    ExternalSortBatch.class,
+                    ExternalSortBatch.INTERRUPTION_WHILE_SPILLING,
+                    IOException.class,
+                    cluster.drillbit().getContext().getEndpoint())
+            .build();
+    ControlsInjectionUtil.setControls(cluster.client(), controls);
     // run a simple order by query
     try {
-      client.queryBuilder().sql("select employee_id from dfs.`xsort/2batches` order by employee_id").run();
+      test("select employee_id from dfs.`xsort/2batches` order by employee_id");
       fail("Query should have failed!");
     } catch (UserRemoteException e) {
       assertEquals(ErrorType.RESOURCE, e.getErrorType());
       assertTrue("Incorrect error message",
-        e.getMessage().contains("External Sort encountered an error while spilling to disk"));
+              e.getMessage().contains("External Sort encountered an error while spilling to disk"));
     }
   }
 
   @Test
   public void testSpillLeakManaged() throws Exception {
-    ClientFixture client = cluster.clientBuilder().build();
     client.alterSession(ExecConstants.EXTERNAL_SORT_DISABLE_MANAGED_OPTION.getOptionName(), false);
-    client.alterSession("planner.enable_mux_exchange", false);
+    client.alterSession(ExecConstants.SLICE_TARGET, 1000000);
     client.alterSession(ExecConstants.MAX_QUERY_MEMORY_PER_NODE_KEY, 60 * 1024 * 1024);
-//    client.alterSession(ExecConstants.EXTERNAL_SORT_BATCH_LIMIT, 60 * 1024 * 1024);
-    client.alterSession(ExecConstants.SLICE_TARGET,1000000);
     // inject exception in sort while spilling
     final String controls = Controls.newBuilder()
-      .addExceptionOnBit(
-          ExternalSortBatch.class,
-          ExternalSortBatch.INTERRUPTION_WHILE_SPILLING,
-          IOException.class,
-          cluster.drillbit().getContext().getEndpoint())
-      .build();
-    ControlsInjectionUtil.setControls(client.client(), controls);
+            .addExceptionOnBit(
+                    ExternalSortBatch.class,
+                    ExternalSortBatch.INTERRUPTION_WHILE_SPILLING,
+                    IOException.class,
+                    cluster.drillbit().getContext().getEndpoint())
+            .build();
+    ControlsInjectionUtil.setControls(cluster.client(), controls);
     // run a simple order by query
     try {
-      client.queryBuilder().sql("SELECT id_i, name_s250 FROM `mock`.`employee_500K` ORDER BY id_i").run();
+      test("SELECT id_i, name_s250 FROM `mock`.`employee_500K` ORDER BY id_i");
       fail("Query should have failed!");
     } catch (UserRemoteException e) {
       assertEquals(ErrorType.RESOURCE, e.getErrorType());
       assertTrue("Incorrect error message",
-        e.getMessage().contains("External Sort encountered an error while spilling to disk"));
+              e.getMessage().contains("External Sort encountered an error while spilling to disk"));
     }
   }
 }
