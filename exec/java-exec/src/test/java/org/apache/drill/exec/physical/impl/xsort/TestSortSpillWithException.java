@@ -60,6 +60,7 @@ public class TestSortSpillWithException extends ClusterTest {
     ClusterFixtureBuilder builder = ClusterFixture.builder(dirTestWatcher)
         .configProperty(ExecConstants.EXTERNAL_SORT_SPILL_THRESHOLD, 1) // Unmanaged
         .configProperty(ExecConstants.EXTERNAL_SORT_SPILL_GROUP_SIZE, 1) // Unmanaged
+//        .configProperty(ExecConstants.EXTERNAL_SORT_BATCH_LIMIT, 60*1024*1024)
         .sessionOption(ExecConstants.MAX_QUERY_MEMORY_PER_NODE_KEY, 60 * 1024 * 1024) // Spill early
         // Prevent the percent-based memory rule from second-guessing the above.
         .sessionOption(ExecConstants.PERCENT_MEMORY_PER_QUERY_KEY, 0.0)
@@ -73,6 +74,7 @@ public class TestSortSpillWithException extends ClusterTest {
     ClientFixture client = cluster.clientBuilder().build();
     client.alterSession(ExecConstants.EXTERNAL_SORT_DISABLE_MANAGED_OPTION.getOptionName(), true);
     client.alterSession("planner.enable_mux_exchange", false);
+    client.alterSession(ExecConstants.MAX_QUERY_MEMORY_PER_NODE_KEY, 60 * 1024 * 1024);
     // inject exception in sort while spilling
     final String controls = Controls.newBuilder()
       .addExceptionOnBit(
@@ -98,6 +100,9 @@ public class TestSortSpillWithException extends ClusterTest {
     ClientFixture client = cluster.clientBuilder().build();
     client.alterSession(ExecConstants.EXTERNAL_SORT_DISABLE_MANAGED_OPTION.getOptionName(), false);
     client.alterSession("planner.enable_mux_exchange", false);
+    client.alterSession(ExecConstants.MAX_QUERY_MEMORY_PER_NODE_KEY, 60 * 1024 * 1024);
+//    client.alterSession(ExecConstants.EXTERNAL_SORT_BATCH_LIMIT, 60 * 1024 * 1024);
+    client.alterSession(ExecConstants.SLICE_TARGET,1000000);
     // inject exception in sort while spilling
     final String controls = Controls.newBuilder()
       .addExceptionOnBit(
@@ -109,7 +114,6 @@ public class TestSortSpillWithException extends ClusterTest {
     ControlsInjectionUtil.setControls(client.client(), controls);
     // run a simple order by query
     try {
-      System.out.println(client.queryBuilder().sql("SELECT id_i, name_s250 FROM `mock`.`employee_500K` ORDER BY id_i").explainJson());
       client.queryBuilder().sql("SELECT id_i, name_s250 FROM `mock`.`employee_500K` ORDER BY id_i").run();
       fail("Query should have failed!");
     } catch (UserRemoteException e) {
