@@ -19,45 +19,44 @@ package org.apache.drill.exec.record;
 
 import io.netty.buffer.DrillBuf;
 
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.drill.exec.memory.BufferAllocator;
 import org.apache.drill.exec.proto.BitData.FragmentRecordBatch;
+import org.apache.drill.exec.proto.UserBitShared;
 import org.apache.drill.exec.rpc.data.AckSender;
 
-public class RawFragmentBatch implements FragmentBatch {
-  private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(RawFragmentBatch.class);
+public class RecordBatchWrapper implements FragmentBatchWrapper {
+  private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(RecordBatchWrapper.class);
 
-  private final FragmentRecordBatch header;
-  private final DrillBuf body;
+  private final RecordBatch batch;
   private final AckSender sender;
   private final AtomicBoolean ackSent = new AtomicBoolean(false);
 
-  public RawFragmentBatch(FragmentRecordBatch header, DrillBuf body, AckSender sender) {
-    this.header = header;
+  public RecordBatchWrapper(RecordBatch batch, AckSender sender) {
+    this.batch = batch;
     this.sender = sender;
-    this.body = body;
-    if (body != null) {
-      body.retain(1);
-    }
-  }
-
-  public FragmentRecordBatch getHeader() {
-    return header;
-  }
-
-  public DrillBuf getBody() {
-    return body;
   }
 
   @Override
-  public String toString() {
-    return "RawFragmentBatch [header=" + header + ", body=" + body + "]";
+  public int getRecordCount() {
+    return batch.getRecordCount();
+  }
+
+  @Override
+  public int getFieldCount() {
+    return batch.getSchema().getFieldCount();
+  }
+
+  @Override
+  public List<UserBitShared.SerializedField> getFieldList() {
+    return null;
   }
 
   public void release() {
-    if (body != null) {
-      body.release(1);
+    if (batch != null) {
+      batch.kill(true);
     }
   }
 
@@ -72,11 +71,16 @@ public class RawFragmentBatch implements FragmentBatch {
   }
 
   public long getByteCount() {
-    return body == null ? 0 : body.readableBytes();
+    return 10;
   }
 
   public boolean isAckSent() {
     return ackSent.get();
+  }
+
+  @Override
+  public FragmentBatch getBatch() {
+    return null;
   }
 
   @Override
@@ -88,5 +92,4 @@ public class RawFragmentBatch implements FragmentBatch {
   public RawFragmentBatch getEmptyBatch(FragmentRecordBatch header, DrillBuf body, AckSender sender) {
     return new RawFragmentBatch(header, body, sender);
   }
-
 }

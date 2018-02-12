@@ -25,7 +25,7 @@ import org.apache.drill.exec.ops.FragmentContext;
 import org.apache.drill.exec.physical.config.MergingReceiverPOP;
 import org.apache.drill.exec.physical.impl.mergereceiver.MergingRecordBatch;
 import org.apache.drill.exec.physical.impl.mergereceiver.MergingRemoteRecordBatch;
-import org.apache.drill.exec.record.RawFragmentBatch;
+import org.apache.drill.exec.record.RawFragmentBatchWrapper;
 import org.apache.drill.exec.record.RecordBatch;
 import org.apache.drill.exec.work.batch.IncomingBuffers;
 import org.apache.drill.exec.work.batch.BatchBuffer;
@@ -44,7 +44,7 @@ public class MergingReceiverCreator implements BatchCreator<MergingReceiverPOP> 
     IncomingBuffers bufHolder = context.getBuffers();
 
     assert bufHolder != null : "IncomingBuffers must be defined for any place a receiver is declared.";
-    BatchBuffer<RawFragmentBatch>[] buffers = bufHolder.getBuffers(receiver.getOppositeMajorFragmentId());
+    BatchBuffer<RawFragmentBatchWrapper>[] buffers = bufHolder.getBuffers(receiver.getOppositeMajorFragmentId());
 
     return new MergingRemoteRecordBatch(context, receiver, buffers);
   }

@@ -19,26 +19,26 @@ package org.apache.drill.exec.physical.impl.mergereceiver;
 
 import org.apache.drill.exec.ops.FragmentContext;
 import org.apache.drill.exec.physical.config.MergingReceiverPOP;
-import org.apache.drill.exec.record.RecordBatch;
 import org.apache.drill.exec.record.BatchProvider;
+import org.apache.drill.exec.record.RecordBatchWrapper;
 import org.apache.drill.exec.testing.ControlsInjector;
 import org.apache.drill.exec.testing.ControlsInjectorFactory;
 
 /**
  * The MergingRecordBatch merges pre-sorted record batches from remote senders.
  */
-public class MergingLocalRecordBatch extends MergingRecordBatch<MergingReceiverPOP, RecordBatch> {
-  private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(MergingRecordBatch.class);
-  private static final ControlsInjector injector = ControlsInjectorFactory.getInjector(MergingRecordBatch.class);
+public class MergingLocalRecordBatch extends MergingRecordBatch<MergingReceiverPOP, RecordBatchWrapper> {
+  private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(MergingLocalRecordBatch.class);
+  private static final ControlsInjector injector = ControlsInjectorFactory.getInjector(MergingLocalRecordBatch.class);
 
   public MergingLocalRecordBatch(final FragmentContext context,
                                   final MergingReceiverPOP config,
-                                  final BatchProvider<RecordBatch>[] fragProviders) {
+                                  final BatchProvider<RecordBatchWrapper>[] fragProviders) {
     super(context, config, fragProviders);
   }
 
   @Override
-  protected RecordBatch[] allocateFragmentBatches(int senderCount) {
-    return new RecordBatch[senderCount];
+  protected RecordBatchWrapper[] allocateFragmentBatches(int senderCount) {
+    return new RecordBatchWrapper[senderCount];
   }
 }

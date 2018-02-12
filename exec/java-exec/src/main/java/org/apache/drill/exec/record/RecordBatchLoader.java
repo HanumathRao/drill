@@ -61,6 +61,10 @@ public class RecordBatchLoader extends BatchLoader {
     this.allocator = Preconditions.checkNotNull(allocator);
   }
 
+  public boolean load(FragmentBatchWrapper batch) throws SchemaChangeException {
+    return load(batch.getBatch().getHeader().getDef(), batch.getBatch().getBody());
+  }
+
   /**
    * Load a record batch from a single buffer.
    *
@@ -211,20 +215,6 @@ public class RecordBatchLoader extends BatchLoader {
   public TypedFieldId getValueVectorId(SchemaPath path) {
     return container.getValueVectorId(path);
   }
-
-//
-//  @SuppressWarnings("unchecked")
-//  public <T extends ValueVector> T getValueVectorId(int fieldId, Class<?> clazz) {
-//    ValueVector v = container.get(fieldId);
-//    assert v != null;
-//    if (v.getClass() != clazz){
-//      logger.warn(String.format(
-//          "Failure while reading vector.  Expected vector class of %s but was holding vector class %s.",
-//          clazz.getCanonicalName(), v.getClass().getCanonicalName()));
-//      return null;
-//    }
-//    return (T) v;
-//  }
 
   @Override
   public int getRecordCount() { return valueCount; }

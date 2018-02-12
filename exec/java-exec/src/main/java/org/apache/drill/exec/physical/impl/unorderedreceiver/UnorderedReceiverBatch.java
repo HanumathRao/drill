@@ -21,7 +21,6 @@ import io.netty.buffer.ByteBuf;
 
 import java.io.IOException;
 import java.util.Iterator;
-
 import org.apache.drill.common.expression.SchemaPath;
 import org.apache.drill.exec.exception.OutOfMemoryException;
 import org.apache.drill.exec.exception.SchemaChangeException;
@@ -35,17 +34,18 @@ import org.apache.drill.exec.proto.BitControl.FinishedReceiver;
 import org.apache.drill.exec.proto.ExecProtos.FragmentHandle;
 import org.apache.drill.exec.proto.GeneralRPCProtos.Ack;
 import org.apache.drill.exec.proto.UserBitShared.RecordBatchDef;
-import org.apache.drill.exec.record.BatchSchema;
 import org.apache.drill.exec.record.CloseableRecordBatch;
-import org.apache.drill.exec.record.RawFragmentBatch;
-import org.apache.drill.exec.work.batch.BatchBuffer;
 import org.apache.drill.exec.record.RecordBatchLoader;
-import org.apache.drill.exec.record.TypedFieldId;
-import org.apache.drill.exec.record.VectorContainer;
-import org.apache.drill.exec.record.VectorWrapper;
-import org.apache.drill.exec.record.WritableBatch;
 import org.apache.drill.exec.record.selection.SelectionVector2;
 import org.apache.drill.exec.record.selection.SelectionVector4;
+import org.apache.drill.exec.record.FragmentBatchWrapper;
+import org.apache.drill.exec.record.BatchSchema;
+import org.apache.drill.exec.record.VectorWrapper;
+import org.apache.drill.exec.record.WritableBatch;
+import org.apache.drill.exec.record.TypedFieldId;
+import org.apache.drill.exec.record.RawFragmentBatch;
+import org.apache.drill.exec.record.VectorContainer;
+import org.apache.drill.exec.work.batch.BatchBuffer;
 import org.apache.drill.exec.rpc.RpcException;
 import org.apache.drill.exec.rpc.RpcOutcomeListener;
 import org.apache.drill.exec.testing.ControlsInjector;
@@ -56,7 +56,7 @@ public class UnorderedReceiverBatch implements CloseableRecordBatch {
   private static final ControlsInjector injector = ControlsInjectorFactory.getInjector(UnorderedReceiverBatch.class);
 
   private final RecordBatchLoader batchLoader;
-  private final BatchBuffer<RawFragmentBatch> fragProvider;
+  private final BatchBuffer<FragmentBatchWrapper> fragProvider;
   private final FragmentContext context;
   private BatchSchema schema;
   private final OperatorStats stats;
@@ -74,7 +74,7 @@ public class UnorderedReceiverBatch implements CloseableRecordBatch {
     }
   }
 
-  public UnorderedReceiverBatch(final FragmentContext context, final BatchBuffer<RawFragmentBatch> fragProvider, final UnorderedReceiver config) throws OutOfMemoryException {
+  public UnorderedReceiverBatch(final FragmentContext context, final BatchBuffer<FragmentBatchWrapper> fragProvider, final UnorderedReceiver config) throws OutOfMemoryException {
     this.fragProvider = fragProvider;
     this.context = context;
     // In normal case, batchLoader does not require an allocator. However, in case of splitAndTransfer of a value vector,
@@ -138,7 +138,12 @@ public class UnorderedReceiverBatch implements CloseableRecordBatch {
   private RawFragmentBatch getNextBatch() throws IOException {
     try {
       injector.injectInterruptiblePause(context.getExecutionControls(), "waiting-for-data", logger);
-      return fragProvider.getNext();
+      FragmentBatchWrapper  batchWrapper = fragProvider.getNext();
+      if (  batchWrapper != null) {
+        return (RawFragmentBatch) batchWrapper.getBatch();
+      } else {
+        return null;
+      }
     } catch(final InterruptedException e) {
       // Preserve evidence that the interruption occurred so that code higher up on the call stack can learn of the
       // interruption and respond to it if it wants to.

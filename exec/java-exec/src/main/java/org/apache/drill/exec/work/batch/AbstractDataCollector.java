@@ -25,8 +25,9 @@ import org.apache.drill.common.AutoCloseables;
 import org.apache.drill.exec.ops.FragmentContext;
 import org.apache.drill.exec.proto.BitControl.Collector;
 import org.apache.drill.exec.record.RawFragmentBatch;
+import org.apache.drill.exec.record.RawFragmentBatchWrapper;
 import org.apache.drill.exec.util.ArrayWrappedIntIntMap;
-
+import org.apache.drill.exec.record.FragmentBatchWrapper;
 import com.google.common.base.Preconditions;
 
 public abstract class AbstractDataCollector implements DataCollector{
@@ -37,7 +38,7 @@ public abstract class AbstractDataCollector implements DataCollector{
   private final AtomicInteger remainingRequired;
   private final AtomicInteger parentAccounter;
   private final int incomingStreams;
-  protected final BatchBuffer[] buffers;
+  protected final BatchBuffer<FragmentBatchWrapper>[] buffers;
   protected final ArrayWrappedIntIntMap fragmentMap;
 
   /**
@@ -100,7 +101,7 @@ public abstract class AbstractDataCollector implements DataCollector{
       }
     }
 
-    getBuffer(minorFragmentId).enqueue(batch);
+    getBuffer(minorFragmentId).enqueue(new RawFragmentBatchWrapper(batch));
 
     return decrementedToZero;
   }
@@ -111,7 +112,7 @@ public abstract class AbstractDataCollector implements DataCollector{
     return incomingStreams;
   }
 
-  protected abstract BatchBuffer<RawFragmentBatch> getBuffer(int minorFragmentId);
+  protected abstract BatchBuffer<FragmentBatchWrapper> getBuffer(int minorFragmentId);
 
   @Override
   public void close() throws Exception {

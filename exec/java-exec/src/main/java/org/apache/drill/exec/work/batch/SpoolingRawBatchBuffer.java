@@ -31,11 +31,12 @@ import java.util.concurrent.TimeUnit;
 import org.apache.drill.exec.ExecConstants;
 import org.apache.drill.exec.memory.BufferAllocator;
 import org.apache.drill.exec.ops.FragmentContext;
-import org.apache.drill.exec.proto.BitData.FragmentRecordBatch;
 import org.apache.drill.exec.proto.BitData;
 import org.apache.drill.exec.proto.ExecProtos;
+import org.apache.drill.exec.proto.UserBitShared;
 import org.apache.drill.exec.proto.helper.QueryIdHelper;
 import org.apache.drill.exec.record.BatchLoader;
+import org.apache.drill.exec.record.FragmentBatch;
 import org.apache.drill.exec.record.RawFragmentBatch;
 import org.apache.drill.exec.rpc.data.AckSender;
 import org.apache.drill.exec.store.LocalSyncableFileSystem;
@@ -45,29 +46,23 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.drill.exec.record.FragmentBatch;
+import org.apache.drill.exec.record.FragmentBatchWrapper;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Queues;
-import org.apache.drill.exec.work.batch.SpoolingRawBatchBuffer.RawFragmentBatchWrapper;
 
 /**
  * This implementation of RawBatchBuffer starts writing incoming batches to disk once the buffer size reaches a threshold.
  * The order of the incoming buffers is maintained.
  */
-public class SpoolingRawBatchBuffer extends BaseBatchBuffer<RawFragmentBatchWrapper> {
+public class SpoolingRawBatchBuffer extends BaseBatchBuffer<FragmentBatchWrapper> {
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(SpoolingRawBatchBuffer.class);
 
   private static String DRILL_LOCAL_IMPL_STRING = "fs.drill-local.impl";
   private static final float STOP_SPOOLING_FRACTION = (float) 0.5;
   public static final long ALLOCATOR_INITIAL_RESERVATION = 1*1024*1024;
   public static final long ALLOCATOR_MAX_RESERVATION = 20L*1000*1000*1000;
-
-  @Override
-  public void enqueue(RawFragmentBatchWrapper batch) throws IOException {
-
-  }
 
   private enum SpoolingState {
     NOT_SPOOLING,
@@ -99,20 +94,20 @@ public class SpoolingRawBatchBuffer extends BaseBatchBuffer<RawFragmentBatchWrap
     this.bufferQueue = new SpoolingBufferQueue();
   }
 
-  private class SpoolingBufferQueue implements BufferQueue<RawFragmentBatchWrapper> {
+  private class SpoolingBufferQueue implements BufferQueue<FragmentBatchWrapper> {
 
     private final LinkedBlockingDeque<RawFragmentBatchWrapper> buffer = Queues.newLinkedBlockingDeque();
 
     @Override
-    public void addOnBatch(RawFragmentBatchWrapper batch) {
-      RawFragmentBatchWrapper batchWrapper = batch;
+    public void addOnBatch(FragmentBatchWrapper batch) {
+      RawFragmentBatchWrapper batchWrapper = (RawFragmentBatchWrapper) batch;
       batchWrapper.setOutOfMemory(true);
       buffer.addFirst(batchWrapper);
     }
 
     @Override
-    public RawFragmentBatchWrapper poll() throws IOException {
-      RawFragmentBatchWrapper batchWrapper = buffer.poll();
+    public FragmentBatchWrapper poll() throws IOException {
+      FragmentBatchWrapper batchWrapper = buffer.poll();
       if (batchWrapper != null) {
         return batchWrapper;
       }
@@ -120,7 +115,7 @@ public class SpoolingRawBatchBuffer extends BaseBatchBuffer<RawFragmentBatchWrap
     }
 
     @Override
-    public RawFragmentBatchWrapper take() throws IOException, InterruptedException {
+    public FragmentBatchWrapper take() throws IOException, InterruptedException {
       return buffer.take();
     }
 
@@ -139,8 +134,8 @@ public class SpoolingRawBatchBuffer extends BaseBatchBuffer<RawFragmentBatchWrap
       return buffer.size() == 0;
     }
 
-    public void add(RawFragmentBatchWrapper batchWrapper) {
-      buffer.add(batchWrapper);
+    public void add(FragmentBatchWrapper batchWrapper) {
+      buffer.add((RawFragmentBatchWrapper) batchWrapper);
     }
   }
 
@@ -196,10 +191,13 @@ public class SpoolingRawBatchBuffer extends BaseBatchBuffer<RawFragmentBatchWrap
   }
 
   @Override
-  protected void enqueueInner(RawFragmentBatchWrapper batch) throws IOException {
-    assert batch.getHeader().getSendingMajorFragmentId() == oppositeId;
+  protected void enqueueInner(FragmentBatchWrapper incomingBatch) throws IOException {
+    RawFragmentBatchWrapper batch = (RawFragmentBatchWrapper) incomingBatch;
+    assert batch.getBatch().getHeader().getSendingMajorFragmentId() == oppositeId;
 
-    logger.debug("Enqueue batch. Current buffer size: {}. Last batch: {}. Sending fragment: {}", bufferQueue.size(), batch.getHeader().getIsLastBatch(), batch.getHeader().getSendingMajorFragmentId());
+    logger.debug("Enqueue batch. Current buffer size: {}. Last batch: {}. Sending fragment: {}", bufferQueue.size(),
+            batch.getBatch().getHeader().getIsLastBatch(),
+            batch.getBatch().getHeader().getSendingMajorFragmentId());
     RawFragmentBatchWrapper wrapper;
 
     boolean spoolCurrentBatch = isCurrentlySpooling();
@@ -227,12 +225,13 @@ public class SpoolingRawBatchBuffer extends BaseBatchBuffer<RawFragmentBatchWrap
   }
 
   @Override
-  protected void upkeep(RawFragmentBatchWrapper batch) {
+  protected void upkeep(FragmentBatchWrapper batchWrapper) {
+    RawFragmentBatchWrapper batch = (RawFragmentBatchWrapper) batchWrapper;
     if (context.isOverMemoryLimit()) {
       outOfMemory.set(true);
     }
 
-    DrillBuf body = batch.getBody();
+    DrillBuf body = batch.getBatch().getBody();
     if (body != null) {
       currentSizeInMemory -= body.capacity();
     }
@@ -335,7 +334,7 @@ public class SpoolingRawBatchBuffer extends BaseBatchBuffer<RawFragmentBatchWrap
     }
   }
 
-  class RawFragmentBatchWrapper implements FragmentBatch {
+  class RawFragmentBatchWrapper implements FragmentBatchWrapper {
     private RawFragmentBatch batch;
     private volatile boolean available;
     private CountDownLatch latch;
@@ -465,14 +464,29 @@ public class SpoolingRawBatchBuffer extends BaseBatchBuffer<RawFragmentBatchWrap
       this.outOfMemory = outOfMemory;
     }
 
+//    @Override
+//    public BitData.FragmentRecordBatch getHeader() {
+//      return null;
+//    }
+//
+//    @Override
+//    public DrillBuf getBody() {
+//      return batch.getBody();
+//    }
+
     @Override
-    public BitData.FragmentRecordBatch getHeader() {
-      return null;
+    public int getRecordCount() {
+      return 0;
     }
 
     @Override
-    public DrillBuf getBody() {
-      return batch.getBody();
+    public int getFieldCount() {
+      return 0;
+    }
+
+    @Override
+    public List<UserBitShared.SerializedField> getFieldList() {
+      return null;
     }
 
     @Override
@@ -511,7 +525,12 @@ public class SpoolingRawBatchBuffer extends BaseBatchBuffer<RawFragmentBatchWrap
     }
 
     @Override
-    public RawFragmentBatchWrapper getEmptyBatch(FragmentRecordBatch header, DrillBuf body, AckSender sender) {
+    public <FB extends FragmentBatch> FB getEmptyBatch(BitData.FragmentRecordBatch header, DrillBuf body, AckSender sender) {
+      return null;
+    }
+
+    @Override
+    public FragmentBatch getBatch() {
       return null;
     }
   }

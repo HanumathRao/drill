@@ -21,11 +21,11 @@ import java.io.IOException;
 import java.util.concurrent.LinkedBlockingDeque;
 
 import org.apache.drill.exec.ops.FragmentContext;
-import org.apache.drill.exec.record.RawFragmentBatch;
+import org.apache.drill.exec.record.FragmentBatchWrapper;
 
 import com.google.common.collect.Queues;
 
-public class UnlimitedRawBatchBuffer extends BaseBatchBuffer<RawFragmentBatch> {
+public class UnlimitedRawBatchBuffer extends BaseBatchBuffer<FragmentBatchWrapper> {
   private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(UnlimitedRawBatchBuffer.class);
 
   private final int softlimit;
@@ -39,17 +39,17 @@ public class UnlimitedRawBatchBuffer extends BaseBatchBuffer<RawFragmentBatch> {
     this.bufferQueue = new UnlimitedBufferQueue();
   }
 
-  private class UnlimitedBufferQueue implements BufferQueue<RawFragmentBatch> {
-    private final LinkedBlockingDeque<RawFragmentBatch> buffer = Queues.newLinkedBlockingDeque();;
+  private class UnlimitedBufferQueue implements BufferQueue<FragmentBatchWrapper> {
+    private final LinkedBlockingDeque<FragmentBatchWrapper> buffer = Queues.newLinkedBlockingDeque();;
 
     @Override
-    public void addOnBatch(RawFragmentBatch batch) {
+    public void addOnBatch(FragmentBatchWrapper batch) {
       buffer.addFirst(batch);
     }
 
     @Override
-    public RawFragmentBatch poll() throws IOException {
-      RawFragmentBatch batch = buffer.poll();
+    public FragmentBatchWrapper poll() throws IOException {
+      FragmentBatchWrapper batch = buffer.poll();
       if (batch != null) {
         batch.sendOk();
       }
@@ -57,8 +57,8 @@ public class UnlimitedRawBatchBuffer extends BaseBatchBuffer<RawFragmentBatch> {
     }
 
     @Override
-    public RawFragmentBatch take() throws IOException, InterruptedException {
-      RawFragmentBatch batch = buffer.take();
+    public FragmentBatchWrapper take() throws IOException, InterruptedException {
+      FragmentBatchWrapper batch = buffer.take();
       batch.sendOk();
       return batch;
     }
@@ -79,18 +79,18 @@ public class UnlimitedRawBatchBuffer extends BaseBatchBuffer<RawFragmentBatch> {
     }
 
     @Override
-    public void add(RawFragmentBatch batch) {
+    public void add(FragmentBatchWrapper batch) {
       buffer.add(batch);
     }
   }
 
-  protected void enqueueInner(final RawFragmentBatch batch) throws IOException {
+  protected void enqueueInner(final FragmentBatchWrapper batch) throws IOException {
     if (bufferQueue.size() < softlimit) {
       batch.sendOk();
     }
     bufferQueue.add(batch);
   }
 
-  protected void upkeep(RawFragmentBatch batch) {
+  protected void upkeep(FragmentBatchWrapper batch) {
   }
 }

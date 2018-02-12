@@ -18,13 +18,35 @@
 package org.apache.drill.exec.record;
 
 import io.netty.buffer.DrillBuf;
-import org.apache.drill.exec.exception.SchemaChangeException;
-import org.apache.drill.exec.proto.UserBitShared;
+import org.apache.drill.exec.memory.BufferAllocator;
+import org.apache.drill.exec.proto.BitData.FragmentRecordBatch;
+import org.apache.drill.exec.proto.UserBitShared.SerializedField;
+import org.apache.drill.exec.rpc.data.AckSender;
+import java.util.List;
 
-public abstract class BatchLoader implements VectorAccessible, Iterable<VectorWrapper<?>>{
-  public abstract boolean load(UserBitShared.RecordBatchDef def, DrillBuf buf) throws SchemaChangeException;
+public interface FragmentBatchWrapper {
+  int getRecordCount();
 
-  public abstract boolean load(FragmentBatchWrapper batch) throws SchemaChangeException;
+  int getFieldCount();
 
-  public abstract void clear();
+  List<SerializedField> getFieldList();
+
+  @Override
+  String toString();
+
+  void release();
+
+  AckSender getSender();
+
+  void sendOk();
+
+  long getByteCount();
+
+  boolean isAckSent();
+
+  <BL extends BatchLoader> BL getBatchLoader(BufferAllocator allocator);
+
+  <FB extends FragmentBatch> FB getEmptyBatch(FragmentRecordBatch header, DrillBuf body, AckSender sender);
+
+  FragmentBatch getBatch();
 }

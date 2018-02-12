@@ -22,9 +22,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.drill.common.exceptions.DrillRuntimeException;
 import org.apache.drill.exec.ExecConstants;
 import org.apache.drill.exec.ops.FragmentContext;
-import org.apache.drill.exec.record.FragmentBatch;
+import org.apache.drill.exec.record.FragmentBatchWrapper;
 
-public abstract class BaseBatchBuffer<T extends FragmentBatch> implements BatchBuffer<T> {
+public abstract class BaseBatchBuffer<T extends FragmentBatchWrapper> implements BatchBuffer<T> {
   private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(BaseBatchBuffer.class);
 
   private enum BufferState {
@@ -135,8 +135,8 @@ public abstract class BaseBatchBuffer<T extends FragmentBatch> implements BatchB
         context.fail(e);
         continue;
       }
-      if (batch.getBody() != null) {
-        batch.getBody().release();
+      if (batch.getBatch().getBody() != null) {
+        batch.getBatch().getBody().release();
       }
     }
   }
@@ -191,8 +191,8 @@ public abstract class BaseBatchBuffer<T extends FragmentBatch> implements BatchB
 
       upkeep(b);
 
-      if (b.getHeader().getIsLastBatch()) {
-        logger.debug("Got last batch from {}:{}", b.getHeader().getSendingMajorFragmentId(), b.getHeader()
+      if (b.getBatch().getHeader().getIsLastBatch()) {
+        logger.debug("Got last batch from {}:{}", b.getBatch().getHeader().getSendingMajorFragmentId(), b.getBatch().getHeader()
             .getSendingMinorFragmentId());
         final int remainingStreams = decrementStreamCounter();
         if (remainingStreams == 0) {
@@ -215,7 +215,7 @@ public abstract class BaseBatchBuffer<T extends FragmentBatch> implements BatchB
   }
 
   private void assertAckSent(T batch) {
-    assert batch == null || batch.isAckSent() : "Ack not sent for batch";
+    assert batch == null || batch.getBatch().isAckSent() : "Ack not sent for batch";
   }
 
   private int decrementStreamCounter() {
