@@ -37,14 +37,8 @@ public class UnorderedMuxExchange extends AbstractMuxExchange {
   }
 
   @Override
-  public Receiver getReceiver(int minorFragmentId) {
-    createSenderReceiverMapping();
-
-    List<MinorFragmentEndpoint> senders = receiverToSenderMapping.get(minorFragmentId);
-    if (senders == null || senders.size() <= 0) {
-      throw new IllegalStateException(String.format("Failed to find senders for receiver [%d]", minorFragmentId));
-    }
-
+  protected Receiver getReceiverInternal(int oppositeMajorFragmentId,
+                                         List<MinorFragmentEndpoint> senders, boolean spooling) {
     return new UnorderedReceiver(senderMajorFragmentId, senders, false);
   }
 
