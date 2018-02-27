@@ -18,8 +18,12 @@
 package org.apache.drill.exec.planner.index;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.core.Sort;
+import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexNode;
 import org.apache.drill.common.expression.LogicalExpression;
 import org.apache.drill.common.expression.SchemaPath;
@@ -36,6 +40,7 @@ import org.apache.calcite.rel.RelNode;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class IndexLogicalPlanCallContext implements IndexCallContext {
@@ -53,6 +58,7 @@ public class IndexLogicalPlanCallContext implements IndexCallContext {
   public List<LogicalExpression> sortExprs;
 
   public RexNode origPushedCondition;
+  public Map<String, RexCall> flattenMap = null;
 
   public IndexLogicalPlanCallContext(RelOptRuleCall call,
                        DrillProjectRel capProject,
@@ -175,4 +181,13 @@ public class IndexLogicalPlanCallContext implements IndexCallContext {
   public RelNode getExchange() { return null; }
 
   public List<DistributionField> getDistributionFields() { return Collections.EMPTY_LIST; }
+
+  public void setFlattenMap(Map<String, RexCall> flattenMap) {
+    this.flattenMap = flattenMap;
+  }
+
+  public Map<String, RexCall> getFlattenMap() {
+    return flattenMap;
+  }
+
 }

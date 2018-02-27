@@ -49,7 +49,7 @@ import com.google.common.collect.Lists;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-public class DbScanSortRemovalRule extends Prule {
+public class DbScanSortRemovalRule extends AbstractIndexPrule {
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(DbScanSortRemovalRule.class);
 
   public static final RelOptRule INDEX_SORT_EXCHANGE_SCAN =

@@ -53,14 +53,13 @@ import org.apache.drill.exec.planner.logical.RelOptHelper;
 import org.apache.drill.exec.planner.logical.partition.RewriteAsBinaryOperators;
 import org.apache.drill.exec.planner.physical.PlannerSettings;
 import org.apache.drill.exec.planner.physical.PrelUtil;
-import org.apache.drill.exec.planner.physical.Prule;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-public class DbScanToIndexScanPrule extends Prule {
+public class DbScanToIndexScanPrule extends AbstractIndexPrule {
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(DbScanToIndexScanPrule.class);
   final public MatchFunction match;
 
@@ -291,17 +290,8 @@ public class DbScanToIndexScanPrule extends Prule {
     indexPlanTimer.stop();
     logger.info("index_plan_info: Index Planning took {} ms", indexPlanTimer.elapsed(TimeUnit.MILLISECONDS));
   }
-  /**
-   * Return the index collection relevant for the underlying data source
-   * @param settings
-   * @param scan
-   */
-  public IndexCollection getIndexCollection(PlannerSettings settings, DrillScanRel scan) {
-    DbGroupScan groupScan = (DbGroupScan)scan.getGroupScan();
-    return groupScan.getSecondaryIndexCollection(scan);
-  }
 
-  private void processWithIndexSelection(
+  public static void processWithIndexSelection(
       IndexLogicalPlanCallContext indexContext,
       PlannerSettings settings,
       RexNode condition,
