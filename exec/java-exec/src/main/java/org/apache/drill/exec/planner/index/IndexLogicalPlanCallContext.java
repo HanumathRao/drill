@@ -18,8 +18,12 @@
 package org.apache.drill.exec.planner.index;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.core.Sort;
+import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexNode;
 import org.apache.drill.common.expression.LogicalExpression;
 import org.apache.drill.common.expression.SchemaPath;
@@ -36,9 +40,13 @@ import org.apache.calcite.rel.RelNode;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class IndexLogicalPlanCallContext implements IndexCallContext {
+  /**
+   * These are inputs to the index planner rules
+   */
   final public RelOptRuleCall call;
   final public DrillSortRel sort;
   final public DrillProjectRel upperProject;
@@ -47,12 +55,20 @@ public class IndexLogicalPlanCallContext implements IndexCallContext {
   final public DrillScanRel scan;
   final public String indexHint;
 
-  public Set<LogicalExpression> leftOutPathsInFunctions;
 
+  /**
+   * The following are properties identified while doing the index analysis
+   */
+  public Set<LogicalExpression> leftOutPathsInFunctions;
   public IndexableExprMarker origMarker;
   public List<LogicalExpression> sortExprs;
-
   public RexNode origPushedCondition;
+  public RexNode indexCondition;
+  public RexNode remainderCondition;
+  public boolean isValidIndexHint;
+  public double totalRows = 0;
+  public double filterRows = 0;
+
 
   public IndexLogicalPlanCallContext(RelOptRuleCall call,
                        DrillProjectRel capProject,
@@ -128,7 +144,7 @@ public class IndexLogicalPlanCallContext implements IndexCallContext {
     return leftOutPathsInFunctions;
   }
 
-  public RelNode getFilter() {
+  public DrillFilterRel getFilter() {
     return filter;
   }
 
@@ -175,4 +191,5 @@ public class IndexLogicalPlanCallContext implements IndexCallContext {
   public RelNode getExchange() { return null; }
 
   public List<DistributionField> getDistributionFields() { return Collections.EMPTY_LIST; }
+
 }

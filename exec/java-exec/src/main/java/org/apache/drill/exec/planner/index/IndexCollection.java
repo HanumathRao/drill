@@ -62,6 +62,11 @@ public interface IndexCollection extends Iterable<IndexDescriptor> {
   public boolean supportsIndexSelection();
 
   /**
+   * Whether or not this index collection supports indexes on array fields
+   */
+  public boolean supportsArrayIndexes();
+
+  /**
    * Get the estimated row count for a single index condition
    * @param indexCondition The index condition (e.g index_col1 < 10 AND index_col2 = 'abc')
    * @return The estimated row count

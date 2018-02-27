@@ -95,7 +95,7 @@ public class IndexConditionInfo {
       return indexConditionRelatedToFields(Lists.newArrayList(paths), condition);
     }
 
-    /*
+    /**
      * A utility function to check whether the given index hint is valid.
      */
     public boolean isValidIndexHint(IndexLogicalPlanCallContext indexContext) {

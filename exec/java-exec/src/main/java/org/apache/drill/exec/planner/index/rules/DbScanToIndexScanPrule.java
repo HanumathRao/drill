@@ -40,8 +40,6 @@ import org.apache.drill.exec.planner.index.IndexLogicalPlanCallContext;
 import org.apache.drill.exec.planner.index.IndexConditionInfo;
 import org.apache.drill.exec.planner.index.IndexGroup;
 import org.apache.drill.exec.planner.index.IndexProperties;
-import org.apache.drill.exec.planner.index.IndexableExprMarker;
-import org.apache.drill.exec.planner.index.Statistics;
 import org.apache.drill.exec.planner.index.generators.CoveringIndexPlanGenerator;
 import org.apache.drill.exec.planner.index.generators.IndexIntersectPlanGenerator;
 import org.apache.drill.exec.planner.index.generators.NonCoveringIndexPlanGenerator;
@@ -53,14 +51,13 @@ import org.apache.drill.exec.planner.logical.RelOptHelper;
 import org.apache.drill.exec.planner.logical.partition.RewriteAsBinaryOperators;
 import org.apache.drill.exec.planner.physical.PlannerSettings;
 import org.apache.drill.exec.planner.physical.PrelUtil;
-import org.apache.drill.exec.planner.physical.Prule;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-public class DbScanToIndexScanPrule extends Prule {
+public class DbScanToIndexScanPrule extends AbstractIndexPrule {
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(DbScanToIndexScanPrule.class);
   final public MatchFunction match;
 
@@ -291,83 +288,22 @@ public class DbScanToIndexScanPrule extends Prule {
     indexPlanTimer.stop();
     logger.info("index_plan_info: Index Planning took {} ms", indexPlanTimer.elapsed(TimeUnit.MILLISECONDS));
   }
-  /**
-   * Return the index collection relevant for the underlying data source
-   * @param settings
-   * @param scan
-   */
-  public IndexCollection getIndexCollection(PlannerSettings settings, DrillScanRel scan) {
-    DbGroupScan groupScan = (DbGroupScan)scan.getGroupScan();
-    return groupScan.getSecondaryIndexCollection(scan);
-  }
 
-  private void processWithIndexSelection(
+  public void processWithIndexSelection(
       IndexLogicalPlanCallContext indexContext,
       PlannerSettings settings,
       RexNode condition,
       IndexCollection collection,
       RexBuilder builder) {
-    double totalRows = 0;
-    double filterRows = totalRows;
+
     DrillScanRel scan = indexContext.scan;
-    if (! (indexContext.scan.getGroupScan() instanceof DbGroupScan) ) {
-      return;
-    }
     IndexConditionInfo.Builder infoBuilder = IndexConditionInfo.newBuilder(condition, collection, builder, indexContext.scan);
-    IndexConditionInfo cInfo = infoBuilder.getCollectiveInfo(indexContext);
-    boolean isValidIndexHint = infoBuilder.isValidIndexHint(indexContext);
 
-    if (!cInfo.hasIndexCol) {
-      logger.info("index_plan_info: No index columns are projected from the scan..continue.");
+    if (!analyzeCondition(indexContext, collection, condition, builder, infoBuilder, logger)) {
       return;
     }
 
-    if (cInfo.indexCondition == null) {
-      logger.info("index_plan_info: No conditions were found eligible for applying index lookup.");
-      return;
-    }
-
-    if (!indexContext.indexHint.equals("") && !isValidIndexHint) {
-      logger.warn("index_plan_info: Index Hint {} is not useful as index with that name is not available", indexContext.indexHint);
-    }
-
-    RexNode indexCondition = cInfo.indexCondition;
-    RexNode remainderCondition = cInfo.remainderCondition;
-
-    if (remainderCondition.isAlwaysTrue()) {
-      remainderCondition = null;
-    }
-    logger.debug("index_plan_info: condition split into indexcondition: {} and remaindercondition: {}", indexCondition, remainderCondition);
-
-    IndexableExprMarker indexableExprMarker = new IndexableExprMarker(indexContext.scan);
-    indexCondition.accept(indexableExprMarker);
-    indexContext.origMarker = indexableExprMarker;
-
-    if (scan.getGroupScan() instanceof DbGroupScan) {
-      // Initialize statistics
-      DbGroupScan dbScan = ((DbGroupScan) scan.getGroupScan());
-      if (settings.isStatisticsEnabled()) {
-        dbScan.getStatistics().initialize(condition, scan, indexContext);
-      }
-      totalRows = dbScan.getRowCount(null, scan);
-      filterRows = dbScan.getRowCount(condition, scan);
-      double sel = filterRows/totalRows;
-      if (totalRows != Statistics.ROWCOUNT_UNKNOWN &&
-          filterRows != Statistics.ROWCOUNT_UNKNOWN &&
-          !settings.isDisableFullTableScan() && !isValidIndexHint &&
-          sel > Math.max(settings.getIndexCoveringSelThreshold(),
-              settings.getIndexNonCoveringSelThreshold() )) {
-        // If full table scan is not disabled, generate full table scan only plans if selectivity
-        // is greater than covering and non-covering selectivity thresholds
-        logger.info("index_plan_info: Skip index planning because filter selectivity: {} is greater than thresholds {}, {}",
-            sel, settings.getIndexCoveringSelThreshold(), settings.getIndexNonCoveringSelThreshold());
-        return;
-      }
-    }
-
-    if (totalRows == Statistics.ROWCOUNT_UNKNOWN ||
-        totalRows == 0 || filterRows == Statistics.ROWCOUNT_UNKNOWN ) {
-      logger.warn("index_plan_info: Total row count is UNKNOWN or 0, or filterRows UNKNOWN; skip index planning");
+    if (!initializeStatistics(scan, settings, indexContext, condition, indexContext.isValidIndexHint, logger)) {
       return;
     }
 
@@ -379,27 +315,11 @@ public class DbScanToIndexScanPrule extends Prule {
     IndexPlanUtils.updateSortExpression(indexContext, indexContext.sort != null ?
             indexContext.sort.collation.getFieldCollations() : null);
 
-    IndexSelector selector = new IndexSelector(indexCondition,
-        remainderCondition,
-        indexContext,
+    IndexSelector selector = createAndInitSelector(indexContext,
         collection,
         builder,
-        totalRows);
+        logger);
 
-    for (IndexDescriptor indexDesc : collection) {
-      logger.info("index_plan_info indexDescriptor: {}", indexDesc.toString());
-      // check if any of the indexed fields of the index are present in the filter condition
-      if (IndexPlanUtils.conditionIndexed(indexableExprMarker, indexDesc) != IndexPlanUtils.ConditionIndexed.NONE) {
-        if (isValidIndexHint && !indexContext.indexHint.equals(indexDesc.getIndexName())) {
-          logger.info("index_plan_info: Index {} is being discarded due to index Hint", indexDesc.getIndexName());
-          continue;
-        }
-        FunctionalIndexInfo functionInfo = indexDesc.getFunctionalInfo();
-        selector.addIndex(indexDesc, IndexPlanUtils.isCoveringIndex(indexContext, functionInfo),
-            indexContext.lowerProject != null ? indexContext.lowerProject.getRowType().getFieldCount() :
-                scan.getRowType().getFieldCount());
-      }
-    }
     // get the candidate indexes based on selection
     selector.getCandidateIndexes(infoBuilder, coveringIndexes, nonCoveringIndexes, intersectIndexes);
 
@@ -489,8 +409,8 @@ public class DbScanToIndexScanPrule extends Prule {
         IndexGroupScan idxScan = indexDesc.getIndexGroupScan();
         FunctionalIndexInfo indexInfo = indexDesc.getFunctionalInfo();
 
-        indexCondition = indexProps.getLeadingColumnsFilter();
-        remainderCondition = indexProps.getTotalRemainderFilter();
+        RexNode indexCondition = indexProps.getLeadingColumnsFilter();
+        RexNode remainderCondition = indexProps.getTotalRemainderFilter();
         //Copy primary table statistics to index table
         idxScan.setStatistics(((DbGroupScan) scan.getGroupScan()).getStatistics());
         logger.info("index_plan_info: Generating covering index plan for index: {}, query condition {}", indexDesc.getIndexName(), indexCondition.toString());
@@ -515,13 +435,13 @@ public class DbScanToIndexScanPrule extends Prule {
           IndexDescriptor indexDesc = indexProps.getIndexDesc();
           IndexGroupScan idxScan = indexDesc.getIndexGroupScan();
 
-          indexCondition = indexProps.getLeadingColumnsFilter();
-          remainderCondition = indexProps.getTotalRemainderFilter();
+          RexNode indexCondition = indexProps.getLeadingColumnsFilter();
+          RexNode remainderCondition = indexProps.getTotalRemainderFilter();
           //Copy primary table statistics to index table
           idxScan.setStatistics(((DbGroupScan) primaryTableScan).getStatistics());
           logger.info("index_plan_info: Generating non-covering index plan for index: {}, query condition {}", indexDesc.getIndexName(), indexCondition.toString());
           NonCoveringIndexPlanGenerator planGen = new NonCoveringIndexPlanGenerator(indexContext, indexDesc,
-            idxScan, indexCondition, remainderCondition, builder, settings);
+            idxScan, indexCondition, remainderCondition, indexContext.getOrigCondition(), builder, settings);
           planGen.go();
         }
       } catch (Exception e) {

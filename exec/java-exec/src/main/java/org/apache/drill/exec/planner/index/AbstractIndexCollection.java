@@ -64,6 +64,11 @@ public abstract class AbstractIndexCollection implements IndexCollection, Iterab
   }
 
   @Override
+  public boolean supportsArrayIndexes() {
+    return false;
+  }
+
+  @Override
   public double getRows(RexNode indexCondition) {
     throw new UnsupportedOperationException("getRows() not supported for this index collection.");
   }

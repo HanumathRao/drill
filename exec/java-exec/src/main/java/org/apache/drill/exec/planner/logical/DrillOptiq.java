@@ -247,7 +247,12 @@ public class DrillOptiq {
           switch(literal.getTypeName()){
           case DECIMAL:
           case INTEGER:
-            return left.getChild(((BigDecimal)literal.getValue()).intValue());
+            int index = ((BigDecimal)literal.getValue()).intValue();
+            if (index < 0) {
+              return left.getUnindexedArrayChild();
+            } else {
+              return left.getChild(index);
+            }
           case CHAR:
             return left.getChild(literal.getValue2().toString());
           default:

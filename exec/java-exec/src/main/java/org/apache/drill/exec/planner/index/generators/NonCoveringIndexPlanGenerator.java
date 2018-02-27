@@ -19,18 +19,15 @@
 package org.apache.drill.exec.planner.index.generators;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import com.google.common.base.Preconditions;
-import org.apache.calcite.linq4j.Ord;
+
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.drill.common.expression.SchemaPath;
 import org.apache.drill.exec.physical.base.DbGroupScan;
-import org.apache.drill.exec.physical.base.GroupScan;
 import org.apache.drill.exec.physical.base.IndexGroupScan;
 import org.apache.drill.exec.planner.common.JoinControl;
 import org.apache.drill.exec.planner.index.IndexLogicalPlanCallContext;
@@ -38,7 +35,6 @@ import org.apache.drill.exec.planner.index.IndexDescriptor;
 import org.apache.drill.exec.planner.index.FunctionalIndexInfo;
 import org.apache.drill.exec.planner.index.FunctionalIndexHelper;
 import org.apache.drill.exec.planner.index.IndexPlanUtils;
-import org.apache.drill.exec.planner.logical.DrillProjectRel;
 import org.apache.drill.exec.planner.logical.DrillScanRel;
 import org.apache.drill.exec.planner.physical.DrillDistributionTrait;
 import org.apache.drill.exec.planner.physical.DrillDistributionTraitDef;
@@ -94,18 +90,22 @@ public class NonCoveringIndexPlanGenerator extends AbstractIndexPlanGenerator {
   final private IndexDescriptor indexDesc;
   // Ideally This functionInfo should be cached along with indexDesc.
   final protected FunctionalIndexInfo functionInfo;
+  // The condition that should be applied on top of the primary table
+  final protected RexNode primaryTableCondition;
 
   public NonCoveringIndexPlanGenerator(IndexLogicalPlanCallContext indexContext,
                                        IndexDescriptor indexDesc,
                                        IndexGroupScan indexGroupScan,
                                        RexNode indexCondition,
                                        RexNode remainderCondition,
+                                       RexNode primaryTableCondition,
                                        RexBuilder builder,
                                        PlannerSettings settings) {
     super(indexContext, indexCondition, remainderCondition, builder, settings);
     this.indexGroupScan = indexGroupScan;
     this.indexDesc = indexDesc;
     this.functionInfo = indexDesc.getFunctionalInfo();
+    this.primaryTableCondition = primaryTableCondition;
   }
 
   @Override
@@ -217,7 +217,7 @@ public class NonCoveringIndexPlanGenerator extends AbstractIndexPlanGenerator {
     //not-wanted records get into downstream operators in such scenarios.
     //the remainder condition will be applied on top of RowKeyJoin.
     FilterPrel leftIndexFilterPrel = new FilterPrel(dbScan.getCluster(), dbScan.getTraitSet(),
-          dbScan, indexContext.getOrigCondition());
+          dbScan, primaryTableCondition);
 
     lastLeft = leftIndexFilterPrel;
 
