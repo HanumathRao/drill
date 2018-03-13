@@ -108,7 +108,7 @@ public class MapRDBIndexDiscover extends IndexDiscoverBase implements IndexDisco
         logger.error("No index found for table {}.", tableName);
         return null;
       }
-      return new DrillIndexCollection(getOriginalScanRel(), idxSet);
+      return new MapRDBIndexCollection(getOriginalScanRel(), idxSet);
     } catch (DBException ex) {
       logger.error("Could not get table index from File system.", ex);
     }

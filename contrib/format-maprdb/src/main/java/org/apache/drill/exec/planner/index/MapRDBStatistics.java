@@ -941,7 +941,7 @@ public class MapRDBStatistics implements Statistics {
    * the given collection would contain only one index for each distinct row key in the collection
    */
   private IndexCollection distinctFKeyIndexes(IndexCollection indexes, RelNode scanRel) {
-    IndexCollection distinctIdxCollection = new DrillIndexCollection(scanRel, new HashSet<DrillIndexDescriptor>());
+    IndexCollection distinctIdxCollection = new MapRDBIndexCollection(scanRel, new HashSet<DrillIndexDescriptor>());
     Iterator<IndexDescriptor> iterator = indexes.iterator();
     Map<String, List<IndexDescriptor>> firstColIndexMap = new HashMap<>();
     while (iterator.hasNext()) {

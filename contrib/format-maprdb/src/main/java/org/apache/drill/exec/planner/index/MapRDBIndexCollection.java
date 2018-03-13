@@ -17,44 +17,40 @@
  */
 package org.apache.drill.exec.planner.index;
 
-
-import org.apache.calcite.rex.RexNode;
-import org.apache.drill.exec.physical.base.IndexGroupScan;
 import org.apache.calcite.rel.RelNode;
 
 import java.util.Set;
 
-public class DrillIndexCollection extends AbstractIndexCollection {
-  private final RelNode scan;  // physical scan rel corresponding to the primary table
+public class MapRDBIndexCollection extends DrillIndexCollection {
 
-  public DrillIndexCollection(RelNode scanRel,
+  public MapRDBIndexCollection(RelNode scanRel,
                                Set<DrillIndexDescriptor> indexes) {
-    this.scan = scanRel;
-    for (IndexDescriptor index : indexes) {
-      super.addIndex(index);
-    }
-  }
-
-  private IndexDescriptor getIndexDescriptor() {
-
-    //XXX need a policy to pick the indexDesc to use instead of picking the first one.
-    return this.indexes.iterator().next();
+    super(scanRel, indexes);
   }
 
   @Override
-  public double getRows(RexNode indexCondition) {
-
-    return getIndexDescriptor().getRows(scan, indexCondition);
+  public boolean supportsIndexSelection() {
+    return true;
   }
 
   @Override
-  public IndexGroupScan getGroupScan() {
-    return getIndexDescriptor().getIndexGroupScan();
+  public boolean supportsArrayIndexes() {
+    return true;
+  }
+
+  @Override
+  public boolean supportsRowCountStats() {
+    return true;
+  }
+
+  @Override
+  public boolean supportsFullTextSearch() {
+    return false;
   }
 
   @Override
   public IndexCollectionType getIndexCollectionType() {
-    return IndexCollection.IndexCollectionType.EXTERNAL_SECONDARY_INDEX_COLLECTION;
+    return IndexCollection.IndexCollectionType.NATIVE_SECONDARY_INDEX_COLLECTION;
   }
 
 }
