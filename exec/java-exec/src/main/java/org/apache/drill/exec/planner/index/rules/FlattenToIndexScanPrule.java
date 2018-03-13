@@ -125,11 +125,10 @@ public class FlattenToIndexScanPrule extends AbstractIndexPrule {
   private void doOnMatch(IndexLogicalPlanCallContext indexContext) {
     Stopwatch indexPlanTimer = Stopwatch.createStarted();
     final PlannerSettings settings = PrelUtil.getPlannerSettings(indexContext.call.getPlanner());
+    final IndexCollection indexCollection = getIndexCollection(settings, indexContext.scan);
 
-    DbGroupScan groupScan = (DbGroupScan)indexContext.scan.getGroupScan();
-
-    final IndexCollection indexCollection = groupScan.getSecondaryIndexCollection(indexContext.scan);
-    if (indexCollection == null) {
+    if (indexCollection == null ||
+        !indexCollection.supportsArrayIndexes()) {
       return;
     }
 
