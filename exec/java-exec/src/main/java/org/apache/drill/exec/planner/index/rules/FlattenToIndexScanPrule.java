@@ -26,6 +26,7 @@ import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptRuleOperand;
 import org.apache.calcite.plan.RelOptUtil;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.drill.exec.physical.base.DbGroupScan;
 import org.apache.drill.exec.planner.index.IndexCollection;
 import org.apache.drill.exec.planner.index.IndexLogicalPlanCallContext;
@@ -42,6 +43,8 @@ import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexVisitorImpl;
+import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.util.Pair;
 
@@ -217,7 +220,13 @@ public class FlattenToIndexScanPrule extends AbstractIndexPrule {
 
     @Override
     public RexNode visitCall(RexCall call) {
-      if (SqlStdOperatorTable.ITEM.equals(call.getOperator()) &&
+      SqlOperator op = call.getOperator();
+      SqlKind kind = op.getKind();
+      RelDataType type = call.getType();
+
+      if (kind == SqlKind.OR || kind == SqlKind.AND) {
+        return builder.makeCall(type, op, visitChildren(call));
+      } else if (SqlStdOperatorTable.ITEM.equals(op) &&
           call.getOperands().size() == 2) {
         if (call.getOperands().get(0) instanceof RexInputRef) {
           RexInputRef inputRef = (RexInputRef) call.getOperands().get(0);
@@ -226,7 +235,7 @@ public class FlattenToIndexScanPrule extends AbstractIndexPrule {
           String projectFieldName = project.getRowType().getFieldNames().get(inputRef.getIndex());
           RexCall c;
           if ((c = flattenMap.get(projectFieldName)) != null) {
-            // take the Flatten's input and build a new RexExpr
+            // take the Flatten's input and build a new RexExpr with ITEM($n, -1)
             RexNode left = c.getOperands().get(0);
             RexLiteral right = builder.makeBigintLiteral(BigDecimal.valueOf(-1));
             RexNode result = builder.makeCall(call.getType(), SqlStdOperatorTable.ITEM, ImmutableList.of(left, right));
@@ -235,6 +244,14 @@ public class FlattenToIndexScanPrule extends AbstractIndexPrule {
         }
       }
       return super.visitCall(call);
+    }
+
+    private List<RexNode> visitChildren(RexCall call) {
+      List<RexNode> children = Lists.newArrayList();
+      for (RexNode child : call.getOperands()) {
+        children.add(child.accept(this));
+      }
+      return ImmutableList.copyOf(children);
     }
   }
 }
