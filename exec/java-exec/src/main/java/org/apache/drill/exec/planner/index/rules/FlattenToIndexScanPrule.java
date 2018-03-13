@@ -39,9 +39,11 @@ import org.apache.drill.exec.planner.physical.PlannerSettings;
 import org.apache.drill.exec.planner.physical.PrelUtil;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexCall;
+import org.apache.calcite.rex.RexCorrelVariable;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexOver;
 import org.apache.calcite.rex.RexVisitorImpl;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
@@ -136,13 +138,16 @@ public class FlattenToIndexScanPrule extends AbstractIndexPrule {
 
     RexBuilder builder = indexContext.filter.getCluster().getRexBuilder();
 
+    /*
     RexNode condition = null;
     if (indexContext.lowerProject == null) {
       condition = indexContext.filter.getCondition();
     } else {
       // get the filter as if it were below the projection.
       condition = RelOptUtil.pushFilterPastProject(indexContext.filter.getCondition(), indexContext.lowerProject);
-    }
+    } */
+
+    RexNode condition = indexContext.filter.getCondition();
 
     //save this pushed down condition, in case it is needed later to build filter when joining back primary table
     indexContext.origPushedCondition = condition;
@@ -223,12 +228,11 @@ public class FlattenToIndexScanPrule extends AbstractIndexPrule {
       SqlKind kind = op.getKind();
       RelDataType type = call.getType();
 
-      if (kind == SqlKind.OR || kind == SqlKind.AND) {
-        return builder.makeCall(type, op, visitChildren(call));
-      } else if (SqlStdOperatorTable.ITEM.equals(op) &&
+      if (SqlStdOperatorTable.ITEM.equals(op) &&
           call.getOperands().size() == 2) {
         if (call.getOperands().get(0) instanceof RexInputRef) {
           RexInputRef inputRef = (RexInputRef) call.getOperands().get(0);
+          RexLiteral literal = (RexLiteral) call.getOperands().get(1);
 
           // check if input is referencing a FLATTEN
           String projectFieldName = project.getRowType().getFieldNames().get(inputRef.getIndex());
@@ -237,12 +241,32 @@ public class FlattenToIndexScanPrule extends AbstractIndexPrule {
             // take the Flatten's input and build a new RexExpr with ITEM($n, -1)
             RexNode left = c.getOperands().get(0);
             RexLiteral right = builder.makeBigintLiteral(BigDecimal.valueOf(-1));
-            RexNode result = builder.makeCall(call.getType(), SqlStdOperatorTable.ITEM, ImmutableList.of(left, right));
-            return result;
+            RexNode result1 = builder.makeCall(call.getType(), SqlStdOperatorTable.ITEM, ImmutableList.of(left, right));
+
+            // final output is ITEM(ITEM($n, -1), 'literal')
+            left = result1;
+            right = literal;
+            RexNode result2 = builder.makeCall(call.getType(), SqlStdOperatorTable.ITEM, ImmutableList.of(left, right));
+            return result2;
           }
         }
       }
-      return super.visitCall(call);
+      return builder.makeCall(type, op, visitChildren(call));
+    }
+
+    @Override
+    public RexNode visitInputRef(RexInputRef inputRef) {
+      return inputRef;
+    }
+
+    @Override
+    public RexNode visitLiteral(RexLiteral literal) {
+      return literal;
+    }
+
+    @Override
+    public RexNode visitCorrelVariable(RexCorrelVariable correlVariable) {
+      return correlVariable;
     }
 
     private List<RexNode> visitChildren(RexCall call) {
