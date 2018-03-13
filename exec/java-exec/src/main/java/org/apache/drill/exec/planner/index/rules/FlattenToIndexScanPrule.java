@@ -17,6 +17,7 @@
  */
 package org.apache.drill.exec.planner.index.rules;
 
+import com.google.common.base.Preconditions;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Maps;
 import com.google.common.collect.ImmutableList;
@@ -225,7 +226,6 @@ public class FlattenToIndexScanPrule extends AbstractIndexPrule {
     @Override
     public RexNode visitCall(RexCall call) {
       SqlOperator op = call.getOperator();
-      SqlKind kind = op.getKind();
       RelDataType type = call.getType();
 
       if (SqlStdOperatorTable.ITEM.equals(op) &&
@@ -237,9 +237,25 @@ public class FlattenToIndexScanPrule extends AbstractIndexPrule {
           // check if input is referencing a FLATTEN
           String projectFieldName = project.getRowType().getFieldNames().get(inputRef.getIndex());
           RexCall c;
+          RexNode left = null;
           if ((c = flattenMap.get(projectFieldName)) != null) {
+            // drill down to the left leaf level of the Flatten to find which field it is
+            // referencing from the Scan
+            RexNode n = c;
+            while (true) {
+              // here we are only expecting a RexCall or a RexInputRef
+              if (n instanceof RexCall) {
+                n = ((RexCall)n).getOperands().get(0);
+              }
+              if (n instanceof RexInputRef) {
+                left = n;
+                break;
+              }
+            }
+
+            Preconditions.checkArgument(left != null, "Found null input reference for Flatten") ;
+
             // take the Flatten's input and build a new RexExpr with ITEM($n, -1)
-            RexNode left = c.getOperands().get(0);
             RexLiteral right = builder.makeBigintLiteral(BigDecimal.valueOf(-1));
             RexNode result1 = builder.makeCall(call.getType(), SqlStdOperatorTable.ITEM, ImmutableList.of(left, right));
 
@@ -262,11 +278,6 @@ public class FlattenToIndexScanPrule extends AbstractIndexPrule {
     @Override
     public RexNode visitLiteral(RexLiteral literal) {
       return literal;
-    }
-
-    @Override
-    public RexNode visitCorrelVariable(RexCorrelVariable correlVariable) {
-      return correlVariable;
     }
 
     private List<RexNode> visitChildren(RexCall call) {
