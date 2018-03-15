@@ -72,7 +72,12 @@ public class FieldPathHelper {
       if (seg.isNamed()) {
         child = new FieldSegment.NameSegment(((PathSegment.NameSegment)seg).getPath(), child, false);
       } else {
-        child = new FieldSegment.IndexSegment(((PathSegment.ArraySegment)seg).getIndex(), child);
+        int index = ((PathSegment.ArraySegment)seg).getIndex();
+        if (index < 0) {
+          child = new FieldSegment.IndexSegment(null, child);
+        } else {
+          child = new FieldSegment.IndexSegment(index, child);
+        }
       }
     }
     return new FieldPath((FieldSegment.NameSegment) child);
