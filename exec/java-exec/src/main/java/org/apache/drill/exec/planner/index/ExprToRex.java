@@ -22,6 +22,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.SqlTypeName;
@@ -31,6 +32,7 @@ import org.apache.drill.common.expression.SchemaPath;
 import org.apache.drill.common.expression.visitors.AbstractExprVisitor;
 import org.apache.drill.exec.planner.sql.TypeInferenceUtils;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -62,14 +64,21 @@ public class ExprToRex extends AbstractExprVisitor<RexNode, Void, RuntimeExcepti
     return null;
   }
 
-  private RexNode makeItemOperator(String[] paths, int index, RelDataType rowType) {
+  private RexNode makeItemOperator(Object[] paths, int index, RelDataType rowType) {
     if (index == 0) { //last one, return ITEM([0]-inputRef, [1] Literal)
-      final RelDataTypeField field = findField(paths[0], rowType);
+      final RelDataTypeField field = findField((String)paths[0], rowType);
       return field == null ? null : builder.makeInputRef(field.getType(), field.getIndex());
+    }
+    RexLiteral literal;
+    if (paths[index] instanceof Integer) {
+      int value = (Integer)paths[index];
+      literal = builder.makeBigintLiteral(BigDecimal.valueOf(value));
+    } else {
+      literal = builder.makeLiteral((String)paths[index]);
     }
     return builder.makeCall(SqlStdOperatorTable.ITEM,
                             makeItemOperator(paths, index - 1, rowType),
-                            builder.makeLiteral(paths[index]));
+                            literal);
   }
 
   @Override
@@ -85,7 +94,8 @@ public class ExprToRex extends AbstractExprVisitor<RexNode, Void, RuntimeExcepti
         throw new IllegalArgumentException("Unexpected array segment encountered");
       }
     }
-    List<String> paths = Lists.newArrayList();
+    // a path may be a string or an integer (e.g for array indexes)
+    List<Object> paths = Lists.newArrayList();
 
     while (rootSegment != null) {
       if (rootSegment.isNamed()) {
@@ -95,12 +105,12 @@ public class ExprToRex extends AbstractExprVisitor<RexNode, Void, RuntimeExcepti
         // this is an array segment, so use an index of '-1' which will be
         // used to create the appropriate ITEM expr
         int index = ((PathSegment.ArraySegment)rootSegment).getIndex();
-        paths.add(String.valueOf(index));
+        paths.add(Integer.valueOf(index));
         rootSegment = rootSegment.getChild();
         // throw new IllegalArgumentException("Unexpected array segment encountered");
       }
     }
-    return makeItemOperator(paths.toArray(new String[0]), paths.size() - 1, newRowType);
+    return makeItemOperator(paths.toArray(new Object[0]), paths.size() - 1, newRowType);
   }
 
   @Override
