@@ -172,6 +172,12 @@ public class FlattenToIndexScanPrule extends AbstractIndexPrule {
 
     if (indexCollection.supportsIndexSelection()) {
       // TODO: index selection and plan generation
+      try {
+        DbScanToIndexScanPrule.processWithIndexSelection(indexContext, settings, condition,
+            indexCollection, builder);
+      } catch(Exception e) {
+        logger.warn("Exception while doing index planning ", e);
+      }
     } else {
       throw new UnsupportedOperationException("Index collection must support index selection");
     }
@@ -241,6 +247,7 @@ public class FlattenToIndexScanPrule extends AbstractIndexPrule {
           if ((c = flattenMap.get(projectFieldName)) != null) {
             // drill down to the left leaf level of the Flatten to find which field it is
             // referencing from the Scan
+/*
             RexNode n = c;
             while (true) {
               // here we are only expecting a RexCall or a RexInputRef
@@ -252,7 +259,8 @@ public class FlattenToIndexScanPrule extends AbstractIndexPrule {
                 break;
               }
             }
-
+*/
+            left = c.getOperands().get(0);
             Preconditions.checkArgument(left != null, "Found null input reference for Flatten") ;
 
             // take the Flatten's input and build a new RexExpr with ITEM($n, -1)

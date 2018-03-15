@@ -74,19 +74,34 @@ public class ExprToRex extends AbstractExprVisitor<RexNode, Void, RuntimeExcepti
 
   @Override
   public RexNode visitSchemaPath(SchemaPath path, Void value) throws RuntimeException {
-    PathSegment.NameSegment rootSegment = path.getRootSegment();
+    PathSegment rootSegment = path.getRootSegment();
     if (rootSegment.isLastPath()) {
-      final RelDataTypeField field = findField(rootSegment.getPath(), newRowType);
-      return field == null ? null : builder.makeInputRef(field.getType(), field.getIndex());
+      if (rootSegment.isNamed()) {  // named segment
+        String segmentPath = ((PathSegment.NameSegment)rootSegment).getPath();
+        final RelDataTypeField field = findField(segmentPath, newRowType);
+        return field == null ? null : builder.makeInputRef(field.getType(), field.getIndex());
+      } else {  // array segment
+        // TODO: for array segment such as a[-1],  build a corresponding ITEM($n, -1) expression
+        throw new IllegalArgumentException("Unexpected array segment encountered");
+      }
     }
     List<String> paths = Lists.newArrayList();
+
     while (rootSegment != null) {
-      paths.add(rootSegment.getPath());
-      rootSegment = (PathSegment.NameSegment) rootSegment.getChild();
+      if (rootSegment.isNamed()) {
+        paths.add(((PathSegment.NameSegment)rootSegment).getPath());
+        rootSegment = rootSegment.getChild();
+      } else {
+        // this is an array segment, so use an index of '-1' which will be
+        // used to create the appropriate ITEM expr
+        int index = ((PathSegment.ArraySegment)rootSegment).getIndex();
+        paths.add(String.valueOf(index));
+        rootSegment = rootSegment.getChild();
+        // throw new IllegalArgumentException("Unexpected array segment encountered");
+      }
     }
     return makeItemOperator(paths.toArray(new String[0]), paths.size() - 1, newRowType);
   }
-
 
   @Override
   public RexNode visitCastExpression(CastExpression e, Void value) throws RuntimeException {
