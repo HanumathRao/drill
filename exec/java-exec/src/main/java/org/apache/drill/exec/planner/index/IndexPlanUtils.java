@@ -28,13 +28,16 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import com.google.common.collect.Sets;
+import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.plan.hep.HepRelVertex;
 import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.AbstractRelNode;
 import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexUtil;
@@ -47,10 +50,13 @@ import org.apache.drill.exec.physical.base.DbGroupScan;
 import org.apache.drill.exec.physical.base.GroupScan;
 import org.apache.drill.exec.physical.base.IndexGroupScan;
 import org.apache.drill.exec.planner.common.DrillProjectRelBase;
+import org.apache.drill.exec.planner.common.DrillRelOptUtil;
 import org.apache.drill.exec.planner.common.DrillScanRelBase;
 import org.apache.drill.exec.planner.fragment.DistributionAffinity;
 import org.apache.drill.exec.planner.logical.DrillOptiq;
 import org.apache.drill.exec.planner.logical.DrillParseContext;
+import org.apache.drill.exec.planner.logical.DrillProjectRel;
+import org.apache.drill.exec.planner.logical.DrillFilterRel;
 import org.apache.drill.exec.planner.logical.DrillScanRel;
 import org.apache.drill.exec.planner.physical.DrillDistributionTrait;
 import org.apache.drill.exec.planner.physical.Prel;
@@ -868,5 +874,146 @@ public class IndexPlanUtils {
       return RexUtil.composeConjunction(rexBuilder, conditions, true);
     }
     return condition;
+  }
+
+  public static <T> T sole(List<T> collection) {
+    assert collection.size() == 1;
+
+    return collection.get(0);
+  }
+
+  /*
+   * Returns the rels matching the specified sequence relSequence. The match is executed
+   * beginning from startingRel. An example of such a sequence is Join->Filter->Project->Scan
+   */
+  public static List<RelNode> findRelSequence(Class[] relSequence, RelNode startingRel,
+                                              org.slf4j.Logger logger) {
+    List<RelNode> matchingRels = new ArrayList<>();
+    findRelSequence(relSequence, 0, startingRel, matchingRels, logger);
+    return matchingRels;
+  }
+  /*
+   * Recursively match until the sequence is satisfied. Otherwise return. Recurse down intermediate nodes
+   * such as RelSubset/HepRelVertex.
+   */
+  public static void findRelSequence(Class[] classes, int idx, RelNode rel,
+                                             List<RelNode> matchingRels, org.slf4j.Logger logger) {
+    if (rel instanceof HepRelVertex) {
+      findRelSequence(classes, idx, ((HepRelVertex) rel).getCurrentRel(), matchingRels, logger);
+    } else if (rel instanceof RelSubset) {
+      if (((RelSubset) rel).getBest() != null) {
+        findRelSequence(classes, idx, ((RelSubset) rel).getBest(), matchingRels, logger);
+      } else {
+        findRelSequence(classes, idx, ((RelSubset) rel).getOriginal(), matchingRels, logger);
+      }
+    } else if (classes[idx].isInstance(rel)) {
+      matchingRels.add(rel);
+      if (idx + 1 < classes.length && rel.getInputs().size() > 0) {
+        findRelSequence(classes, idx + 1, rel.getInput(0), matchingRels, logger);
+      }
+    } else {
+      if (logger.isDebugEnabled()) {
+        String sequence, matchingSequence;
+        StringBuffer sb = new StringBuffer();
+        for (int i = 0; i < classes.length; i++) {
+          if (i == classes.length - 1) {
+            sb.append(classes[i].getCanonicalName().toString());
+          } else {
+            sb.append(classes[i].getCanonicalName().toString() + "->");
+          }
+        }
+        sequence = sb.toString();
+        sb.delete(0, sb.length());
+        for (int i = 0; i < matchingRels.size(); i++) {
+          if (i == matchingRels.size() - 1) {
+            sb.append(matchingRels.get(i).getClass().getCanonicalName().toString());
+          } else {
+            sb.append(matchingRels.get(i).getClass().getCanonicalName().toString() + "->");
+          }
+        }
+        matchingSequence = sb.toString();
+        logger.debug("FindRelSequence: ABORT: Unexpected Rel={}, After={}, CurSeq={}" ,
+                rel.getClass().getCanonicalName().toString() , matchingSequence , sequence);
+      }
+      matchingRels.clear();
+    }
+  }
+
+  /*
+   * Generate the rowkeyjoin call context. This context is useful when generating the transformed
+   * plan nodes. It tries to identify some RelNode sequences e.g. Filter-Project-Scan and generates
+   * the context based on the identified sequence.
+   */
+  public static IndexLogicalPlanCallContext generateContext(RelOptRuleCall call,
+                                                            AbstractRelNode startNode, org.slf4j.Logger logger) {
+    List<RelNode> matchingRels;
+
+    // Sequence of rels (PFPS, FPS, PS, FS, S) matched for this rule
+    Class[] PFPS = new Class[] {DrillProjectRel.class, DrillFilterRel.class, DrillProjectRel.class, DrillScanRel.class};
+    Class[] FPS = new Class[] {DrillFilterRel.class, DrillProjectRel.class, DrillScanRel.class};
+    Class[] PS = new Class[] {DrillProjectRel.class, DrillScanRel.class};
+    Class[] FS = new Class[] {DrillFilterRel.class, DrillScanRel.class};
+    Class[] S = new Class[] {DrillScanRel.class};
+
+    matchingRels = IndexPlanUtils.findRelSequence(PFPS, startNode, logger);
+    if (matchingRels.size() > 0) {
+      logger.debug("Matched rel sequence : Project->Filter->Project->Scan");
+      return new IndexLogicalPlanCallContext(call, (DrillProjectRel)matchingRels.get(0),
+              (DrillFilterRel) matchingRels.get(1), (DrillProjectRel) matchingRels.get(2),
+              (DrillScanRel) matchingRels.get(3));
+    }
+    matchingRels = IndexPlanUtils.findRelSequence(FPS, startNode, logger);
+    if (matchingRels.size() > 0) {
+      logger.debug("Matched rel sequence : Filter->Project->Scan");
+      return new IndexLogicalPlanCallContext(call, null, (DrillFilterRel) matchingRels.get(0),
+              (DrillProjectRel) matchingRels.get(1), (DrillScanRel) matchingRels.get(2));
+    }
+    matchingRels = IndexPlanUtils.findRelSequence(PS, startNode, logger);
+    if (matchingRels.size() > 0) {
+      logger.debug("Matched rel sequence : Project->Scan");
+      return new IndexLogicalPlanCallContext(call, null,
+              null, (DrillProjectRel) matchingRels.get(0), (DrillScanRel) matchingRels.get(1));
+    }
+    matchingRels = IndexPlanUtils.findRelSequence(FS, startNode, logger);
+    if (matchingRels.size() > 0) {
+      logger.debug("Matched rel sequence : Filter->Scan");
+      return new IndexLogicalPlanCallContext(call, null,
+              (DrillFilterRel) matchingRels.get(0), null, (DrillScanRel) matchingRels.get(1));
+    }
+    matchingRels = IndexPlanUtils.findRelSequence(S, startNode, logger);
+    if (matchingRels.size() > 0) {
+      logger.debug("Matched rel sequence : Scan");
+      return new IndexLogicalPlanCallContext(call, null, null,
+              null, (DrillScanRel) matchingRels.get(0));
+    }
+    logger.debug("Matched rel sequence : None");
+    return new IndexLogicalPlanCallContext(call, null, null, null, null, null);
+  }
+
+  public static List<RexNode> projects(RelNode scan, List<String> names) {
+    List<RexNode> projects = Lists.newArrayList();
+    List<String> scanFields = scan.getRowType().getFieldNames();
+    List<RelDataTypeField> scanFieldTypes = scan.getRowType().getFieldList();
+    for (String name : names) {
+      int fieldIndex = scanFields.indexOf(name);
+      projects.add(RexInputRef.of(fieldIndex, scanFieldTypes));
+    }
+    return projects;
+  }
+
+  public static List<RexNode> projectsTransformer(RexBuilder builder, List<RexNode> projects,
+                                            RelDataType oldRowType, RelDataType newRowType) {
+    List<RexNode> result = Lists.newArrayList();
+    DrillRelOptUtil.RexFieldsTransformer transformer = new DrillRelOptUtil.RexFieldsTransformer(builder, oldRowType, newRowType);
+    for (RexNode expr : projects) {
+      result.add(transformer.go(expr));
+    }
+    return result;
+  }
+
+  public static RexNode transform(RexBuilder builder, RexNode rexNode,
+                            RelDataType oldRowType, RelDataType newRowType) {
+    DrillRelOptUtil.RexFieldsTransformer transformer = new DrillRelOptUtil.RexFieldsTransformer(builder, oldRowType, newRowType);
+    return transformer.go(rexNode);
   }
 }

@@ -40,6 +40,7 @@ import org.apache.drill.exec.planner.index.IndexCallContext;
 import org.apache.drill.exec.planner.index.IndexPlanUtils;
 import org.apache.drill.exec.planner.logical.DrillFilterRel;
 import org.apache.drill.exec.planner.logical.DrillProjectRel;
+import org.apache.drill.exec.planner.logical.DrillJoinRel;
 import org.apache.drill.exec.planner.logical.DrillSortRel;
 import org.apache.drill.exec.planner.common.DrillProjectRelBase;
 import org.apache.drill.exec.planner.common.OrderedRel;
@@ -246,7 +247,7 @@ public abstract class AbstractIndexPlanGenerator extends SubsetTransformer<RelNo
     return true;
   }
 
-  public void go() throws InvalidRelException {
+  public boolean go() throws InvalidRelException {
     RelNode top = indexContext.getCall().rel(0);
     final RelNode input;
     if (top instanceof DrillProjectRel) {
@@ -263,12 +264,12 @@ public abstract class AbstractIndexPlanGenerator extends SubsetTransformer<RelNo
     else if ( top instanceof DrillSortRel) {
       DrillSortRel topSort = (DrillSortRel) top;
       input = topSort.getInput();
-    }
-    else {
-      return;
+    } else {
+      return false;
     }
     RelTraitSet traits = input.getTraitSet().plus(Prel.DRILL_PHYSICAL);
     RelNode convertedInput = Prule.convert(input, traits);
     this.go(top, convertedInput);
+    return true;
   }
 }

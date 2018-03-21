@@ -90,7 +90,7 @@ public class IndexLogicalPlanCallContext implements IndexCallContext {
     this.filter = filter;
     this.lowerProject = project;
     this.scan = scan;
-    this.indexHint = ((DbGroupScan)this.scan.getGroupScan()).getIndexHint();
+    this.indexHint = scan == null ? null : ((DbGroupScan)this.scan.getGroupScan()).getIndexHint();
   }
 
   public IndexLogicalPlanCallContext(RelOptRuleCall call,

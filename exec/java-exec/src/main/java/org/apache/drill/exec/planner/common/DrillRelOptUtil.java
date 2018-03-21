@@ -41,6 +41,7 @@ import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexVisitor;
+import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexVisitorImpl;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
@@ -443,6 +444,73 @@ public abstract class DrillRelOptUtil {
       } else {
         desiredField.addNode(originalNode);
       }
+    }
+  }
+
+  public static class RexFieldsTransformer {
+    private final RexBuilder rexBuilder;
+    private final List<String> leftFields;
+    private final List<String> rightFields;
+    private final List<RelDataTypeField> rightFieldTypes;
+
+    public RexFieldsTransformer(
+            RexBuilder rexBuilder,
+            RelDataType leftType,
+            RelDataType rightType) {
+      this.rexBuilder = rexBuilder;
+      this.leftFields = Lists.newArrayList();
+      this.rightFields = Lists.newArrayList();
+      for (RelDataTypeField fld : leftType.getFieldList()) {
+        this.leftFields.add(fld.getName());
+      }
+      for (RelDataTypeField fld : rightType.getFieldList()) {
+        this.rightFields.add(fld.getName());
+      }
+      this.rightFieldTypes = rightType.getFieldList();
+    }
+
+    public RexNode go(RexNode rex) {
+      if (rex instanceof RexCall) {
+        ImmutableList.Builder<RexNode> builder =
+                ImmutableList.builder();
+        final RexCall call = (RexCall) rex;
+        for (RexNode operand : call.operands) {
+          builder.add(go(operand));
+        }
+        return call.clone(call.getType(), builder.build());
+      } else if (rex instanceof RexInputRef) {
+        RexInputRef var = (RexInputRef) rex;
+        int index = var.getIndex();
+        int rightIndex = rightFields.indexOf(leftFields.get(index));
+        return rexBuilder.makeInputRef(rightFieldTypes.get(rightIndex).getType(), rightIndex);
+      } else {
+        return rex;
+      }
+    }
+  }
+
+  public static class RexFieldsCollector {
+    public final RelNode input;
+    private final List<String> fieldNames;
+
+    public RexFieldsCollector(RelNode input) {
+      this.input = input;
+      this.fieldNames = input.getRowType().getFieldNames();
+    }
+
+    public List<String> go(RexNode rex) {
+      List<String> result = Lists.newArrayList();
+      if (rex instanceof RexCall) {
+        final RexCall call = (RexCall) rex;
+        for (RexNode operand : call.operands) {
+          result.addAll(go(operand));
+        }
+      } else if (rex instanceof RexInputRef) {
+        RexInputRef var = (RexInputRef) rex;
+        int index = var.getIndex();
+        result.add(fieldNames.get(index));
+      }
+      return result;
     }
   }
 }
