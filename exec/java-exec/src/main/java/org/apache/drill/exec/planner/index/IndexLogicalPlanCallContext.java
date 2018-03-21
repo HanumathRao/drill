@@ -44,6 +44,9 @@ import java.util.Map;
 import java.util.Set;
 
 public class IndexLogicalPlanCallContext implements IndexCallContext {
+  /**
+   * These are inputs to the index planner rules
+   */
   final public RelOptRuleCall call;
   final public DrillSortRel sort;
   final public DrillProjectRel upperProject;
@@ -52,13 +55,21 @@ public class IndexLogicalPlanCallContext implements IndexCallContext {
   final public DrillScanRel scan;
   final public String indexHint;
 
-  public Set<LogicalExpression> leftOutPathsInFunctions;
 
+  /**
+   * The following are properties identified while doing the index analysis
+   */
+  public Set<LogicalExpression> leftOutPathsInFunctions;
   public IndexableExprMarker origMarker;
   public List<LogicalExpression> sortExprs;
-
   public RexNode origPushedCondition;
   public Map<String, RexCall> flattenMap = null;
+  public RexNode indexCondition;
+  public RexNode remainderCondition;
+  public boolean isValidIndexHint;
+  public double totalRows = 0;
+  public double filterRows = 0;
+
 
   public IndexLogicalPlanCallContext(RelOptRuleCall call,
                        DrillProjectRel capProject,
