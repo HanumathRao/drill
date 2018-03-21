@@ -100,6 +100,7 @@ public final class VLOverflowReader extends VLAbstractEntryReader {
 
       } else {
         value_lengths[idx] = -1;
+        ++numNulls;
       }
     }
 

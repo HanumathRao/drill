@@ -227,7 +227,7 @@ public final class RecordBatchStats {
     msg.append(totalAllocSize);
     msg.append("], Total Buffer Size: [");
     msg.append(totalBufferSize);
-    msg.append("], Total Paylod Byte: [");
+    msg.append("], Total Payload Byte: [");
     msg.append(totalPayloadByte);
     msg.append("]\n");
 

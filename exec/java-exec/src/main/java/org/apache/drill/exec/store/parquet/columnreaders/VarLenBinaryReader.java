@@ -213,6 +213,7 @@ public final class VarLenBinaryReader {
       for (VLColumnContainer container : orderedColumns) {
         if (!isFirstValue) {
           msg.append(", ");
+        } else {
           isFirstValue = false;
         }
         msg.append(container.column.valueVec.getField().getName());
