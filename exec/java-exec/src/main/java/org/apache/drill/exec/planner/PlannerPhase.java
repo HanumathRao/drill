@@ -397,8 +397,8 @@ public enum PlannerPhase {
             DbScanSortRemovalRule.INDEX_SORT_PROJ_SCAN,
             FlattenToIndexScanPrule.FILTER_PROJECT_SCAN,
             FlattenToIndexScanPrule.FILTER_PROJECT_FILTER_SCAN,
-            SemiJoinIndexScanPrule.JOIN_FILTER_PROJECT_SCAN,
-            SemiJoinIndexScanPrule.JOIN_FILTER_PROJECT_SCAN_OPP
+            SemiJoinIndexScanPrule.JOIN_FILTER_PROJECT_FILTER_SCAN,
+            SemiJoinIndexScanPrule.JOIN_FILTER_PROJECT_SCAN
         )
         .build();
     return RuleSets.ofList(indexRules);

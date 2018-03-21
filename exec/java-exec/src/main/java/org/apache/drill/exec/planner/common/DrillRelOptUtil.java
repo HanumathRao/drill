@@ -450,7 +450,6 @@ public abstract class DrillRelOptUtil {
   public static class RexFieldsTransformer {
     private final RexBuilder rexBuilder;
     private final List<String> leftFields;
-    private final List<RelDataTypeField> leftFieldTypes;
     private final List<String> rightFields;
     private final List<RelDataTypeField> rightFieldTypes;
 
@@ -467,7 +466,6 @@ public abstract class DrillRelOptUtil {
       for (RelDataTypeField fld : rightType.getFieldList()) {
         this.rightFields.add(fld.getName());
       }
-      this.leftFieldTypes = leftType.getFieldList();
       this.rightFieldTypes = rightType.getFieldList();
     }
 

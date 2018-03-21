@@ -36,10 +36,10 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.util.Pair;
 import org.apache.drill.exec.planner.logical.RowKeyJoinCallContext.RowKey;
 import org.apache.drill.exec.physical.base.DbGroupScan;
+import org.apache.drill.exec.planner.index.IndexPlanUtils;
 import org.apache.drill.exec.planner.index.rules.MatchFunction;
 import org.apache.drill.exec.planner.physical.PrelUtil;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class DrillPushRowKeyJoinToScanRule extends RelOptRule {
@@ -65,60 +65,7 @@ public class DrillPushRowKeyJoinToScanRule extends RelOptRule {
       RelOptHelper.any(DrillJoinRel.class), "DrillPushRowKeyJoinToScanRule_Join", new MatchRelJ());
 
   public static class MatchRelJ implements MatchFunction<RowKeyJoinCallContext> {
-    /*
-     * Returns the rels matching the specified sequence relSequence. The match is executed
-     * beginning from startingRel. An example of such a sequence is Join->Filter->Project->Scan
-     */
-    private List<RelNode> findRelSequence(Class[] relSequence, RelNode startingRel) {
-      List<RelNode> matchingRels = new ArrayList<>();
-      findRelSequenceInternal(relSequence, 0, startingRel, matchingRels);
-      return matchingRels;
-    }
-    /*
-     * Recursively match until the sequence is satisfied. Otherwise return. Recurse down intermediate nodes
-     * such as RelSubset/HepRelVertex.
-     */
-    private void findRelSequenceInternal(Class[] classes, int idx, RelNode rel, List<RelNode> matchingRels) {
-      if (rel instanceof HepRelVertex) {
-        findRelSequenceInternal(classes, idx, ((HepRelVertex) rel).getCurrentRel(), matchingRels);
-      } else if (rel instanceof RelSubset) {
-        if (((RelSubset) rel).getBest() != null) {
-          findRelSequenceInternal(classes, idx, ((RelSubset) rel).getBest(), matchingRels);
-        } else {
-          findRelSequenceInternal(classes, idx, ((RelSubset) rel).getOriginal(), matchingRels);
-        }
-      } else if (classes[idx].isInstance(rel)) {
-        matchingRels.add(rel);
-        if (idx + 1 < classes.length && rel.getInputs().size() > 0) {
-          findRelSequenceInternal(classes, idx + 1, rel.getInput(0), matchingRels);
-        }
-      } else {
-        if (logger.isDebugEnabled()) {
-          String sequence, matchingSequence;
-          StringBuffer sb = new StringBuffer();
-          for (int i = 0; i < classes.length; i++) {
-            if (i == classes.length - 1) {
-              sb.append(classes[i].getCanonicalName().toString());
-            } else {
-              sb.append(classes[i].getCanonicalName().toString() + "->");
-            }
-          }
-          sequence = sb.toString();
-          sb.delete(0, sb.length());
-          for (int i = 0; i < matchingRels.size(); i++) {
-            if (i == matchingRels.size() - 1) {
-              sb.append(matchingRels.get(i).getClass().getCanonicalName().toString());
-            } else {
-              sb.append(matchingRels.get(i).getClass().getCanonicalName().toString() + "->");
-            }
-          }
-          matchingSequence = sb.toString();
-          logger.debug("FindRelSequence: ABORT: Unexpected Rel={}, After={}, CurSeq={}" ,
-              rel.getClass().getCanonicalName().toString() , matchingSequence , sequence);
-        }
-        matchingRels.clear();
-      }
-    }
+
 
     /*
      * Generate the rowkeyjoin call context. This context is useful when generating the transformed
@@ -136,33 +83,33 @@ public class DrillPushRowKeyJoinToScanRule extends RelOptRule {
       Class[] S = new Class[] {DrillScanRel.class};
       logger.debug("GenerateContext(): Primary-key: Side={}, RowTypePos={}, SwapInputs={}",
           rowKeyLoc.name(), rowKeyPos, swapInputs);
-      matchingRels = findRelSequence(PFPS, joinChildRel);
+      matchingRels = IndexPlanUtils.findRelSequence(PFPS, joinChildRel, logger);
       if (matchingRels.size() > 0) {
         logger.debug("Matched rel sequence : Project->Filter->Project->Scan");
         return new RowKeyJoinCallContext(call, rowKeyLoc, rowKeyPos, swapInputs, joinRel,
             (DrillProjectRel) matchingRels.get(0), (DrillFilterRel) matchingRels.get(1),
             (DrillProjectRel) matchingRels.get(2), (DrillScanRel) matchingRels.get(3));
       }
-      matchingRels = findRelSequence(FPS, joinChildRel);
+      matchingRels = IndexPlanUtils.findRelSequence(FPS, joinChildRel, logger);
       if (matchingRels.size() > 0) {
         logger.debug("Matched rel sequence : Filter->Project->Scan");
         return new RowKeyJoinCallContext(call, rowKeyLoc, rowKeyPos, swapInputs, joinRel,
             null, (DrillFilterRel) matchingRels.get(0), (DrillProjectRel) matchingRels.get(1),
             (DrillScanRel) matchingRels.get(2));
       }
-      matchingRels = findRelSequence(PS, joinChildRel);
+      matchingRels = IndexPlanUtils.findRelSequence(PS, joinChildRel, logger);
       if (matchingRels.size() > 0) {
         logger.debug("Matched rel sequence : Project->Scan");
         return new RowKeyJoinCallContext(call, rowKeyLoc, rowKeyPos, swapInputs, joinRel, null,
             null, (DrillProjectRel) matchingRels.get(0), (DrillScanRel) matchingRels.get(1));
       }
-      matchingRels = findRelSequence(FS, joinChildRel);
+      matchingRels = IndexPlanUtils.findRelSequence(FS, joinChildRel, logger);
       if (matchingRels.size() > 0) {
         logger.debug("Matched rel sequence : Filter->Scan");
         return new RowKeyJoinCallContext(call, rowKeyLoc, rowKeyPos, swapInputs, joinRel, null,
             (DrillFilterRel) matchingRels.get(0), null, (DrillScanRel) matchingRels.get(1));
       }
-      matchingRels = findRelSequence(S, joinChildRel);
+      matchingRels = IndexPlanUtils.findRelSequence(S, joinChildRel, logger);
       if (matchingRels.size() > 0) {
         logger.debug("Matched rel sequence : Scan");
         return new RowKeyJoinCallContext(call, rowKeyLoc, rowKeyPos, swapInputs, joinRel, null, null,
