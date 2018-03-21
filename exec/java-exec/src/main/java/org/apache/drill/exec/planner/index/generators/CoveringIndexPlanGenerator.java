@@ -95,7 +95,7 @@ public class CoveringIndexPlanGenerator extends AbstractIndexPlanGenerator {
   }
 
   @Override
-  public RelNode convertChild(final RelNode filter, final RelNode input) throws InvalidRelException {
+  public RelNode convertChild(final RelNode filter, final RelNode input) {
 
     if (indexGroupScan == null) {
       logger.error("Null indexgroupScan in CoveringIndexPlanGenerator.convertChild");

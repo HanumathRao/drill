@@ -17,13 +17,20 @@
  */
 package org.apache.drill.exec.planner.index.rules;
 
+import org.apache.calcite.rex.RexCall;
+import org.apache.calcite.rex.RexNode;
 import org.apache.drill.common.expression.SchemaPath;
 import org.apache.drill.exec.physical.base.DbGroupScan;
 import org.apache.drill.exec.physical.base.GroupScan;
+import org.apache.drill.exec.planner.logical.DrillProjectRel;
 import org.apache.drill.exec.planner.logical.DrillScanRel;
+import org.apache.calcite.util.Pair;
+
+import java.util.Map;
+
 
 public abstract class AbstractMatchFunction<T> implements MatchFunction<T> {
-  public boolean checkScan(DrillScanRel scanRel) {
+  public static boolean checkScan(DrillScanRel scanRel) {
     GroupScan groupScan = scanRel.getGroupScan();
     if (groupScan instanceof DbGroupScan) {
       DbGroupScan dbscan = ((DbGroupScan) groupScan);
@@ -34,7 +41,7 @@ public abstract class AbstractMatchFunction<T> implements MatchFunction<T> {
     return false;
   }
 
-  public boolean checkScan(GroupScan groupScan) {
+  public static boolean checkScan(GroupScan groupScan) {
     if (groupScan instanceof DbGroupScan) {
       DbGroupScan dbscan = ((DbGroupScan) groupScan);
       //if we already applied index convert rule, and this scan is indexScan or restricted scan already,
@@ -54,5 +61,31 @@ public abstract class AbstractMatchFunction<T> implements MatchFunction<T> {
       }
     }
     return false;
+  }
+
+  /**
+   * Check if a Project contains Flatten expressions and populate a supplied map with a mapping of
+   * the field name to the RexCall corresponding to the Flatten expression. If there are multiple
+   * Flattens, identify all of them.
+   * @param project
+   * @param flattenMap
+   * @return True if Flatten was found, False otherwise
+   */
+  protected static boolean projectHasFlatten(DrillProjectRel project, Map<String, RexCall> flattenMap) {
+    boolean found = false;
+    for (Pair<RexNode, String> p : project.getNamedProjects()) {
+      if (p.left instanceof RexCall) {
+        RexCall function = (RexCall) p.left;
+        String functionName = function.getOperator().getName();
+        if (functionName.equalsIgnoreCase("flatten")
+                && function.getOperands().size() == 1) {
+          flattenMap.put((String) p.right, (RexCall) p.left);
+          found = true;
+          // continue since there may be multiple FLATTEN exprs which may be
+          // referenced by the filter condition
+        }
+      }
+    }
+    return found;
   }
 }
