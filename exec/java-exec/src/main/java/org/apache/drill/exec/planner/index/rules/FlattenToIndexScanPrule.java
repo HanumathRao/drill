@@ -22,11 +22,11 @@ import com.google.common.base.Stopwatch;
 import com.google.common.collect.Maps;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptRuleOperand;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.util.Pair;
 import org.apache.drill.exec.physical.base.DbGroupScan;
 import org.apache.drill.exec.physical.base.GroupScan;
 import org.apache.drill.exec.physical.base.IndexGroupScan;
@@ -40,6 +40,8 @@ import org.apache.drill.exec.planner.index.IndexLogicalPlanCallContext;
 import org.apache.drill.exec.planner.index.IndexPlanUtils;
 import org.apache.drill.exec.planner.index.IndexProperties;
 import org.apache.drill.exec.planner.index.IndexSelector;
+import org.apache.drill.exec.planner.index.generators.AbstractIndexPlanGenerator;
+import org.apache.drill.exec.planner.index.generators.IndexPlanGenerator;
 import org.apache.drill.exec.planner.index.generators.CoveringIndexPlanGenerator;
 import org.apache.drill.exec.planner.index.generators.NonCoveringIndexPlanGenerator;
 import org.apache.drill.exec.planner.logical.DrillFilterRel;
@@ -58,7 +60,6 @@ import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.rex.RexVisitorImpl;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
-import org.apache.calcite.util.Pair;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -68,7 +69,7 @@ import java.util.concurrent.TimeUnit;
 public class FlattenToIndexScanPrule extends AbstractIndexPrule {
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(FlattenToIndexScanPrule.class);
 
-  public static final RelOptRule FILTER_PROJECT_SCAN = new FlattenToIndexScanPrule(
+  public static final FlattenToIndexScanPrule FILTER_PROJECT_SCAN = new FlattenToIndexScanPrule(
       RelOptHelper.some(DrillFilterRel.class,
           RelOptHelper.some(DrillProjectRel.class, RelOptHelper.any(DrillScanRel.class))),
       "FlattenToIndexScanPrule:Filter_Project_Scan", new MatchFPS());
@@ -166,14 +167,44 @@ public class FlattenToIndexScanPrule extends AbstractIndexPrule {
       final DrillScanRel scan = (DrillScanRel) call.rel(3);
 
       FlattenIndexPlanCallContext idxContext = new FlattenIndexPlanCallContext(call,
-          null /* upper project */,
-          filterAboveFlatten,
-          projectWithFlatten,
-          filterBelowFlatten,
-          scan,
-          flattenMap);
+              null /* upper project */,
+              filterAboveFlatten,
+              projectWithFlatten,
+              filterBelowFlatten,
+              scan,
+              flattenMap);
 
       return idxContext;
+    }
+  }
+
+  public static class FlattenIndexPlanGenerator implements IndexPlanGenerator {
+    private final IndexLogicalPlanCallContext indexContext;
+
+    private FlattenIndexPlanGenerator(IndexLogicalPlanCallContext context) {
+      this.indexContext = context;
+    }
+
+
+    @Override
+    public AbstractIndexPlanGenerator getCoveringIndexGen(FunctionalIndexInfo functionInfo,
+                                                          IndexGroupScan indexGroupScan,
+                                                          RexNode indexCondition,
+                                                          RexNode remainderCondition,
+                                                          RexBuilder builder,
+                                                          PlannerSettings settings) {
+      return new CoveringIndexPlanGenerator(indexContext, functionInfo, indexGroupScan, indexCondition, remainderCondition, builder, settings);
+    }
+
+    @Override
+    public AbstractIndexPlanGenerator getNonCoveringIndexGen(IndexDescriptor indexDesc,
+                                                             IndexGroupScan indexGroupScan,
+                                                             RexNode indexCondition,
+                                                             RexNode remainderCondition,
+                                                             RexNode totalCondition,
+                                                             RexBuilder builder,
+                                                             PlannerSettings settings) {
+      return new NonCoveringIndexPlanGenerator(indexContext, indexDesc, indexGroupScan, indexCondition, remainderCondition, totalCondition, builder, settings);
     }
   }
 
@@ -185,7 +216,8 @@ public class FlattenToIndexScanPrule extends AbstractIndexPrule {
 
   @Override
   public void onMatch(RelOptRuleCall call) {
-    doOnMatch((FlattenIndexPlanCallContext) match.onMatch(call));
+    FlattenIndexPlanCallContext context = match.onMatch(call);
+    doOnMatch(context,new FlattenIndexPlanGenerator(context));
   }
 
   private RexNode composeCondition(FlattenIndexPlanCallContext indexContext, RexBuilder builder) {
@@ -209,14 +241,15 @@ public class FlattenToIndexScanPrule extends AbstractIndexPrule {
     }
   }
 
-  private void doOnMatch(FlattenIndexPlanCallContext indexContext) {
+  public boolean doOnMatch(FlattenIndexPlanCallContext indexContext, IndexPlanGenerator generator) {
+    boolean result = false;
     Stopwatch indexPlanTimer = Stopwatch.createStarted();
     final PlannerSettings settings = PrelUtil.getPlannerSettings(indexContext.call.getPlanner());
     final IndexCollection indexCollection = getIndexCollection(settings, indexContext.scan);
 
     if (indexCollection == null ||
         !indexCollection.supportsArrayIndexes()) {
-      return;
+      result = false;
     }
 
     logger.debug("Index Rule {} starts", this.description);
@@ -236,7 +269,7 @@ public class FlattenToIndexScanPrule extends AbstractIndexPrule {
     RexNode condition = composeCondition(indexContext, builder);
 
     if (condition == null) {
-      return;
+      return false;
     }
 
     // the index analysis code only understands binary operators, so the condition should be
@@ -246,7 +279,7 @@ public class FlattenToIndexScanPrule extends AbstractIndexPrule {
 
     if (indexCollection.supportsIndexSelection()) {
       try {
-        processWithIndexSelection(indexContext, settings, condition, indexCollection, builder);
+        result = processWithIndexSelection(indexContext, settings, condition, indexCollection, builder, generator);
       } catch(Exception e) {
         logger.warn("Exception while doing index planning ", e);
       }
@@ -256,24 +289,27 @@ public class FlattenToIndexScanPrule extends AbstractIndexPrule {
 
     indexPlanTimer.stop();
     logger.debug("Index Planning took {} ms", indexPlanTimer.elapsed(TimeUnit.MILLISECONDS));
+    return result;
   }
 
-  public void processWithIndexSelection(
-      IndexLogicalPlanCallContext indexContext,
-      PlannerSettings settings,
-      RexNode condition,
-      IndexCollection collection,
-      RexBuilder builder) {
+  public boolean processWithIndexSelection(IndexLogicalPlanCallContext indexContext,
+                                          PlannerSettings settings,
+                                          RexNode condition,
+                                          IndexCollection collection,
+                                          RexBuilder builder,
+                                          IndexPlanGenerator generator) {
 
     DrillScanRel scan = indexContext.scan;
-    IndexConditionInfo.Builder infoBuilder = IndexConditionInfo.newBuilder(condition, collection, builder, indexContext.scan);
+    IndexConditionInfo.Builder infoBuilder = IndexConditionInfo.newBuilder(condition,
+            collection, builder, indexContext.scan);
 
     if (!analyzeCondition(indexContext, collection, condition, builder, infoBuilder, logger)) {
-      return;
+      return false;
     }
 
-    if (!initializeStatistics(scan, settings, indexContext, condition, indexContext.isValidIndexHint, logger)) {
-      return;
+    if (!initializeStatistics(scan, settings, indexContext,
+        condition, indexContext.isValidIndexHint, logger)) {
+      return false;
     }
 
     List<IndexGroup> coveringIndexes = Lists.newArrayList();
@@ -281,9 +317,9 @@ public class FlattenToIndexScanPrule extends AbstractIndexPrule {
     List<IndexGroup> intersectIndexes = Lists.newArrayList();
 
     IndexSelector selector = createAndInitSelector(indexContext,
-        collection,
-        builder,
-        logger);
+            collection,
+            builder,
+            logger);
 
     // get the candidate indexes based on selection
     selector.getCandidateIndexes(infoBuilder, coveringIndexes, nonCoveringIndexes, intersectIndexes);
@@ -303,10 +339,11 @@ public class FlattenToIndexScanPrule extends AbstractIndexPrule {
         idxScan.setStatistics(((DbGroupScan) scan.getGroupScan()).getStatistics());
         logger.info("index_plan_info: Generating covering index plan for index: {}, query condition {}", indexDesc.getIndexName(), indexCondition.toString());
 
-        CoveringIndexPlanGenerator planGen = new CoveringIndexPlanGenerator(indexContext, indexInfo, idxScan,
-            indexCondition, remainderCondition, builder, settings);
+//        CoveringIndexPlanGenerator planGen = new CoveringIndexPlanGenerator(indexContext, indexInfo, idxScan,
+//                indexCondition, remainderCondition, builder, settings);
+        AbstractIndexPlanGenerator planGen = generator.getCoveringIndexGen(indexInfo, idxScan, indexCondition, remainderCondition, builder, settings);
 
-        planGen.go();
+        return planGen.go();
       }
     } catch (Exception e) {
       logger.warn("Exception while trying to generate covering index plan", e);
@@ -316,7 +353,7 @@ public class FlattenToIndexScanPrule extends AbstractIndexPrule {
 
     //First, check if the primary table scan supports creating a restricted scan
     if (primaryTableScan instanceof DbGroupScan &&
-        (((DbGroupScan) primaryTableScan).supportsRestrictedScan())) {
+            (((DbGroupScan) primaryTableScan).supportsRestrictedScan())) {
       try {
         for (IndexGroup index : nonCoveringIndexes) {
           IndexProperties indexProps = index.getIndexProps().get(0);
@@ -332,17 +369,16 @@ public class FlattenToIndexScanPrule extends AbstractIndexPrule {
           //Copy primary table statistics to index table
           idxScan.setStatistics(((DbGroupScan) primaryTableScan).getStatistics());
           logger.info("index_plan_info: Generating non-covering index plan for index: {}, query condition {}", indexDesc.getIndexName(), indexCondition.toString());
-          NonCoveringIndexPlanGenerator planGen = new NonCoveringIndexPlanGenerator(indexContext, indexDesc,
-            idxScan, indexCondition, remainderCondition, totalCondition, builder, settings);
-          planGen.go();
+          AbstractIndexPlanGenerator planGen = generator.getNonCoveringIndexGen(indexDesc, idxScan, indexCondition, remainderCondition, totalCondition, builder, settings);
+          return planGen.go();
         }
       } catch (Exception e) {
         logger.warn("Exception while trying to generate non-covering index access plan", e);
       }
     }
 
+    return false;
   }
-
 
   /**
    * Query:
