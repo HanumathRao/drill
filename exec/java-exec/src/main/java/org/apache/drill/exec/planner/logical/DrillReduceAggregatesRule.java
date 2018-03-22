@@ -317,7 +317,7 @@ public class DrillReduceAggregatesRule extends RelOptRule {
             iAvgInput);
     RelDataType sumType =
         TypeInferenceUtils.getDrillSqlReturnTypeInference(SqlKind.SUM.name(),
-            ImmutableList.<DrillFuncHolder>of())
+            ImmutableList.of(), plannerSettings.getOptions())
           .inferReturnType(oldCall.createBinding(oldAggRel));
     sumType =
         typeFactory.createTypeWithNullability(
@@ -507,7 +507,7 @@ public class DrillReduceAggregatesRule extends RelOptRule {
 
     RelDataType sumType =
         TypeInferenceUtils.getDrillSqlReturnTypeInference(SqlKind.SUM.name(),
-            ImmutableList.<DrillFuncHolder>of())
+            ImmutableList.of(), plannerSettings.getOptions())
           .inferReturnType(oldCall.createBinding(oldAggRel));
     sumType = typeFactory.createTypeWithNullability(sumType, true);
     final AggregateCall sumArgSquaredAggCall =

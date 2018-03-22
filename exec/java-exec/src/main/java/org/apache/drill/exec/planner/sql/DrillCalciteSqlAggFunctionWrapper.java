@@ -32,6 +32,7 @@ import org.apache.calcite.sql.validate.SqlValidatorScope;
 
 import org.apache.calcite.util.Litmus;
 import org.apache.drill.exec.expr.fn.DrillFuncHolder;
+import org.apache.drill.exec.server.options.OptionManager;
 
 import java.util.List;
 
@@ -72,11 +73,13 @@ public class DrillCalciteSqlAggFunctionWrapper extends SqlAggFunction implements
 
   public DrillCalciteSqlAggFunctionWrapper(
       SqlAggFunction sqlAggFunction,
-      List<DrillFuncHolder> functions) {
+      List<DrillFuncHolder> functions,
+      OptionManager optionManager) {
     this(sqlAggFunction,
         TypeInferenceUtils.getDrillSqlReturnTypeInference(
             sqlAggFunction.getName(),
-            functions));
+            functions,
+            optionManager));
   }
 
   public DrillCalciteSqlAggFunctionWrapper(

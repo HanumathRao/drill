@@ -30,6 +30,7 @@ import org.apache.calcite.sql.validate.SqlMonotonicity;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.util.Litmus;
 import org.apache.drill.exec.expr.fn.DrillFuncHolder;
+import org.apache.drill.exec.server.options.OptionManager;
 
 import java.util.List;
 
@@ -43,7 +44,7 @@ import java.util.List;
 public class DrillCalciteSqlOperatorWrapper extends SqlOperator implements DrillCalciteSqlWrapper {
   public final SqlOperator operator;
 
-  public DrillCalciteSqlOperatorWrapper(SqlOperator operator, final String rename, final List<DrillFuncHolder> functions) {
+  public DrillCalciteSqlOperatorWrapper(SqlOperator operator, final String rename, final List<DrillFuncHolder> functions, final OptionManager optionManager) {
     super(
         operator.getName(),
         operator.getKind(),
@@ -51,7 +52,8 @@ public class DrillCalciteSqlOperatorWrapper extends SqlOperator implements Drill
         operator.getRightPrec(),
         TypeInferenceUtils.getDrillSqlReturnTypeInference(
             rename,
-            functions),
+            functions,
+            optionManager),
         operator.getOperandTypeInference(),
         Checker.ANY_CHECKER);
     this.operator = operator;

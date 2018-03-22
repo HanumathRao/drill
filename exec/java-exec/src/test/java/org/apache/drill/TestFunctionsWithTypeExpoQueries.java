@@ -22,8 +22,11 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.drill.categories.SqlFunctionTest;
 import org.apache.drill.common.expression.SchemaPath;
 import org.apache.drill.common.types.TypeProtos;
+import org.apache.drill.exec.ExecConstants;
 import org.apache.drill.test.BaseTestQuery;
 import org.junit.BeforeClass;
+import org.apache.drill.exec.planner.physical.PlannerSettings;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -742,24 +745,29 @@ public class TestFunctionsWithTypeExpoQueries extends BaseTestQuery {
 
   @Test
   public void testBetweenDecimalAndDouble() throws Exception {
-    final String query = "select cast(r_regionkey as Integer) as col \n" +
-        "from cp.`tpch/region.parquet` \n" +
-        "where cast(r_regionkey as double) BETWEEN 1.1 AND 4.5 \n" +
-        "limit 0";
+    try {
+      setSessionOption(ExecConstants.EARLY_LIMIT0_OPT_KEY, true);
+      final String query = "select cast(r_regionkey as Integer) as col \n" +
+          "from cp.`tpch/region.parquet` \n" +
+          "where cast(r_regionkey as double) BETWEEN 1.1 AND 4.5 \n" +
+          "limit 0";
 
-    final TypeProtos.MajorType majorType = TypeProtos.MajorType.newBuilder()
-        .setMinorType(TypeProtos.MinorType.INT)
-        .setMode(TypeProtos.DataMode.OPTIONAL)
-        .build();
+      final TypeProtos.MajorType majorType = TypeProtos.MajorType.newBuilder()
+          .setMinorType(TypeProtos.MinorType.INT)
+          .setMode(TypeProtos.DataMode.OPTIONAL)
+          .build();
 
-    final List<Pair<SchemaPath, TypeProtos.MajorType>> expectedSchema = Lists.newArrayList();
-    expectedSchema.add(Pair.of(SchemaPath.getSimplePath("col"), majorType));
+      final List<Pair<SchemaPath, TypeProtos.MajorType>> expectedSchema = Lists.newArrayList();
+      expectedSchema.add(Pair.of(SchemaPath.getSimplePath("col"), majorType));
 
-    testBuilder()
-        .sqlQuery(query)
-        .schemaBaseLine(expectedSchema)
-        .build()
-        .run();
+      testBuilder()
+          .sqlQuery(query)
+          .schemaBaseLine(expectedSchema)
+          .build()
+          .run();
+    } finally {
+      resetSessionOption(ExecConstants.EARLY_LIMIT0_OPT_KEY);
+    }
   }
 
   @Test // DRILL-4525
@@ -769,23 +777,28 @@ public class TestFunctionsWithTypeExpoQueries extends BaseTestQuery {
         "limit 0";
 
     // Validate the plan
-    final String[] expectedPlan = {"Scan.*FindLimit0Visitor"};
+    final String[] expectedPlan = {"Scan.*RelDataTypeReader"};
     final String[] excludedPlan = {};
-    PlanTestBase.testPlanMatchingPatterns(query, expectedPlan, excludedPlan);
+    try {
+      setSessionOption(ExecConstants.EARLY_LIMIT0_OPT_KEY, true);
+      PlanTestBase.testPlanMatchingPatterns(query, expectedPlan, excludedPlan);
 
-    final TypeProtos.MajorType majorType = TypeProtos.MajorType.newBuilder()
-        .setMinorType(TypeProtos.MinorType.FLOAT8)
-        .setMode(TypeProtos.DataMode.OPTIONAL)
-        .build();
+      final TypeProtos.MajorType majorType = TypeProtos.MajorType.newBuilder()
+          .setMinorType(TypeProtos.MinorType.FLOAT8)
+          .setMode(TypeProtos.DataMode.OPTIONAL)
+          .build();
 
-    final List<Pair<SchemaPath, TypeProtos.MajorType>> expectedSchema = Lists.newArrayList();
-    expectedSchema.add(Pair.of(SchemaPath.getSimplePath("col"), majorType));
+      final List<Pair<SchemaPath, TypeProtos.MajorType>> expectedSchema = Lists.newArrayList();
+      expectedSchema.add(Pair.of(SchemaPath.getSimplePath("col"), majorType));
 
-    testBuilder()
-        .sqlQuery(query)
-        .schemaBaseLine(expectedSchema)
-        .build()
-        .run();
+      testBuilder()
+          .sqlQuery(query)
+          .schemaBaseLine(expectedSchema)
+          .build()
+          .run();
+    } finally {
+      resetSessionOption(ExecConstants.EARLY_LIMIT0_OPT_KEY);
+    }
   }
 
   @Test
@@ -795,22 +808,72 @@ public class TestFunctionsWithTypeExpoQueries extends BaseTestQuery {
         "limit 0";
 
     // Validate the plan
-    final String[] expectedPlan = {"Scan.*FindLimit0Visitor"};
+    final String[] expectedPlan = {"Scan.*RelDataTypeReader"};
     final String[] excludedPlan = {};
-    PlanTestBase.testPlanMatchingPatterns(query, expectedPlan, excludedPlan);
 
-    final TypeProtos.MajorType majorType = TypeProtos.MajorType.newBuilder()
-        .setMinorType(TypeProtos.MinorType.FLOAT8)
-        .setMode(TypeProtos.DataMode.OPTIONAL)
-        .build();
+    try {
+      setSessionOption(ExecConstants.EARLY_LIMIT0_OPT_KEY, true);
+      PlanTestBase.testPlanMatchingPatterns(query, expectedPlan, excludedPlan);
 
-    final List<Pair<SchemaPath, TypeProtos.MajorType>> expectedSchema = Lists.newArrayList();
-    expectedSchema.add(Pair.of(SchemaPath.getSimplePath("col"), majorType));
+      final TypeProtos.MajorType majorType = TypeProtos.MajorType.newBuilder()
+          .setMinorType(TypeProtos.MinorType.FLOAT8)
+          .setMode(TypeProtos.DataMode.OPTIONAL)
+          .build();
 
-    testBuilder()
-        .sqlQuery(query)
-        .schemaBaseLine(expectedSchema)
-        .build()
-        .run();
+      final List<Pair<SchemaPath, TypeProtos.MajorType>> expectedSchema = Lists.newArrayList();
+      expectedSchema.add(Pair.of(SchemaPath.getSimplePath("col"), majorType));
+
+      testBuilder()
+          .sqlQuery(query)
+          .schemaBaseLine(expectedSchema)
+          .build()
+          .run();
+    } finally {
+      resetSessionOption(ExecConstants.EARLY_LIMIT0_OPT_KEY);
+    }
+  }
+
+  @Test
+  @Ignore // 3-09-2017
+  public void testDecimalPlusWhenDecimalEnabled() throws Exception {
+    final String query = "select cast('99' as decimal(9,0)) + cast('99' as decimal(9,0)) as col \n" +
+        "from cp.`tpch/region.parquet` \n" +
+        "limit 0";
+
+    try {
+      final TypeProtos.MajorType majorTypeDouble = TypeProtos.MajorType.newBuilder()
+          .setMinorType(TypeProtos.MinorType.FLOAT8)
+          .setMode(TypeProtos.DataMode.REQUIRED)
+          .build();
+
+      final List<Pair<SchemaPath, TypeProtos.MajorType>> expectedSchemaDouble = Lists.newArrayList();
+      expectedSchemaDouble.add(Pair.of(SchemaPath.getSimplePath("col"), majorTypeDouble));
+
+      testBuilder()
+          .sqlQuery(query)
+          .schemaBaseLine(expectedSchemaDouble)
+          .build()
+          .run();
+
+      test(String.format("alter session set `%s` = true", PlannerSettings.ENABLE_DECIMAL_DATA_TYPE_KEY));
+
+      final TypeProtos.MajorType majorTypeDecimal9 = TypeProtos.MajorType.newBuilder()
+          .setMinorType(TypeProtos.MinorType.DECIMAL18)
+          .setMode(TypeProtos.DataMode.REQUIRED)
+          .setPrecision(10)
+          .setScale(0)
+          .build();
+
+      final List<Pair<SchemaPath, TypeProtos.MajorType>> expectedSchemaDecimal = Lists.newArrayList();
+      expectedSchemaDecimal.add(Pair.of(SchemaPath.getSimplePath("col"), majorTypeDecimal9));
+
+      testBuilder()
+          .sqlQuery(query)
+          .schemaBaseLine(expectedSchemaDecimal)
+          .build()
+          .run();
+    } finally {
+      test(String.format("alter session set `%s` = false", PlannerSettings.ENABLE_DECIMAL_DATA_TYPE_KEY));
+    }
   }
 }

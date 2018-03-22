@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -30,10 +30,9 @@ import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlOperatorBinding;
 import org.apache.calcite.sql.SqlSyntax;
 import org.apache.calcite.sql.parser.SqlParserPos;
-import org.apache.calcite.sql.type.OperandTypes;
 import org.apache.calcite.sql.type.SqlReturnTypeInference;
-import org.apache.calcite.sql.validate.SqlMonotonicity;
 import org.apache.drill.exec.expr.fn.DrillFuncHolder;
+import org.apache.drill.exec.server.options.OptionManager;
 
 public class DrillSqlOperator extends SqlFunction {
   // static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(DrillSqlOperator.class);
@@ -134,6 +133,12 @@ public class DrillSqlOperator extends SqlFunction {
     private int argCountMax = Integer.MIN_VALUE;
     private boolean isDeterministic = true;
     private boolean isNiladic = false;
+    private OptionManager optionManager = null;
+
+    public DrillSqlOperatorBuilder setOptionManager(OptionManager optionManager) {
+      this.optionManager = optionManager;
+      return this;
+    }
 
     public DrillSqlOperatorBuilder setName(final String name) {
       this.name = name;
@@ -198,7 +203,8 @@ public class DrillSqlOperator extends SqlFunction {
           isDeterministic,
           TypeInferenceUtils.getDrillSqlReturnTypeInference(
               name,
-              functions),
+              functions,
+              optionManager),
           isNiladic);
     }
   }
