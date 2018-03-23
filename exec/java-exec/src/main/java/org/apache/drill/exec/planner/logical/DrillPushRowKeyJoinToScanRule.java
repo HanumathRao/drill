@@ -216,7 +216,12 @@ public class DrillPushRowKeyJoinToScanRule extends RelOptRule {
         || rowKeyLocation == RowKey.BOTH) {
       return canSwapJoinInputsInternal(joinRel.getRight());
     } else if (rowKeyLocation == RowKey.RIGHT) {
-      return canSwapJoinInputsInternal(joinRel.getLeft());
+      // If the rowkey occurs on the right side, don't swap since it can potentially cause
+      // wrong results unless we make additional changes to fix-up column ordinals for the
+      // join condition as well as the parent/ancestors of the Join.
+
+      // return canSwapJoinInputsInternal(joinRel.getLeft());
+      return false;
     }
     return false;
   }
