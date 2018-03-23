@@ -42,7 +42,7 @@
     <sqlline.version>1.1.9-drill-r7</sqlline.version>
     <jackson.version>2.7.9</jackson.version>
     <jackson.databind.version>2.7.9.1</jackson.databind.version>
-    <mapr.release.version>6.0.0-mapr</mapr.release.version>
+    <mapr.release.version>6.0.1-mapr</mapr.release.version>
     <ojai.version>2.0-mapr-1710</ojai.version>
     <kerby.version>1.0.0-RC2</kerby.version>
     <findbugs.version>3.0.0</findbugs.version>
@@ -2007,7 +2007,7 @@
         <rat.excludeSubprojects>true</rat.excludeSubprojects>
         <hive.version>2.1.1-mapr-1710</hive.version>
         <hbase.version>1.1.1-mapr-1602-m7-5.2.0</hbase.version>
-        <hadoop.version>2.7.0-mapr-1707</hadoop.version>
+        <hadoop.version>2.7.0-mapr-1710</hadoop.version>
       </properties>
       <dependencyManagement>
         <dependencies>
