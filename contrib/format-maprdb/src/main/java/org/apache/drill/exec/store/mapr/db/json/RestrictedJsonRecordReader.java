@@ -161,8 +161,8 @@ public class RestrictedJsonRecordReader extends MaprDBJsonRecordReader {
     DBDocumentReaderBase reader = null;
 
     long maxRecordsForThisBatch = this.maxRecordsToRead > 0?
-        Math.min(BaseValueVector.INITIAL_VALUE_ALLOCATION, this.maxRecordsToRead) :
-            this.maxRecordsToRead == -1 ? BaseValueVector.INITIAL_VALUE_ALLOCATION : 0;
+        Math.min(rss.getMaxRowKeysToBeRead(), this.maxRecordsToRead) :
+            this.maxRecordsToRead == -1 ? rss.getMaxRowKeysToBeRead() : 0;
 
     Stopwatch timer = Stopwatch.createUnstarted();
 

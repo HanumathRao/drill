@@ -114,6 +114,19 @@ public class RestrictedMapRDBSubScanSpec extends MapRDBSubScanSpec {
     return false;
   }
 
+  @JsonIgnore
+  public int getMaxRowKeysToBeRead() {
+    if (rjbatch != null) {
+      Pair<ValueVector, Integer> currentBatch = rjbatch.nextRowKeyBatch();
+
+      // note that the currentBatch could be null initially during the BUILD_SCHEMA phase
+      if (currentBatch != null) {
+        init(currentBatch);
+      }
+    }
+    return maxOccupiedIndex + 1;
+  }
+
   /**
    * Returns number of rowKeys that can be read.
    * Number of rowKeys returned will be numRowKeysToRead at the most i.e. it
