@@ -30,6 +30,7 @@ import org.apache.drill.exec.rpc.user.clusterclient.zkbased.ZKBasedConnectionPoo
 import org.apache.drill.exec.rpc.user.clusterclient.zkbased.ZKBasedEndpointProvider;
 import org.apache.drill.test.QuerySummaryFuture;
 import org.apache.drill.test.SummaryOnlyQueryEventListener;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -42,7 +43,9 @@ import static org.junit.Assert.fail;
 
 import java.util.Properties;
 
-//should run this individually before we move to exclusive runs of the tests that start cluster
+// should run this individually before we move to exclusive runs of the tests that start cluster
+// We should evaluate to either fix this test to run in parallel with other tests or remove these tests
+@Ignore
 public class TestDrillClusterClient extends DrillSystemTestBase {
 //  private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestDrillClusterClient.class);
   final ZookeeperHelper zkHelper = new ZookeeperHelper();
