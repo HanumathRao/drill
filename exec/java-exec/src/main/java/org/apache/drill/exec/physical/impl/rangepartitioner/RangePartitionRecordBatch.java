@@ -113,7 +113,6 @@ public class RangePartitionRecordBatch extends AbstractSingleRecordBatch<RangePa
    */
   @Override
   protected boolean setupNewSchema() throws SchemaChangeException {
-    BatchSchema oldSchema = container.hasSchema() ? container.getSchema() : null;
     container.clear();
 
     for (VectorWrapper<?> vw : incoming) {
@@ -124,9 +123,11 @@ public class RangePartitionRecordBatch extends AbstractSingleRecordBatch<RangePa
 
     container.add(this.partitionIdVector);
     container.buildSchema(incoming.getSchema().getSelectionVectorMode());
-    if (oldSchema != null && oldSchema.equals(container.getSchema())) {
-      return false;
-    }
+    /*
+     * Always return true because we transfer incoming. If upstream sent OK_NEW_SCHEMA,
+     * it would also generate new VVs. Since we get them via transfer, we should send
+     * OK_NEW_SCHEMA to downstream for it to re-init to the new VVs.
+     */
     return true;
   }
 
