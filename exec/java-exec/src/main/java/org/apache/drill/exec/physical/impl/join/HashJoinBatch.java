@@ -176,21 +176,8 @@ public class HashJoinBatch extends AbstractBinaryRecordBatch<HashJoinPOP> implem
 
   @Override
   protected void buildSchema() throws SchemaChangeException {
-    if (! prefetchFirstBatchFromBothSides()) {
+    if (!prefetchFirstBatchFromBothSides()) {
       return;
-    }
-
-    /* It is fine to clear Record Batches when one of the stream is NONE for INNER join.
-     * INNER join doesn't produce any data if one of the stream is NONE.
-     * However, this is not true for non INNER join's.
-     */
-    if (this.joinType == JoinRelType.INNER) {
-      if (rightUpstream == IterOutcome.NONE) {
-        drainLeft();
-      }
-      if (leftUpstream == IterOutcome.NONE) {
-        drainRight();
-      }
     }
 
     // Initialize the hash join helper context
