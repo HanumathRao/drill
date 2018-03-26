@@ -441,7 +441,7 @@ public class DbScanToIndexScanPrule extends AbstractIndexPrule {
           idxScan.setStatistics(((DbGroupScan) primaryTableScan).getStatistics());
           logger.info("index_plan_info: Generating non-covering index plan for index: {}, query condition {}", indexDesc.getIndexName(), indexCondition.toString());
           NonCoveringIndexPlanGenerator planGen = new NonCoveringIndexPlanGenerator(indexContext, indexDesc,
-            idxScan, indexCondition, remainderCondition, builder, settings);
+            idxScan, indexCondition, remainderCondition, indexContext.getOrigCondition(), builder, settings);
           planGen.go();
         }
       } catch (Exception e) {

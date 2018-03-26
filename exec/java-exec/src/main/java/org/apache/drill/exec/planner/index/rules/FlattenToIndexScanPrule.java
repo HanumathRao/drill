@@ -37,6 +37,7 @@ import org.apache.drill.exec.planner.index.IndexConditionInfo;
 import org.apache.drill.exec.planner.index.IndexDescriptor;
 import org.apache.drill.exec.planner.index.IndexGroup;
 import org.apache.drill.exec.planner.index.IndexLogicalPlanCallContext;
+import org.apache.drill.exec.planner.index.IndexPlanUtils;
 import org.apache.drill.exec.planner.index.IndexProperties;
 import org.apache.drill.exec.planner.index.IndexSelector;
 import org.apache.drill.exec.planner.index.generators.CoveringIndexPlanGenerator;
@@ -253,11 +254,15 @@ public class FlattenToIndexScanPrule extends AbstractIndexPrule {
 
           RexNode indexCondition = indexProps.getLeadingColumnsFilter();
           RexNode remainderCondition = indexProps.getTotalRemainderFilter();
+
+          // Combine the index and remainder conditions such that the total condition can be re-applied
+          RexNode totalCondition = IndexPlanUtils.getTotalFilter(indexCondition, remainderCondition, builder);
+
           //Copy primary table statistics to index table
           idxScan.setStatistics(((DbGroupScan) primaryTableScan).getStatistics());
           logger.info("index_plan_info: Generating non-covering index plan for index: {}, query condition {}", indexDesc.getIndexName(), indexCondition.toString());
           NonCoveringIndexPlanGenerator planGen = new NonCoveringIndexPlanGenerator(indexContext, indexDesc,
-            idxScan, indexCondition, remainderCondition, builder, settings);
+            idxScan, indexCondition, remainderCondition, totalCondition, builder, settings);
           planGen.go();
         }
       } catch (Exception e) {
