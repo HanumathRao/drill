@@ -26,11 +26,11 @@ import com.google.common.collect.Lists;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptRuleOperand;
-import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.drill.exec.physical.base.DbGroupScan;
 import org.apache.drill.exec.physical.base.GroupScan;
 import org.apache.drill.exec.physical.base.IndexGroupScan;
+import org.apache.drill.exec.planner.index.FlattenIndexPlanCallContext;
 import org.apache.drill.exec.planner.index.FunctionalIndexInfo;
 import org.apache.drill.exec.planner.index.IndexCollection;
 import org.apache.drill.exec.planner.index.IndexConditionInfo;
@@ -54,6 +54,7 @@ import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.rex.RexVisitorImpl;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
@@ -72,16 +73,48 @@ public class FlattenToIndexScanPrule extends AbstractIndexPrule {
           RelOptHelper.some(DrillProjectRel.class, RelOptHelper.any(DrillScanRel.class))),
       "FlattenToIndexScanPrule:Filter_Project_Scan", new MatchFPS());
 
-  final private MatchFunction<IndexLogicalPlanCallContext> match;
+  public static final RelOptRule FILTER_PROJECT_FILTER_SCAN = new FlattenToIndexScanPrule(
+      RelOptHelper.some(DrillFilterRel.class,
+          RelOptHelper.some(DrillProjectRel.class,
+              RelOptHelper.some(DrillFilterRel.class, RelOptHelper.any(DrillScanRel.class)))),
+      "FlattenToIndexScanPrule:Filter_Project_Filter_Scan", new MatchFPFS());
+
+  final private MatchFunction<FlattenIndexPlanCallContext> match;
 
   private FlattenToIndexScanPrule(RelOptRuleOperand operand,
                                    String description,
-                                   MatchFunction<IndexLogicalPlanCallContext> match) {
+                                   MatchFunction<FlattenIndexPlanCallContext> match) {
     super(operand, description);
     this.match = match;
   }
 
-  private static class MatchFPS extends AbstractMatchFunction<IndexLogicalPlanCallContext> {
+  /**
+   * Check if a Project contains Flatten expressions and populate a supplied map with a mapping of
+   * the field name to the RexCall corresponding to the Flatten expression. If there are multiple
+   * Flattens, identify all of them.
+   * @param project
+   * @param flattenMap
+   * @return True if Flatten was found, False otherwise
+   */
+  private static boolean projectHasFlatten(DrillProjectRel project, Map<String, RexCall> flattenMap) {
+    boolean found = false;
+    for (Pair<RexNode, String> p : project.getNamedProjects()) {
+      if (p.left instanceof RexCall) {
+        RexCall function = (RexCall) p.left;
+        String functionName = function.getOperator().getName();
+        if (functionName.equalsIgnoreCase("flatten")
+            && function.getOperands().size() == 1) {
+          flattenMap.put((String) p.right, (RexCall) p.left);
+          found = true;
+          // continue since there may be multiple FLATTEN exprs which may be
+          // referenced by the filter condition
+        }
+      }
+    }
+    return found;
+  }
+
+  private static class MatchFPS extends AbstractMatchFunction<FlattenIndexPlanCallContext> {
 
     Map<String, RexCall> flattenMap = Maps.newHashMap();
 
@@ -89,39 +122,61 @@ public class FlattenToIndexScanPrule extends AbstractIndexPrule {
       final DrillScanRel scan = (DrillScanRel) call.rel(2);
       final DrillProjectRel project = (DrillProjectRel) call.rel(1);
       if (checkScan(scan)) {
-        boolean found = false;
-
         // if Project does not contain a FLATTEN expression, rule does not apply
-        for (Pair<RexNode, String> p : project.getNamedProjects()) {
-          if (p.left instanceof RexCall) {
-            RexCall function = (RexCall) p.left;
-            String functionName = function.getOperator().getName();
-            if (functionName.equalsIgnoreCase("flatten")
-                && function.getOperands().size() == 1) {
-              flattenMap.put((String) p.right, (RexCall) p.left);
-              found = true;
-              // continue since there may be multiple FLATTEN exprs which may be
-              // referenced by the filter condition
-            }
-          }
-        }
-
-        return found;
+        return projectHasFlatten(project, flattenMap);
       }
       return false;
     }
 
-    public IndexLogicalPlanCallContext onMatch(RelOptRuleCall call) {
-      final DrillFilterRel filter = call.rel(0);
-      final DrillProjectRel project = call.rel(1);
+    public FlattenIndexPlanCallContext onMatch(RelOptRuleCall call) {
+      final DrillFilterRel filterAboveFlatten = call.rel(0);
+      final DrillProjectRel projectWithFlatten = call.rel(1);
       final DrillScanRel scan = call.rel(2);
 
-      IndexLogicalPlanCallContext idxContext = new IndexLogicalPlanCallContext(call, null, filter, project, scan);
-      idxContext.setFlattenMap(flattenMap);
+      FlattenIndexPlanCallContext idxContext = new FlattenIndexPlanCallContext(call,
+          null /* upper project */,
+          filterAboveFlatten,
+          projectWithFlatten,
+          null /* no filter below flatten */,
+          scan,
+          flattenMap);
       return idxContext;
     }
-
   }
+
+  private static class MatchFPFS extends AbstractMatchFunction<FlattenIndexPlanCallContext> {
+
+    Map<String, RexCall> flattenMap = Maps.newHashMap();
+
+    public boolean match(RelOptRuleCall call) {
+      final DrillProjectRel project = (DrillProjectRel) call.rel(1);
+      final DrillScanRel scan = (DrillScanRel) call.rel(3);
+
+      if (checkScan(scan)) {
+        // if Project does not contain a FLATTEN expression, rule does not apply
+        return projectHasFlatten(project, flattenMap);
+      }
+      return false;
+    }
+
+    public FlattenIndexPlanCallContext onMatch(RelOptRuleCall call) {
+      final DrillFilterRel filterAboveFlatten = (DrillFilterRel) call.rel(0);
+      final DrillProjectRel projectWithFlatten = (DrillProjectRel) call.rel(1);
+      final DrillFilterRel filterBelowFlatten = (DrillFilterRel) call.rel(2);
+      final DrillScanRel scan = (DrillScanRel) call.rel(3);
+
+      FlattenIndexPlanCallContext idxContext = new FlattenIndexPlanCallContext(call,
+          null /* upper project */,
+          filterAboveFlatten,
+          projectWithFlatten,
+          filterBelowFlatten,
+          scan,
+          flattenMap);
+
+      return idxContext;
+    }
+  }
+
 
   @Override
   public boolean matches(RelOptRuleCall call) {
@@ -130,10 +185,31 @@ public class FlattenToIndexScanPrule extends AbstractIndexPrule {
 
   @Override
   public void onMatch(RelOptRuleCall call) {
-    doOnMatch((IndexLogicalPlanCallContext) match.onMatch(call));
+    doOnMatch((FlattenIndexPlanCallContext) match.onMatch(call));
   }
 
-  private void doOnMatch(IndexLogicalPlanCallContext indexContext) {
+  private RexNode composeCondition(FlattenIndexPlanCallContext indexContext, RexBuilder builder) {
+    if (indexContext.getFilterAboveFlatten() != null) {
+      FilterVisitor  filterVisitor =
+          new FilterVisitor(indexContext.getFlattenMap(), indexContext.lowerProject, builder);
+      RexNode conditionFilterAboveFlatten = indexContext.getFilterAboveFlatten().getCondition().accept(filterVisitor);
+      if (indexContext.getFilterBelowFlatten() != null) {
+        RexNode conditionFilterBelowFlatten = indexContext.getFilterBelowFlatten().getCondition();
+        // compose a new condition
+        RexNode combinedCondition = RexUtil.composeConjunction(builder,
+            ImmutableList.of(conditionFilterAboveFlatten, conditionFilterBelowFlatten), false);
+        return combinedCondition;
+      } else {
+        return conditionFilterAboveFlatten;
+      }
+    } else {
+      // return null because filter below flatten is supposed to be handled by a separate
+      // index planning rule
+      return null;
+    }
+  }
+
+  private void doOnMatch(FlattenIndexPlanCallContext indexContext) {
     Stopwatch indexPlanTimer = Stopwatch.createStarted();
     final PlannerSettings settings = PrelUtil.getPlannerSettings(indexContext.call.getPlanner());
     final IndexCollection indexCollection = getIndexCollection(settings, indexContext.scan);
@@ -145,7 +221,7 @@ public class FlattenToIndexScanPrule extends AbstractIndexPrule {
 
     logger.debug("Index Rule {} starts", this.description);
 
-    RexBuilder builder = indexContext.filter.getCluster().getRexBuilder();
+    RexBuilder builder = indexContext.getFilterAboveFlatten().getCluster().getRexBuilder();
 
     /*
     RexNode condition = null;
@@ -156,17 +232,12 @@ public class FlattenToIndexScanPrule extends AbstractIndexPrule {
       condition = RelOptUtil.pushFilterPastProject(indexContext.filter.getCondition(), indexContext.lowerProject);
     } */
 
-    RexNode condition = indexContext.filter.getCondition();
+    // create a combined condition using the upper and lower filters
+    RexNode condition = composeCondition(indexContext, builder);
 
-    //save this pushed down condition, in case it is needed later to build filter when joining back primary table
-    indexContext.origPushedCondition = condition;
-
-    // for each conjunct in the Filter, check if the conjunct is referencing the FLATTEN output
-    List<RexNode> conjuncts = RelOptUtil.conjunctions(condition);
-    FilterVisitor  filterVisitor =
-        new FilterVisitor(indexContext.getFlattenMap(), indexContext.lowerProject, builder);
-
-    condition = condition.accept(filterVisitor);
+    if (condition == null) {
+      return;
+    }
 
     // the index analysis code only understands binary operators, so the condition should be
     // rewritten to convert N-ary ANDs and ORs into binary ANDs and ORs

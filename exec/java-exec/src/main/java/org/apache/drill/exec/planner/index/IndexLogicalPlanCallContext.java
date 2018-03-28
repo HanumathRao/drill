@@ -63,7 +63,6 @@ public class IndexLogicalPlanCallContext implements IndexCallContext {
   public IndexableExprMarker origMarker;
   public List<LogicalExpression> sortExprs;
   public RexNode origPushedCondition;
-  public Map<String, RexCall> flattenMap = null;
   public RexNode indexCondition;
   public RexNode remainderCondition;
   public boolean isValidIndexHint;
@@ -145,7 +144,7 @@ public class IndexLogicalPlanCallContext implements IndexCallContext {
     return leftOutPathsInFunctions;
   }
 
-  public RelNode getFilter() {
+  public DrillFilterRel getFilter() {
     return filter;
   }
 
@@ -192,13 +191,5 @@ public class IndexLogicalPlanCallContext implements IndexCallContext {
   public RelNode getExchange() { return null; }
 
   public List<DistributionField> getDistributionFields() { return Collections.EMPTY_LIST; }
-
-  public void setFlattenMap(Map<String, RexCall> flattenMap) {
-    this.flattenMap = flattenMap;
-  }
-
-  public Map<String, RexCall> getFlattenMap() {
-    return flattenMap;
-  }
 
 }
