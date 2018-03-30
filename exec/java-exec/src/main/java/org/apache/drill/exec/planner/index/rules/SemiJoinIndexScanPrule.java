@@ -62,19 +62,17 @@ public class SemiJoinIndexScanPrule extends AbstractIndexPrule {
           RelOptHelper.some(DrillJoinRel.class,
                   RelOptHelper.some(DrillAggregateRel.class,
                           RelOptHelper.some(DrillProjectRel.class,
-                                  RelOptHelper.some(DrillFilterRel.class,
-                                          RelOptHelper.some(DrillProjectRel.class, RelOptHelper.any(DrillScanRel.class))))),
+                                FlattenToIndexScanPrule.FILTER_PROJECT_SCAN.getOperand())),
                   RelOptHelper.any(DrillScanRel.class)),
-          "FlattenToIndexScanPrule:Join_Project_Filter_Project_Scan", new MatchJSPFPS());
+          "SemiJoinIndexScanPrule:Join_Project_Filter_Project_Scan", new MatchJSPFPS());
 
   public static final RelOptRule JOIN_FILTER_PROJECT_SCAN_OPP = new SemiJoinIndexScanPrule(
           RelOptHelper.some(DrillJoinRel.class,
                   RelOptHelper.any(DrillScanRel.class),
                   RelOptHelper.some(DrillAggregateRel.class,
                           RelOptHelper.some(DrillProjectRel.class,
-                                  RelOptHelper.some(DrillFilterRel.class,
-                                          RelOptHelper.some(DrillProjectRel.class, RelOptHelper.any(DrillScanRel.class)))))),
-          "FlattenToIndexScanPrule:Join_Project_Filter_Project_Scan_opp", new MatchJSPFPS());
+                                  FlattenToIndexScanPrule.FILTER_PROJECT_SCAN.getOperand()))),
+          "SemiJoinIndexScanPrule:Join_Project_Filter_Project_Scan_opp", new MatchJSPFPS());
 
   final private MatchFunction<SemiJoinIndexPlanCallContext> match;
 

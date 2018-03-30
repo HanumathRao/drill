@@ -298,7 +298,7 @@ public class FlattenToIndexScanPrule extends AbstractIndexPrule {
                                           IndexCollection collection,
                                           RexBuilder builder,
                                           IndexPlanGenerator generator) {
-
+    boolean result = false;
     DrillScanRel scan = indexContext.scan;
     IndexConditionInfo.Builder infoBuilder = IndexConditionInfo.newBuilder(condition,
             collection, builder, indexContext.scan);
@@ -338,12 +338,8 @@ public class FlattenToIndexScanPrule extends AbstractIndexPrule {
         //Copy primary table statistics to index table
         idxScan.setStatistics(((DbGroupScan) scan.getGroupScan()).getStatistics());
         logger.info("index_plan_info: Generating covering index plan for index: {}, query condition {}", indexDesc.getIndexName(), indexCondition.toString());
-
-//        CoveringIndexPlanGenerator planGen = new CoveringIndexPlanGenerator(indexContext, indexInfo, idxScan,
-//                indexCondition, remainderCondition, builder, settings);
         AbstractIndexPlanGenerator planGen = generator.getCoveringIndexGen(indexInfo, idxScan, indexCondition, remainderCondition, builder, settings);
-
-        return planGen.go();
+        result = result || planGen.go();
       }
     } catch (Exception e) {
       logger.warn("Exception while trying to generate covering index plan", e);
@@ -370,14 +366,14 @@ public class FlattenToIndexScanPrule extends AbstractIndexPrule {
           idxScan.setStatistics(((DbGroupScan) primaryTableScan).getStatistics());
           logger.info("index_plan_info: Generating non-covering index plan for index: {}, query condition {}", indexDesc.getIndexName(), indexCondition.toString());
           AbstractIndexPlanGenerator planGen = generator.getNonCoveringIndexGen(indexDesc, idxScan, indexCondition, remainderCondition, totalCondition, builder, settings);
-          return planGen.go();
+          result = result || planGen.go();
         }
       } catch (Exception e) {
         logger.warn("Exception while trying to generate non-covering index access plan", e);
       }
     }
 
-    return false;
+    return result;
   }
 
   /**

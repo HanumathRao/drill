@@ -33,7 +33,7 @@ import org.apache.calcite.rel.RelNode;
  */
 public class SemiJoinMergeRowKeyJoinGenerator extends NonCoveringIndexPlanGenerator {
 
-  static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(CoveringIndexPlanGenerator.class);
+  static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(SemiJoinMergeRowKeyJoinGenerator.class);
 
   public SemiJoinMergeRowKeyJoinGenerator(SemiJoinIndexPlanCallContext indexContext,
                                        IndexDescriptor indexDesc,

@@ -32,7 +32,7 @@ import org.apache.calcite.rel.RelNode;
  */
 public class SemiJoinToCoveringIndexScanGenerator extends CoveringIndexPlanGenerator {
 
-  static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(CoveringIndexPlanGenerator.class);
+  static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(SemiJoinToCoveringIndexScanGenerator.class);
 
   public SemiJoinToCoveringIndexScanGenerator(SemiJoinIndexPlanCallContext indexContext,
                                               FunctionalIndexInfo functionInfo,
