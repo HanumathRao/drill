@@ -18,11 +18,9 @@
 package org.apache.drill.exec.physical.impl.lateraljoin;
 
 import static org.junit.Assert.assertEquals;
-
 import org.apache.drill.PlanTestBase;
 import org.apache.drill.test.BaseTestQuery;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class TestLateralPlans extends BaseTestQuery {
@@ -40,8 +38,8 @@ public class TestLateralPlans extends BaseTestQuery {
 
   @Test
   public void testLateralSql() throws Exception {
-    String Sql = "select t.c_name, t2.o_shop as o_shop from cp.`lateraljoin/nested-customer.json` t,"
-                 + " unnest(t.orders) t2 limit 1";
+    String Sql = "select t.c_name, t2.o.o_shop as o_shop from cp.`lateraljoin/nested-customer.json` t,"
+                 + " unnest(t.orders) t2(o) limit 1";
     testBuilder()
         .unOrdered()
         .sqlQuery(Sql)
@@ -53,16 +51,16 @@ public class TestLateralPlans extends BaseTestQuery {
   @Test
   public void testExplainLateralSql() throws Exception {
     String Sql = "explain plan without implementation for"
-        + " select t.c_name, t2.o_shop as o_shop from cp.`lateraljoin/nested-customer.json` t,"
-        + " unnest(t.orders) t2 limit 1";
+        + " select t.c_name, t2.o.o_shop as o_shop from cp.`lateraljoin/nested-customer.json` t,"
+        + " unnest(t.orders) t2(o) limit 1";
     test(Sql);
   }
 
   @Test
   public void testFilterPushCorrelate() throws Exception {
     test("alter session set `planner.slice_target`=1");
-    String query = "select t.c_name, t2.o_shop as o_shop from cp.`lateraljoin/nested-customer.json` t,"
-        + " unnest(t.orders) t2 where t.c_name='customer1' AND t2.o_shop='Meno Park 1st' ";
+    String query = "select t.c_name, t2.o.o_shop as o_shop from cp.`lateraljoin/nested-customer.json` t,"
+        + " unnest(t.orders) t2(o) where t.c_name='customer1' AND t2.o.o_shop='Meno Park 1st' ";
     PlanTestBase.testPlanMatchingPatterns(query,
         new String[] {"Correlate(.*[\n\r])+.*Filter(.*[\n\r])+.*Scan(.*[\n\r])+.*Filter"},
         new String[]{}
@@ -76,36 +74,44 @@ public class TestLateralPlans extends BaseTestQuery {
   }
 
   @Test
-  @Ignore("naming of single column")
   public void testLateralSqlPlainCol() throws Exception {
-    String Sql = "select t.c_name, t2.c_phone from cp.`lateraljoin/nested-customer.json` t, unnest(t.c_phone) t2 limit 1";
+    String Sql = "select t.c_name, t2.o as c_phone from cp.`lateraljoin/nested-customer.json` t," +
+        " unnest(t.c_phone) t2(o) limit 1";
     testBuilder()
         .unOrdered()
         .sqlQuery(Sql)
-        .baselineColumns("c_name", "c_phone_flat")
+        .baselineColumns("c_name", "c_phone")
         .baselineValues("customer1", "6505200001")
         .go();
-
   }
 
   @Test
   public void testLateralSqlStar() throws Exception {
-    String Sql = "select * from cp.`lateraljoin/nested-customer.json` t, unnest(t.orders) t2 limit 1";
+    String Sql = "select * from cp.`lateraljoin/nested-customer.json` t, unnest(t.orders) t2(o) limit 1";
     test(Sql);
   }
 
   @Test
-  @Ignore("To be fixed: how to specify columns names for table alias in dynamic case")
   public void testLateralSqlWithAS() throws Exception {
-    String Sql = "select t.c_name, t2.o_shop from cp.`lateraljoin/nested-customer.parquet` t,"
-        + " unnest(t.orders) as t2(o_shop) limit 1";
+    String Sql = "select t.c_name, t2.orders from cp.`lateraljoin/nested-customer.parquet` t,"
+        + " unnest(t.orders) as t2(orders)";
+    String baselineQuery = "select t.c_name, t2.orders from cp.`lateraljoin/nested-customer.parquet` t inner join" +
+        " (select c_name, flatten(orders) from cp" +
+        ".`lateraljoin/nested-customer.parquet` ) as t2(name, orders) on t.c_name = t2.name";
+
     testBuilder()
         .unOrdered()
         .sqlQuery(Sql)
-        .baselineColumns("c_name", "o_shop")
-        .baselineValues("customer1", "Meno Park 1st")
+        .sqlBaselineQuery(baselineQuery)
         .go();
+  }
 
+  @Test
+  public void testNestedLateral() throws Exception {
+    String Sql = "select t.c_name, t2.orders from cp.`lateraljoin/nested-customer.parquet` t," +
+        " LATERAL ( select t2.orders from unnest(t.orders) as t2(orders)) as t2, LATERAL " +
+        "(select t3.orders from unnest(t.orders) as t3(orders)) as t3";
+    test(Sql);
   }
 
   @Test
