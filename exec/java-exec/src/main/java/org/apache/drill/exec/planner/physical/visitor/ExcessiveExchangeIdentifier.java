@@ -18,9 +18,11 @@
 package org.apache.drill.exec.planner.physical.visitor;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
-
+import java.util.Set;
 import org.apache.drill.exec.planner.fragment.DistributionAffinity;
+import org.apache.drill.exec.planner.physical.CorrelatePrel;
 import org.apache.drill.exec.planner.physical.ExchangePrel;
 import org.apache.drill.exec.planner.physical.Prel;
 import org.apache.drill.exec.planner.physical.ScanPrel;
@@ -28,9 +30,11 @@ import org.apache.drill.exec.planner.physical.ScreenPrel;
 import org.apache.calcite.rel.RelNode;
 
 import com.google.common.collect.Lists;
+import org.apache.drill.exec.planner.physical.UnnestPrel;
 
 public class ExcessiveExchangeIdentifier extends BasePrelVisitor<Prel, ExcessiveExchangeIdentifier.MajorFragmentStat, RuntimeException> {
   private final long targetSliceSize;
+  private Set<CorrelatePrel> topMostCorrelate = new HashSet<>();
 
   public ExcessiveExchangeIdentifier(long targetSliceSize) {
     this.targetSliceSize = targetSliceSize;
@@ -45,16 +49,20 @@ public class ExcessiveExchangeIdentifier extends BasePrelVisitor<Prel, Excessive
   public Prel visitExchange(ExchangePrel prel, MajorFragmentStat parent) throws RuntimeException {
     parent.add(prel);
     MajorFragmentStat newFrag = new MajorFragmentStat();
+    newFrag.setNoExchgsAndNoSpill(parent.noExchgsAndNoSpill);
     Prel newChild = ((Prel) prel.getInput()).accept(this, newFrag);
-
-    if (newFrag.isSingular() && parent.isSingular() &&
-        // if one of them has strict distribution or none, we can remove the exchange
-        (!newFrag.isDistributionStrict() || !parent.isDistributionStrict())
-        ) {
+    if (canRemoveExchange(parent, newFrag)) {
       return newChild;
     } else {
       return (Prel) prel.copy(prel.getTraitSet(), Collections.singletonList((RelNode) newChild));
     }
+  }
+
+  private boolean canRemoveExchange(MajorFragmentStat parentFrag, MajorFragmentStat childFrag) {
+    return  (childFrag.isSingular() && parentFrag.isSingular() &&
+            (!childFrag.isDistributionStrict() || !parentFrag.isDistributionStrict())) ||
+            parentFrag.isNoExchgsAndNoSpill();
+
   }
 
   @Override
@@ -67,6 +75,38 @@ public class ExcessiveExchangeIdentifier extends BasePrelVisitor<Prel, Excessive
   @Override
   public Prel visitScan(ScanPrel prel, MajorFragmentStat s) throws RuntimeException {
     s.addScan(prel);
+    return prel;
+  }
+
+  @Override
+  public Prel visitCorrelate(CorrelatePrel prel, MajorFragmentStat s) throws RuntimeException {
+    List<RelNode> children = Lists.newArrayList();
+    s.add(prel);
+
+    // Add all children to MajorFragmentStat, before we visit each child.
+    // Since MajorFramentStat keeps track of maxRows of Prels in MajorFrag, it's fine to add prel multiple times.
+    // Doing this will ensure MajorFragmentStat is same when visit each individual child, in order to make
+    // consistent decision.
+    for (Prel p : prel) {
+      s.add(p);
+    }
+
+    children.add(((Prel)prel.getInput(0)).accept(this, s));
+    if (topMostCorrelate.size() == 0) {
+      topMostCorrelate.add(prel);
+    }
+    s.setNoExchgsAndNoSpill(true);
+    children.add(((Prel)prel.getInput(1)).accept(this, s));
+    if (topMostCorrelate.contains(prel)) {
+      topMostCorrelate.remove(prel);
+      s.setNoExchgsAndNoSpill(false);
+    }
+    return (Prel) prel.copy(prel.getTraitSet(), children);
+  }
+
+  @Override
+  public Prel visitUnnest(UnnestPrel prel, MajorFragmentStat s) throws RuntimeException {
+    s.addUnnest(prel);
     return prel;
   }
 
@@ -98,6 +138,7 @@ public class ExcessiveExchangeIdentifier extends BasePrelVisitor<Prel, Excessive
     private double maxRows = 0d;
     private int maxWidth = Integer.MAX_VALUE;
     private boolean isMultiSubScan = false;
+    private boolean noExchgsAndNoSpill = false;
 
     public void add(Prel prel) {
       maxRows = Math.max(prel.estimateRowCount(prel.getCluster().getMetadataQuery()), maxRows);
@@ -130,9 +171,20 @@ public class ExcessiveExchangeIdentifier extends BasePrelVisitor<Prel, Excessive
       return w == 1;
     }
 
+    public boolean isNoExchgsAndNoSpill() {
+      return this.noExchgsAndNoSpill;
+    }
+
+    public void addUnnest(UnnestPrel prel) {
+      add(prel);
+    }
+
+    public void setNoExchgsAndNoSpill(boolean noExchgsAndNoSpill) {
+      this.noExchgsAndNoSpill = noExchgsAndNoSpill;
+    }
+
     public boolean isDistributionStrict() {
       return distributionAffinity == DistributionAffinity.HARD;
     }
   }
-
 }
