@@ -179,6 +179,15 @@ public class TestLateralPlans extends BaseTestQuery {
         .sqlQuery(Sql)
         .sqlBaselineQuery(baselineQuery)
         .go();
+    ClusterFixtureBuilder builder = ClusterFixture.builder(dirTestWatcher)
+            .setOptionDefault(ExecConstants.ENABLE_UNNEST_LATERAL_KEY, true)
+            .setOptionDefault(ExecConstants.SLICE_TARGET, 1);
+
+    try (ClusterFixture cluster = builder.build();
+         ClientFixture client = cluster.clientFixture()) {
+      String explain = client.queryBuilder().sql(Sql).explainText();
+      System.out.println(explain);
+    }
   }
 
   @Test
@@ -195,6 +204,15 @@ public class TestLateralPlans extends BaseTestQuery {
         .sqlQuery(Sql)
         .sqlBaselineQuery(baselineQuery)
         .go();
+    ClusterFixtureBuilder builder = ClusterFixture.builder(dirTestWatcher)
+            .setOptionDefault(ExecConstants.ENABLE_UNNEST_LATERAL_KEY, true)
+            .setOptionDefault(ExecConstants.SLICE_TARGET, 1);
+
+    try (ClusterFixture cluster = builder.build();
+         ClientFixture client = cluster.clientFixture()) {
+      String explain = client.queryBuilder().sql(Sql).explainText();
+      System.out.println(explain);
+    }
   }
 
   @Test
@@ -304,6 +322,7 @@ public class TestLateralPlans extends BaseTestQuery {
          ClientFixture client = cluster.clientFixture()) {
       String explain = client.queryBuilder().sql(Sql).explainText();
       String rightChild = getRightChildOfLateral(explain);
+      System.out.println(explain);
       assertFalse(rightChild.contains("Exchange"));
     }
   }
@@ -322,6 +341,7 @@ public class TestLateralPlans extends BaseTestQuery {
          ClientFixture client = cluster.clientFixture()) {
       String explain = client.queryBuilder().sql(Sql).explainText();
       String rightChild = getRightChildOfLateral(explain);
+      System.out.println(explain);
       assertFalse(rightChild.contains("Exchange"));
     }
   }
@@ -340,6 +360,7 @@ public class TestLateralPlans extends BaseTestQuery {
          ClientFixture client = cluster.clientFixture()) {
       String explain = client.queryBuilder().sql(Sql).explainText();
       String rightChild = getRightChildOfLateral(explain);
+      System.out.println(explain);
       assertFalse(rightChild.contains("Exchange"));
     }
   }
@@ -356,6 +377,7 @@ public class TestLateralPlans extends BaseTestQuery {
          ClientFixture client = cluster.clientFixture()) {
       String explain = client.queryBuilder().sql(Sql).explainText();
       String rightChild = getRightChildOfLateral(explain);
+      System.out.println(explain);
       assertFalse(rightChild.contains("Exchange"));
     }
   }
@@ -372,6 +394,7 @@ public class TestLateralPlans extends BaseTestQuery {
          ClientFixture client = cluster.clientFixture()) {
       String explain = client.queryBuilder().sql(Sql).explainText();
       String rightChild = getRightChildOfLateral(explain);
+      System.out.println(explain);
       assertFalse(rightChild.contains("Exchange"));
     }
   }
@@ -390,6 +413,7 @@ public class TestLateralPlans extends BaseTestQuery {
          ClientFixture client = cluster.clientFixture()) {
       String explain = client.queryBuilder().sql(Sql).explainText();
       String rightChild = getRightChildOfLateral(explain);
+      System.out.println(explain);
       assertFalse(rightChild.contains("Exchange"));
     }
   }
@@ -407,6 +431,7 @@ public class TestLateralPlans extends BaseTestQuery {
          ClientFixture client = cluster.clientFixture()) {
       String explain = client.queryBuilder().sql(Sql).explainText();
       String rightChild = getRightChildOfLateral(explain);
+      System.out.println(explain);
       assertFalse(rightChild.contains("Exchange"));
     }
   }
@@ -425,6 +450,7 @@ public class TestLateralPlans extends BaseTestQuery {
          ClientFixture client = cluster.clientFixture()) {
       String explain = client.queryBuilder().sql(Sql).explainText();
       String rightChild = getRightChildOfLateral(explain);
+      System.out.println(explain);
       assertFalse(rightChild.contains("Exchange"));
     }
   }
