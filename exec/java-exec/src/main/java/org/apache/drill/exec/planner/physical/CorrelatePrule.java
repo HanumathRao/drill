@@ -47,8 +47,7 @@ public class CorrelatePrule extends Prule {
     final RelNode convertedRight = convert(right, traitsRight);
 
     final CorrelatePrel correlatePrel = new CorrelatePrel(correlate.getCluster(),
-                                  corrTraits,
-                                  convertedLeft, convertedRight, correlate.getCorrelationId(),
+                                  corrTraits, convertedLeft, convertedRight, correlate.donotIncludeCorrelateVariable, correlate.getCorrelationId(),
                                   correlate.getRequiredColumns(),correlate.getJoinType());
     call.transformTo(correlatePrel);
   }

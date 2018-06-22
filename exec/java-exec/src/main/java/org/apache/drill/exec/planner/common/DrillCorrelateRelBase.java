@@ -17,6 +17,7 @@
  */
 package org.apache.drill.exec.planner.common;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -25,17 +26,26 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Correlate;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.sql.SemiJoinType;
+import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.drill.exec.ExecConstants;
 import org.apache.drill.exec.planner.cost.DrillCostBase;
 import org.apache.drill.exec.planner.physical.PrelUtil;
 
+import java.util.ArrayList;
+import java.util.List;
+
 
 public abstract class DrillCorrelateRelBase extends Correlate implements DrillRelNode {
-  public DrillCorrelateRelBase(RelOptCluster cluster, RelTraitSet traits, RelNode left, RelNode right,
+  final private static double CORRELATE_MEM_COPY_COST = DrillCostBase.MEMORY_TO_CPU_RATIO * DrillCostBase.BASE_CPU_COST;
+  final public boolean donotIncludeCorrelateVariable;
+  public DrillCorrelateRelBase(RelOptCluster cluster, RelTraitSet traits, RelNode left, RelNode right, boolean includeCorrelateVar,
                                CorrelationId correlationId, ImmutableBitSet requiredColumns, SemiJoinType semiJoinType) {
     super(cluster, traits, left, right, correlationId, requiredColumns, semiJoinType);
+    this.donotIncludeCorrelateVariable = includeCorrelateVar;
   }
 
   @Override public RelOptCost computeSelfCost(RelOptPlanner planner,
@@ -49,7 +59,51 @@ public abstract class DrillCorrelateRelBase extends Correlate implements DrillRe
     double rowSize = (this.getLeft().getRowType().getFieldList().size()) * fieldWidth;
 
     double cpuCost = rowCount * rowSize * DrillCostBase.BASE_CPU_COST;
-    double memCost = 0;
+    double memCost = !donotIncludeCorrelateVariable ? CORRELATE_MEM_COPY_COST : 0.0;
     return costFactory.makeCost(rowCount, cpuCost, 0, 0, memCost);
+  }
+
+  @Override
+  protected RelDataType deriveRowType() {
+    switch (joinType) {
+      case LEFT:
+      case INNER:
+        return constructRowType(SqlValidatorUtil.deriveJoinRowType(left.getRowType(),
+          right.getRowType(), joinType.toJoinType(),
+          getCluster().getTypeFactory(), null,
+          ImmutableList.<RelDataTypeField>of()));
+      case ANTI:
+      case SEMI:
+        return constructRowType(left.getRowType());
+      default:
+        throw new IllegalStateException("Unknown join type " + joinType);
+    }
+  }
+
+  public int getInputSize(int offset, RelNode input) {
+    if (this.donotIncludeCorrelateVariable &&
+      offset == 0) {
+      return input.getRowType().getFieldList().size() - 1;
+    }
+    return input.getRowType().getFieldList().size();
+  }
+
+  public RelDataType constructRowType(RelDataType inputRowType) {
+    List<RelDataType> fields = new ArrayList<>();
+    List<String> fieldNames = new ArrayList<>();
+    if (donotIncludeCorrelateVariable) {
+      int corrVariable = this.requiredColumns.nextSetBit(0);
+
+      for (RelDataTypeField field : inputRowType.getFieldList()) {
+        if (field.getIndex() == corrVariable) {
+          continue;
+        }
+        fieldNames.add(field.getName());
+        fields.add(field.getType());
+      }
+
+      return getCluster().getTypeFactory().createStructType(fields, fieldNames);
+    }
+    return inputRowType;
   }
 }

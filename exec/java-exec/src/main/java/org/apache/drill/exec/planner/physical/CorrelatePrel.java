@@ -22,6 +22,7 @@ import com.google.common.collect.Lists;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.Correlate;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.type.RelDataType;
@@ -30,6 +31,8 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.SemiJoinType;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.commons.collections.ListUtils;
+import org.apache.drill.common.expression.SchemaPath;
 import org.apache.drill.exec.physical.base.PhysicalOperator;
 import org.apache.drill.exec.physical.config.LateralJoinPOP;
 import org.apache.drill.exec.planner.common.DrillCorrelateRelBase;
@@ -44,15 +47,15 @@ import java.util.List;
 public class CorrelatePrel extends DrillCorrelateRelBase implements Prel {
 
 
-  protected CorrelatePrel(RelOptCluster cluster, RelTraitSet traits, RelNode left, RelNode right,
+  protected CorrelatePrel(RelOptCluster cluster, RelTraitSet traits, RelNode left, RelNode right, boolean includeCorrelateVar,
                               CorrelationId correlationId, ImmutableBitSet requiredColumns, SemiJoinType semiJoinType) {
-    super(cluster, traits, left, right, correlationId, requiredColumns, semiJoinType);
+    super(cluster, traits, left, right, includeCorrelateVar, correlationId, requiredColumns, semiJoinType);
   }
   @Override
   public Correlate copy(RelTraitSet traitSet,
                         RelNode left, RelNode right, CorrelationId correlationId,
                         ImmutableBitSet requiredColumns, SemiJoinType joinType) {
-    return new CorrelatePrel(this.getCluster(), this.getTraitSet(), left, right, correlationId, requiredColumns,
+    return new CorrelatePrel(this.getCluster(), this.getTraitSet(), left, right, this.donotIncludeCorrelateVariable, correlationId, requiredColumns,
         this.getJoinType());
   }
 
@@ -64,8 +67,16 @@ public class CorrelatePrel extends DrillCorrelateRelBase implements Prel {
 
     SemiJoinType jtype = this.getJoinType();
 
-    LateralJoinPOP ljoin = new LateralJoinPOP(leftPop, rightPop, jtype.toJoinType());
+    LateralJoinPOP ljoin = new LateralJoinPOP(leftPop, rightPop, jtype.toJoinType(), getColumn());
     return creator.addMetadata(this, ljoin);
+  }
+
+  private SchemaPath getColumn() {
+    if (this.donotIncludeCorrelateVariable) {
+      int index = this.getRequiredColumns().asList().get(0);
+      return  SchemaPath.getSimplePath(this.getInput(0).getRowType().getFieldNames().get(index));
+    }
+    return null;
   }
 
   /**
@@ -76,8 +87,8 @@ public class CorrelatePrel extends DrillCorrelateRelBase implements Prel {
     Preconditions.checkArgument(DrillJoinRelBase.uniqueFieldNames(input.getRowType()));
     final List<String> fields = getRowType().getFieldNames();
     final List<String> inputFields = input.getRowType().getFieldNames();
-    final List<String> outputFields = fields.subList(offset, offset + inputFields.size());
-    if (!outputFields.equals(inputFields)) {
+    final List<String> outputFields = fields.subList(offset, offset + getInputSize(offset, input));
+    if (ListUtils.subtract(outputFields, inputFields).size() != 0) {
       // Ensure that input field names are the same as output field names.
       // If there are duplicate field names on left and right, fields will get
       // lost.
@@ -103,6 +114,12 @@ public class CorrelatePrel extends DrillCorrelateRelBase implements Prel {
 
     return proj;
   }
+
+  @Override
+  public RelWriter explainTerms(RelWriter pw) {
+    return super.explainTerms(pw).item("correlate Column: ", this.donotIncludeCorrelateVariable ? this.getColumn() : "None");
+  }
+
 
   @Override
   public <T, X, E extends Throwable> T accept(PrelVisitor<T, X, E> visitor, X value) throws E {
