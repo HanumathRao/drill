@@ -1,4 +1,3 @@
-package org.apache.drill.exec.planner.logical;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,6 +14,8 @@ package org.apache.drill.exec.planner.logical;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.drill.exec.planner.logical;
+
 
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.rel.core.Correlate;
