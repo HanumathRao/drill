@@ -69,7 +69,7 @@ public class TestUnnestWithLateralCorrectness extends SubOperatorTest {
 
   @BeforeClass public static void setUpBeforeClass() throws Exception {
     mockPopConfig = new MockStorePOP(null);
-    ljPopConfig = new LateralJoinPOP(null, null, JoinRelType.FULL);
+    ljPopConfig = new LateralJoinPOP(null, null, JoinRelType.FULL, null);
     operatorContext = fixture.newOperatorContext(mockPopConfig);
   }
 
@@ -875,8 +875,8 @@ public class TestUnnestWithLateralCorrectness extends SubOperatorTest {
     final ProjectRecordBatch projectBatch2 =
         new ProjectRecordBatch(projectPopConfig2, unnestBatch2, fixture.getFragmentContext());
 
-    final LateralJoinPOP ljPopConfig2 = new LateralJoinPOP(projectPopConfig1, projectPopConfig2, JoinRelType.FULL);
-    final LateralJoinPOP ljPopConfig1 = new LateralJoinPOP(mockPopConfig, ljPopConfig2, JoinRelType.FULL);
+    final LateralJoinPOP ljPopConfig2 = new LateralJoinPOP(projectPopConfig1, projectPopConfig2, JoinRelType.FULL, null);
+    final LateralJoinPOP ljPopConfig1 = new LateralJoinPOP(mockPopConfig, ljPopConfig2, JoinRelType.FULL, null);
 
     final LateralJoinBatch lateralJoinBatch2 =
         new LateralJoinBatch(ljPopConfig2, fixture.getFragmentContext(), projectBatch1, projectBatch2);
