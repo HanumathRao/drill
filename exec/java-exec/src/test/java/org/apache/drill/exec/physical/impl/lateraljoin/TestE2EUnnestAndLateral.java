@@ -105,7 +105,7 @@ public class TestE2EUnnestAndLateral extends BaseTestQuery {
 
   @Test
   public void testMultiUnnestAtSameLevel() throws Exception {
-    String Sql = "EXPLAIN PLAN FOR SELECT customer.c_name, customer.c_address, U1.order_id, U1.order_amt," +
+    String Sql = "EXPLAIN PLAN INCLUDING ALL ATTRIBUTES FOR SELECT customer.c_name, customer.c_address, U1.order_id, U1.order_amt," +
       " U1.itemName, U1.itemNum" + " FROM cp.`lateraljoin/nested-customer.parquet` customer, LATERAL" +
       " (SELECT t.ord.o_id AS order_id, t.ord.o_amount AS order_amt, U2.item_name AS itemName, U2.item_num AS " +
         "itemNum FROM UNNEST(customer.orders) t(ord) , LATERAL" +

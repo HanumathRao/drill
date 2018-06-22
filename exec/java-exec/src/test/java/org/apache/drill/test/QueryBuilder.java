@@ -552,7 +552,7 @@ public class QueryBuilder {
   }
 
   public String explain(String format) throws Exception {
-    queryText = "EXPLAIN PLAN FOR " + queryText;
+    queryText = "EXPLAIN PLAN including all attributes FOR " + queryText;
     return queryPlan(format);
   }
 

@@ -33,16 +33,16 @@ import java.util.List;
 
 public class DrillCorrelateRel extends DrillCorrelateRelBase implements DrillRel {
 
-  protected DrillCorrelateRel(RelOptCluster cluster, RelTraitSet traits, RelNode left, RelNode right,
+  protected DrillCorrelateRel(RelOptCluster cluster, RelTraitSet traits, RelNode left, RelNode right, boolean includeCorrelateVar,
                               CorrelationId correlationId, ImmutableBitSet requiredColumns, SemiJoinType semiJoinType) {
-    super(cluster, traits, left, right, correlationId, requiredColumns, semiJoinType);
+    super(cluster, traits, left, right, includeCorrelateVar, correlationId, requiredColumns, semiJoinType);
   }
 
   @Override
   public Correlate copy(RelTraitSet traitSet,
         RelNode left, RelNode right, CorrelationId correlationId,
         ImmutableBitSet requiredColumns, SemiJoinType joinType) {
-    return new DrillCorrelateRel(this.getCluster(), this.getTraitSet(), left, right, correlationId, requiredColumns,
+    return new DrillCorrelateRel(this.getCluster(), this.getTraitSet(), left, right, this.donotIncludeCorrelateVariable, correlationId, requiredColumns,
         this.getJoinType());
   }
 
@@ -50,7 +50,7 @@ public class DrillCorrelateRel extends DrillCorrelateRelBase implements DrillRel
   public LogicalOperator implement(DrillImplementor implementor) {
     final List<String> fields = getRowType().getFieldNames();
     assert DrillJoinRel.isUnique(fields);
-    final int leftCount = left.getRowType().getFieldCount();
+    final int leftCount = getInputSize(0,left);
 
     final LogicalOperator leftOp = DrillJoinRel.implementInput(implementor, 0, 0, left, this);
     final LogicalOperator rightOp = DrillJoinRel.implementInput(implementor, 1, leftCount, right, this);
