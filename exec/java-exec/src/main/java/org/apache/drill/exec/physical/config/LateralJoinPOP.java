@@ -35,8 +35,8 @@ import java.util.List;
 public class LateralJoinPOP extends AbstractJoinPop {
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(LateralJoinPOP.class);
 
-  @JsonProperty("column")
-  private SchemaPath column;
+  @JsonProperty("excludedColumns")
+  private List<SchemaPath> excludedColumns;
 
   @JsonProperty("unnestForLateralJoin")
   private UnnestPOP unnestForLateralJoin;
@@ -46,16 +46,16 @@ public class LateralJoinPOP extends AbstractJoinPop {
       @JsonProperty("left") PhysicalOperator left,
       @JsonProperty("right") PhysicalOperator right,
       @JsonProperty("joinType") JoinRelType joinType,
-      @JsonProperty("column") SchemaPath column) {
+      @JsonProperty("excludedColumns") List<SchemaPath> excludedColumns) {
     super(left, right, joinType, null, null);
-    this.column = column;
+    this.excludedColumns = excludedColumns;
   }
 
   @Override
   public PhysicalOperator getNewWithChildren(List<PhysicalOperator> children) {
     Preconditions.checkArgument(children.size() == 2,
       "Lateral join should have two physical operators");
-    LateralJoinPOP newPOP =  new LateralJoinPOP(children.get(0), children.get(1), joinType, this.column);
+    LateralJoinPOP newPOP =  new LateralJoinPOP(children.get(0), children.get(1), joinType, this.excludedColumns);
     newPOP.unnestForLateralJoin = this.unnestForLateralJoin;
     return newPOP;
   }
@@ -65,9 +65,9 @@ public class LateralJoinPOP extends AbstractJoinPop {
     return this.unnestForLateralJoin;
   }
 
-  @JsonProperty("column")
-  public SchemaPath getColumn() {
-    return this.column;
+  @JsonProperty("excludedColumns")
+  public List<SchemaPath> getColumn() {
+    return this.excludedColumns;
   }
 
   public void setUnnestForLateralJoin(UnnestPOP unnest) {

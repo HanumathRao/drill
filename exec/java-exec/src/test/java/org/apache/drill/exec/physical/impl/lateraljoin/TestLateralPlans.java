@@ -72,7 +72,7 @@ public class TestLateralPlans extends BaseTestQuery {
 
   @Test
   public void testExplainLateralSql() throws Exception {
-    String explainSql = "explain plan for select t.c_name, t2.ord.o_shop as o_shop from cp.`lateraljoin/nested-customer.json` t," +
+    String explainSql = "explain plan without implementation for select t.c_name, t2.ord.o_shop as o_shop from cp.`lateraljoin/nested-customer.json` t," +
         " unnest(t.orders) t2(ord) limit 1";
 
     String Sql = "select t.c_name, t2.ord.o_shop as o_shop from cp.`lateraljoin/nested-customer.json` t," +

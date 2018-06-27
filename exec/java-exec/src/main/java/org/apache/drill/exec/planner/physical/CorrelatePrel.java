@@ -41,6 +41,7 @@ import org.apache.drill.exec.planner.physical.visitor.PrelVisitor;
 import org.apache.drill.exec.record.BatchSchema;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
@@ -66,8 +67,9 @@ public class CorrelatePrel extends DrillCorrelateRelBase implements Prel {
     PhysicalOperator rightPop = ((Prel)right).getPhysicalOperator(creator);
 
     SemiJoinType jtype = this.getJoinType();
-
-    LateralJoinPOP ljoin = new LateralJoinPOP(leftPop, rightPop, jtype.toJoinType(), getColumn());
+    List<SchemaPath> excludedColumns = new ArrayList<>();
+    excludedColumns.add(getColumn());
+    LateralJoinPOP ljoin = new LateralJoinPOP(leftPop, rightPop, jtype.toJoinType(), excludedColumns);
     return creator.addMetadata(this, ljoin);
   }
 
