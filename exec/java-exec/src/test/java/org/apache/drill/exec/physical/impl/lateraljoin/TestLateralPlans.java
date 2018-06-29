@@ -499,4 +499,17 @@ public class TestLateralPlans extends BaseTestQuery {
       assertTrue(matcher.find());
     }
   }
+
+  @Test
+  public void testQuery() throws Exception {
+    String Sql = "SELECT t5.l_quantity FROM dfs.`lateraljoin/multipleFiles/` t, LATERAL (SELECT t2.ordrs FROM UNNEST(t.c_orders) t2(ordrs)) t3(ordrs), LATERAL (SELECT t4.l_quantity FROM UNNEST(t3.ordrs) t4(l_quantity)) t5";
+    ClusterFixtureBuilder builder = ClusterFixture.builder(dirTestWatcher)
+      .setOptionDefault(ExecConstants.ENABLE_UNNEST_LATERAL_KEY, true)
+      .setOptionDefault(ExecConstants.SLICE_TARGET, 1);
+
+    try (ClusterFixture cluster = builder.build();
+         ClientFixture client = cluster.clientFixture()) {
+      System.out.println(client.queryBuilder().sql(Sql).run());
+    }
+  }
 }

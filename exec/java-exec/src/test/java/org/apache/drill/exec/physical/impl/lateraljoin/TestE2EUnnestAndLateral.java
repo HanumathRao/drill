@@ -167,6 +167,16 @@ public class TestE2EUnnestAndLateral extends ClusterTest {
   }
 
   @Test
+  public void testMultiUnnestAtSameLevelRun() throws Exception {
+    String Sql = "SELECT customer.c_name, customer.c_address, U1.order_id, U1.order_amt," +
+      " U1.itemName, U1.itemNum" + " FROM cp.`lateraljoin/nested-customer.parquet` customer, LATERAL" +
+      " (SELECT t.ord.o_id AS order_id, t.ord.o_amount AS order_amt, U2.item_name AS itemName, U2.item_num AS " +
+      "itemNum FROM UNNEST(customer.orders) t(ord) , LATERAL" +
+      " (SELECT t1.ord.i_name AS item_name, t1.ord.i_number AS item_num FROM UNNEST(t.ord) AS t1(ord)) AS U2) AS U1";
+    test(Sql);
+  }
+
+  @Test
   public void testNestedUnnest() throws Exception {
     String Sql = "select * from (select customer.orders as orders from cp.`lateraljoin/nested-customer.parquet` customer ) t1," +
         " lateral ( select t.ord.items as items from unnest(t1.orders) t(ord) ) t2, unnest(t2.items) t3(item) ";

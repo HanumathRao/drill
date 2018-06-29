@@ -18,15 +18,23 @@
 package org.apache.drill.exec.planner.physical.visitor;
 
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
+import com.google.common.base.Preconditions;
+import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.rex.RexNode;
 import org.apache.drill.exec.planner.physical.JoinPrel;
 import org.apache.drill.exec.planner.physical.LateralJoinPrel;
 import org.apache.drill.exec.planner.physical.Prel;
 import org.apache.calcite.rel.RelNode;
 
 import com.google.common.collect.Lists;
+import org.apache.drill.exec.planner.physical.UnnestPrel;
 
 public class JoinPrelRenameVisitor extends BasePrelVisitor<Prel, Void, RuntimeException>{
+
+  private final Map<String, Prel> sourceOperatorRegistry = new HashMap();
 
   private static JoinPrelRenameVisitor INSTANCE = new JoinPrelRenameVisitor();
 
@@ -34,16 +42,36 @@ public class JoinPrelRenameVisitor extends BasePrelVisitor<Prel, Void, RuntimeEx
     return prel.accept(INSTANCE, null);
   }
 
-  @Override
-  public Prel visitPrel(Prel prel, Void value) throws RuntimeException {
-    return preparePrel(prel, getChildren(prel));
+  private void register(Prel toRegister) {
+    this.sourceOperatorRegistry.put(toRegister.getClass().getSimpleName(), toRegister);
   }
 
-  private List<RelNode> getChildren(Prel prel) {
+  private Prel getRegisteredPrel(Class<?> classname) {
+    return this.sourceOperatorRegistry.get(classname.getSimpleName());
+  }
+
+  @Override
+  public Prel visitPrel(Prel prel, Void value) throws RuntimeException {
+    return preparePrel(prel, getChildren(prel, -1));
+  }
+
+  public void unRegister(Prel unregister) {
+    this.sourceOperatorRegistry.remove(unregister.getClass().getSimpleName());
+  }
+
+  private List<RelNode> getChildren(Prel prel, int registerForChild) {
+    int i=0;
     List<RelNode> children = Lists.newArrayList();
     for(Prel child : prel){
+      if (registerForChild == i) {
+        register(prel);
+      }
       child = child.accept(this, null);
+      if (registerForChild == i) {
+        unRegister(prel);
+      }
       children.add(child);
+      i++;
     }
     return children;
   }
@@ -55,7 +83,7 @@ public class JoinPrelRenameVisitor extends BasePrelVisitor<Prel, Void, RuntimeEx
   @Override
   public Prel visitJoin(JoinPrel prel, Void value) throws RuntimeException {
 
-    List<RelNode> children = getChildren(prel);
+    List<RelNode> children = getChildren(prel, -1);
 
     final int leftCount = children.get(0).getRowType().getFieldCount();
 
@@ -70,11 +98,10 @@ public class JoinPrelRenameVisitor extends BasePrelVisitor<Prel, Void, RuntimeEx
     return preparePrel(prel, reNamedChildren);
   }
 
-  //TODO: consolidate this code with join column renaming.
   @Override
   public Prel visitLateral(LateralJoinPrel prel, Void value) throws RuntimeException {
 
-    List<RelNode> children = getChildren(prel);
+    List<RelNode> children = getChildren(prel, 1);
 
     final int leftCount = prel.getInputSize(0,children.get(0));
 
@@ -87,5 +114,19 @@ public class JoinPrelRenameVisitor extends BasePrelVisitor<Prel, Void, RuntimeEx
     reNamedChildren.add(right);
 
     return preparePrel(prel, reNamedChildren);
+  }
+
+  @Override
+  public Prel visitUnnest(UnnestPrel prel, Void value) throws RuntimeException {
+    Preconditions.checkArgument(getRegisteredPrel(prel.getParentClass()) instanceof LateralJoinPrel);
+
+    LateralJoinPrel lateralJoinPrel = (LateralJoinPrel) getRegisteredPrel(prel.getParentClass());
+    int correlationIndex = lateralJoinPrel.getRequiredColumns().nextSetBit(0);
+    String correlationColumnName = lateralJoinPrel.getLeft().getRowType().getFieldNames().get(correlationIndex);
+    RexBuilder builder = prel.getCluster().getRexBuilder();
+    RexNode corrRef = builder.makeCorrel(lateralJoinPrel.getLeft().getRowType(), lateralJoinPrel.getCorrelationId());
+    RexNode fieldAccess = builder.makeFieldAccess(corrRef, correlationColumnName, false);
+    UnnestPrel unnestPrel = new UnnestPrel(prel.getCluster(), prel.getTraitSet(), prel.getRowType(), fieldAccess);
+    return unnestPrel;
   }
 }
