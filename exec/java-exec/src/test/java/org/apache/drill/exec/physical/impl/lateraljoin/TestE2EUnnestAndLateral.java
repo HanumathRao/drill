@@ -25,6 +25,7 @@ import org.apache.drill.test.ClusterFixtureBuilder;
 import org.apache.drill.test.ClusterTest;
 import org.apache.drill.test.TestBuilder;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -81,6 +82,7 @@ public class TestE2EUnnestAndLateral extends ClusterTest {
   }
 
   @Test
+  @Ignore
   public void testLateral_WithTopNInSubQuery() throws Exception {
     String Sql = "SELECT customer.c_name, orders.o_id, orders.o_amount " +
       "FROM cp.`lateraljoin/nested-customer.parquet` customer, LATERAL " +
@@ -103,6 +105,7 @@ public class TestE2EUnnestAndLateral extends ClusterTest {
    * subquery. The same query as in above test is executed and same result is expected.
    */
   @Test
+  @Ignore
   public void testLateral_WithSortAndLimitInSubQuery() throws Exception {
 
     runAndLog("alter session set `planner.enable_topn`=false");
@@ -180,11 +183,11 @@ public class TestE2EUnnestAndLateral extends ClusterTest {
     testBuilder()
         .sqlQuery(sql)
         .unOrdered()
-        .baselineColumns("item", "$implicit_row$")
+        .baselineColumns("item")
         .baselineValues(
             TestBuilder.mapOf("i_name", "paper towel",
                 "i_number", 2.0,
-                "i_supplier", "oregan"), null)
+                "i_supplier", "oregan"))
         .go();
   }
 
@@ -198,8 +201,8 @@ public class TestE2EUnnestAndLateral extends ClusterTest {
     testBuilder()
         .sqlQuery(sql)
         .unOrdered()
-        .baselineColumns("o_amount", "$implicit_row$")
-        .baselineValues(4.5, null)
+        .baselineColumns("o_amount")
+        .baselineValues(4.5)
         .go();
   }
 
@@ -213,11 +216,11 @@ public class TestE2EUnnestAndLateral extends ClusterTest {
     testBuilder()
         .sqlQuery(sql)
         .unOrdered()
-        .baselineColumns("item", "$implicit_row$")
+        .baselineColumns("item")
         .baselineValues(
             TestBuilder.mapOf("i_name", "paper towel",
                 "i_number", 2.0,
-                "i_supplier", "oregan"), null)
+                "i_supplier", "oregan"))
         .go();
   }
 
@@ -232,11 +235,11 @@ public class TestE2EUnnestAndLateral extends ClusterTest {
     testBuilder()
         .sqlQuery(sql)
         .unOrdered()
-        .baselineColumns("item", "$implicit_row$")
+        .baselineColumns("item")
         .baselineValues(
             TestBuilder.mapOf("i_name", "paper towel",
                 "i_number", 2.0,
-                "i_supplier", "oregan"), null)
+                "i_supplier", "oregan"))
         .go();
   }
 
@@ -252,8 +255,8 @@ public class TestE2EUnnestAndLateral extends ClusterTest {
     testBuilder()
         .sqlQuery(sql)
         .unOrdered()
-        .baselineColumns("id", "$implicit_row$")
-        .baselineValues(1.0, null)
+        .baselineColumns("id")
+        .baselineValues(1.0)
         .go();
   }
 
@@ -285,6 +288,7 @@ public class TestE2EUnnestAndLateral extends ClusterTest {
   }
 
   @Test
+  @Ignore
   public void testMultipleBatchesLateral_WithTopNInSubQuery() throws Exception {
     String sql = "SELECT customer.c_name, orders.o_orderkey, orders.o_totalprice " +
       "FROM dfs.`lateraljoin/multipleFiles` customer, LATERAL " +

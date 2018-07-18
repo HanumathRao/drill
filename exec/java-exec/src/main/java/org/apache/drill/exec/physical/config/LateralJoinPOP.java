@@ -27,6 +27,7 @@ import org.apache.drill.common.expression.SchemaPath;
 import org.apache.drill.exec.physical.base.AbstractJoinPop;
 import org.apache.drill.exec.physical.base.PhysicalOperator;
 import org.apache.drill.exec.physical.base.PhysicalVisitor;
+import org.apache.drill.exec.planner.common.DrillLateralJoinRelBase;
 import org.apache.drill.exec.proto.UserBitShared.CoreOperatorType;
 
 import java.util.List;
@@ -39,7 +40,7 @@ public class LateralJoinPOP extends AbstractJoinPop {
   private List<SchemaPath> excludedColumns;
 
   @JsonProperty("implicitColumns")
-  final private String implicitColumn = "$drill_implicit_field$";
+  final private String implicitColumn = DrillLateralJoinRelBase.IMPLICIT_COLUMN;
 
   @JsonProperty("unnestForLateralJoin")
   private UnnestPOP unnestForLateralJoin;

@@ -317,6 +317,33 @@ public abstract class DrillRelOptUtil {
     }
   }
 
+  /**
+   * Given a list of rexnodes it transforms the rexnodes by changing the expr to use new index mapped to the old index.
+   * @param builder : RexBuilder from the planner.
+   * @param exprs: RexNodes to be transformed.
+   * @param corrMap: Mapping between old index to new index.
+   * @return
+   */
+  public static List<RexNode> transformExprs(RexBuilder builder, List<RexNode> exprs, Map<Integer, Integer> corrMap) {
+    List<RexNode> outputExprs = new ArrayList<>();
+    DrillRelOptUtil.RexFieldsTransformer transformer = new DrillRelOptUtil.RexFieldsTransformer(builder, corrMap);
+    for (RexNode expr : exprs) {
+      outputExprs.add(transformer.go(expr));
+    }
+    return outputExprs;
+  }
+
+  /**
+   * Given a of rexnode it transforms the rexnode by changing the expr to use new index mapped to the old index.
+   * @param builder : RexBuilder from the planner.
+   * @param expr: RexNode to be transformed.
+   * @param corrMap: Mapping between old index to new index.
+   * @return
+   */
+  public static RexNode transformExpr(RexBuilder builder, RexNode expr, Map<Integer, Integer> corrMap) {
+    DrillRelOptUtil.RexFieldsTransformer transformer = new DrillRelOptUtil.RexFieldsTransformer(builder, corrMap);
+    return transformer.go(expr);
+  }
 
   /**
    * RexFieldsTransformer is a utility class used to convert column refs in a RexNode

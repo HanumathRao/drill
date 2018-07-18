@@ -29,6 +29,7 @@ import org.apache.drill.exec.physical.base.Leaf;
 import org.apache.drill.exec.physical.base.PhysicalOperator;
 import org.apache.drill.exec.physical.base.PhysicalVisitor;
 import org.apache.drill.exec.physical.impl.unnest.UnnestRecordBatch;
+import org.apache.drill.exec.planner.common.DrillLateralJoinRelBase;
 
 import java.util.Iterator;
 import java.util.List;
@@ -39,7 +40,7 @@ import static org.apache.drill.exec.proto.UserBitShared.CoreOperatorType.UNNEST_
 public class UnnestPOP extends AbstractBase implements Leaf {
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(UnnestPOP.class);
 
-  private final String implicitColumn = "$drill_implicit_field$";
+  private final String implicitColumn = DrillLateralJoinRelBase.IMPLICIT_COLUMN;
 
   private SchemaPath column;
 
