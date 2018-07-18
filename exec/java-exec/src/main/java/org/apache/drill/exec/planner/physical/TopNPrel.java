@@ -87,6 +87,7 @@ public class TopNPrel extends SinglePrel {
         .item("limit", limit);
   }
 
+  
 
   @Override
   public SelectionVectorMode[] getSupportedEncodings() {
