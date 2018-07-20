@@ -24,6 +24,7 @@ import org.apache.drill.exec.ops.OperatorContext;
 import org.apache.drill.exec.physical.base.PhysicalOperator;
 import org.apache.drill.exec.physical.config.LateralJoinPOP;
 import org.apache.drill.exec.physical.impl.MockRecordBatch;
+import org.apache.drill.exec.planner.common.DrillLateralJoinRelBase;
 import org.apache.drill.exec.record.CloseableRecordBatch;
 import org.apache.drill.exec.record.RecordBatch;
 import org.apache.drill.exec.record.VectorAccessibleUtilities;
@@ -96,6 +97,8 @@ public class TestNewLateralJoinCorrectness extends SubOperatorTest {
     PhysicalOperator mockPopConfig = new MockStorePOP(null);
     operatorContext = fixture.newOperatorContext(mockPopConfig);
 
+    ljPopConfig = new LateralJoinPOP(null, null, JoinRelType.INNER, DrillLateralJoinRelBase.IMPLICIT_COLUMN, Lists.newArrayList());
+
     leftSchema = new SchemaBuilder()
       .add("id_left", TypeProtos.MinorType.INT)
       .add("cost_left", TypeProtos.MinorType.INT)
@@ -129,7 +132,7 @@ public class TestNewLateralJoinCorrectness extends SubOperatorTest {
       .add("name_right", TypeProtos.MinorType.VARCHAR, TypeProtos.DataMode.OPTIONAL)
       .buildSchema();
 
-    ljPopConfig = new LateralJoinPOP(null, null, JoinRelType.INNER, Lists.newArrayList());
+    ljPopConfig = new LateralJoinPOP(null, null, JoinRelType.INNER, DrillLateralJoinRelBase.IMPLICIT_COLUMN, Lists.newArrayList());
   }
 
   @AfterClass
@@ -412,7 +415,7 @@ public class TestNewLateralJoinCorrectness extends SubOperatorTest {
     final CloseableRecordBatch rightMockBatch = new MockRecordBatch(fixture.getFragmentContext(), operatorContext,
       rightContainer, rightOutcomes, rightContainer.get(0).getSchema());
 
-    LateralJoinPOP ljPopConfig = new LateralJoinPOP(null, null, JoinRelType.LEFT, Lists.newArrayList());
+    LateralJoinPOP ljPopConfig = new LateralJoinPOP(null, null, JoinRelType.LEFT, DrillLateralJoinRelBase.IMPLICIT_COLUMN, Lists.newArrayList());
     final LateralJoinBatch ljBatch = new LateralJoinBatch(ljPopConfig, fixture.getFragmentContext(),
       leftMockBatch, rightMockBatch);
 
@@ -541,7 +544,7 @@ public class TestNewLateralJoinCorrectness extends SubOperatorTest {
     final CloseableRecordBatch rightMockBatch = new MockRecordBatch(fixture.getFragmentContext(), operatorContext,
       rightContainer, rightOutcomes, rightContainer.get(0).getSchema());
 
-    LateralJoinPOP ljPopConfig = new LateralJoinPOP(null, null, JoinRelType.LEFT, Lists.newArrayList());
+    LateralJoinPOP ljPopConfig = new LateralJoinPOP(null, null, JoinRelType.LEFT, DrillLateralJoinRelBase.IMPLICIT_COLUMN, Lists.newArrayList());
     final LateralJoinBatch ljBatch = new LateralJoinBatch(ljPopConfig, fixture.getFragmentContext(),
       leftMockBatch, rightMockBatch);
 
@@ -671,7 +674,7 @@ public class TestNewLateralJoinCorrectness extends SubOperatorTest {
     final CloseableRecordBatch rightMockBatch = new MockRecordBatch(fixture.getFragmentContext(), operatorContext,
       rightContainer, rightOutcomes, rightContainer.get(0).getSchema());
 
-    LateralJoinPOP ljPopConfig = new LateralJoinPOP(null, null, JoinRelType.LEFT, Lists.newArrayList());
+    LateralJoinPOP ljPopConfig = new LateralJoinPOP(null, null, JoinRelType.LEFT, DrillLateralJoinRelBase.IMPLICIT_COLUMN, Lists.newArrayList());
     final LateralJoinBatch ljBatch = new LateralJoinBatch(ljPopConfig, fixture.getFragmentContext(),
       leftMockBatch, rightMockBatch);
 
@@ -872,7 +875,7 @@ public class TestNewLateralJoinCorrectness extends SubOperatorTest {
     final CloseableRecordBatch rightMockBatch = new MockRecordBatch(fixture.getFragmentContext(), operatorContext,
       rightContainer, rightOutcomes, rightContainer.get(0).getSchema());
 
-    LateralJoinPOP ljPopConfig = new LateralJoinPOP(null, null, JoinRelType.LEFT, Lists.newArrayList());
+    LateralJoinPOP ljPopConfig = new LateralJoinPOP(null, null, JoinRelType.LEFT, DrillLateralJoinRelBase.IMPLICIT_COLUMN, Lists.newArrayList());
     final LateralJoinBatch ljBatch = new LateralJoinBatch(ljPopConfig, fixture.getFragmentContext(),
       leftMockBatch, rightMockBatch);
 
@@ -959,7 +962,7 @@ public class TestNewLateralJoinCorrectness extends SubOperatorTest {
     final CloseableRecordBatch rightMockBatch = new MockRecordBatch(fixture.getFragmentContext(), operatorContext,
       rightContainer, rightOutcomes, rightContainer.get(0).getSchema());
 
-    LateralJoinPOP ljPopConfig = new LateralJoinPOP(null, null, JoinRelType.LEFT, Lists.newArrayList());
+    LateralJoinPOP ljPopConfig = new LateralJoinPOP(null, null, JoinRelType.LEFT, DrillLateralJoinRelBase.IMPLICIT_COLUMN, Lists.newArrayList());
     final LateralJoinBatch ljBatch = new LateralJoinBatch(ljPopConfig, fixture.getFragmentContext(),
       leftMockBatch, rightMockBatch);
 
