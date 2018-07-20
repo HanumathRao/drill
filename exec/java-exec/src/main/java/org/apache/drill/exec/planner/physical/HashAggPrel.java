@@ -20,6 +20,7 @@ package org.apache.drill.exec.planner.physical;
 import java.io.IOException;
 import java.util.List;
 
+import com.google.common.collect.Lists;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.drill.exec.physical.base.PhysicalOperator;
 import org.apache.drill.exec.physical.config.HashAggregate;
@@ -84,4 +85,25 @@ public class HashAggPrel extends AggPrelBase implements Prel{
     return SelectionVectorMode.NONE;
   }
 
+  @Override
+  public Prel addImplicitRowIDCol(List<RelNode> children) {
+    List<Integer> groupingCols = Lists.newArrayList();
+    groupingCols.add(0);
+    for (int groupingCol : groupSet.asList()) {
+      groupingCols.add(groupingCol + 1);
+    }
+
+    ImmutableBitSet groupingSet = ImmutableBitSet.of(groupingCols);
+    List<ImmutableBitSet> groupingSets = Lists.newArrayList();
+    groupingSets.add(groupingSet);
+    List<AggregateCall> aggregateCalls = Lists.newArrayList();
+    for (AggregateCall aggCall : aggCalls) {
+      List<Integer> arglist = Lists.newArrayList();
+      for (int arg : aggCall.getArgList()) {
+        arglist.add(arg + 1);
+      }
+      aggregateCalls.add(AggregateCall.create(aggCall.getAggregation(), aggCall.isDistinct(), aggCall.isApproximate(), arglist, aggCall.filterArg, aggCall.type, aggCall.name));
+    }
+    return (Prel) copy(traitSet, children.get(0),indicator,groupingSet,groupingSets, aggregateCalls);
+  }
 }

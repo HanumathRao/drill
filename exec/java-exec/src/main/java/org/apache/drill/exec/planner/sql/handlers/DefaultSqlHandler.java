@@ -492,8 +492,6 @@ public class DefaultSqlHandler extends AbstractSqlHandler {
       }
     }
 
-    phyRelNode = LateralUnnestRowIDVisitor.insertRowID(phyRelNode);
-
     /* The order of the following transformations is important */
 
     /*
@@ -561,6 +559,7 @@ public class DefaultSqlHandler extends AbstractSqlHandler {
      */
     phyRelNode = ExcessiveExchangeIdentifier.removeExcessiveEchanges(phyRelNode, targetSliceSize);
 
+    phyRelNode = LateralUnnestRowIDVisitor.insertRowID(phyRelNode);
 
     /* 5.)
      * Add ProducerConsumer after each scan if the option is set

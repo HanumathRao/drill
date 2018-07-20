@@ -71,7 +71,7 @@ public abstract class DrillLateralJoinRelBase extends Correlate implements Drill
       case LEFT:
       case INNER:
         return constructRowType(SqlValidatorUtil.deriveJoinRowType(left.getRowType(),
-          right.getRowType(), joinType.toJoinType(),
+          removeImplicitField(right.getRowType()), joinType.toJoinType(),
           getCluster().getTypeFactory(), null,
           ImmutableList.of()));
       case ANTI:
@@ -116,6 +116,21 @@ public abstract class DrillLateralJoinRelBase extends Correlate implements Drill
       return getCluster().getTypeFactory().createStructType(fields, fieldNames);
     }
     return inputRowType;
+  }
+
+  public RelDataType removeImplicitField(RelDataType inputRowType) {
+    List<RelDataType> fields = new ArrayList<>();
+    List<String> fieldNames = new ArrayList<>();
+
+    for (RelDataTypeField field : inputRowType.getFieldList()) {
+      if (field.getName().equals("$drill_implicit_field$")) {
+        continue;
+      }
+      fieldNames.add(field.getName());
+      fields.add(field.getType());
+    }
+
+    return getCluster().getTypeFactory().createStructType(fields, fieldNames);
   }
 
   @Override

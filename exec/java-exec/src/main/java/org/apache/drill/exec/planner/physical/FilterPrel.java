@@ -18,11 +18,18 @@
 package org.apache.drill.exec.planner.physical;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
+import com.google.common.collect.Lists;
+import org.apache.calcite.rex.RexBuilder;
 import org.apache.drill.exec.physical.base.PhysicalOperator;
 import org.apache.drill.exec.physical.config.Filter;
 import org.apache.drill.exec.planner.common.DrillFilterRelBase;
+import org.apache.drill.exec.planner.common.DrillRelOptUtil;
 import org.apache.drill.exec.planner.logical.DrillParseContext;
 import org.apache.drill.exec.planner.physical.visitor.PrelVisitor;
 import org.apache.drill.exec.record.BatchSchema.SelectionVectorMode;
@@ -81,4 +88,22 @@ public class FilterPrel extends DrillFilterRelBase implements Prel {
     return true;
   }
 
+  @Override
+  public Prel addImplicitRowIDCol(List<RelNode> children) {
+    RexBuilder builder = this.getCluster().getRexBuilder();
+    return (Prel) this.copy(this.traitSet, children.get(0), transformExprs(builder, condition, buildMap()));
+  }
+
+  private Map<Integer, Integer> buildMap() {
+    Map<Integer, Integer> map = new HashMap<>();
+    for (int i=0;i<this.getInput().getRowType().getFieldCount();i++) {
+      map.put(i, i+1);
+    }
+    return map;
+  }
+
+  private RexNode transformExprs(RexBuilder builder, RexNode condition, Map<Integer, Integer> corrMap) {
+    DrillRelOptUtil.RexFieldsTransformer transformer = new DrillRelOptUtil.RexFieldsTransformer(builder, corrMap);
+    return transformer.go(condition);
+  }
 }

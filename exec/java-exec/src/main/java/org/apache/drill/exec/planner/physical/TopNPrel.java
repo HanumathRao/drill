@@ -87,8 +87,6 @@ public class TopNPrel extends SinglePrel {
         .item("limit", limit);
   }
 
-  
-
   @Override
   public SelectionVectorMode[] getSupportedEncodings() {
     return SelectionVectorMode.NONE_AND_TWO;
@@ -97,5 +95,10 @@ public class TopNPrel extends SinglePrel {
   @Override
   public SelectionVectorMode getEncoding() {
     return SelectionVectorMode.FOUR_BYTE;
+  }
+
+  @Override
+  public Prel addImplicitRowIDCol(List<RelNode> children) {
+    return (Prel) this.copy(this.traitSet, children);
   }
 }

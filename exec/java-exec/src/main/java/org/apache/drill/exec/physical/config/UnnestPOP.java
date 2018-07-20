@@ -41,6 +41,8 @@ public class UnnestPOP extends AbstractBase implements Leaf {
 
   private SchemaPath column;
 
+  private final String implicitColumn = "$drill_implicit_field$";
+
   @JsonIgnore
   private UnnestRecordBatch unnestBatch;
 
@@ -76,6 +78,8 @@ public class UnnestPOP extends AbstractBase implements Leaf {
   public void addUnnestBatch(UnnestRecordBatch unnestBatch) {
     this.unnestBatch = unnestBatch;
   }
+
+  public String getImplicitColumn() { return this.implicitColumn; }
 
   @JsonIgnore
   public UnnestRecordBatch getUnnestBatch() {
