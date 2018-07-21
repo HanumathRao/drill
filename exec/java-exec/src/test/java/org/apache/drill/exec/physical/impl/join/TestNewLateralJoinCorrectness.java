@@ -107,7 +107,7 @@ public class TestNewLateralJoinCorrectness extends SubOperatorTest {
     emptyLeftRowSet = fixture.rowSetBuilder(leftSchema).build();
 
     rightSchema = new SchemaBuilder()
-      .add(LateralJoinBatch.IMPLICIT_COLUMN, TypeProtos.MinorType.INT)
+      .add(ljPopConfig.getImplicitColumn(), TypeProtos.MinorType.INT)
       .add("id_right", TypeProtos.MinorType.INT)
       .add("cost_right", TypeProtos.MinorType.INT)
       .add("name_right", TypeProtos.MinorType.VARCHAR)
