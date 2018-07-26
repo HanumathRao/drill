@@ -84,31 +84,26 @@ public class TestE2EUnnestAndLateral extends ClusterTest {
 
   @Test
   public void testLateral_WithTopNInSubQuery() throws Exception {
+    runAndLog("alter session set `planner.enable_topn`=false");
 
     String Sql = "SELECT customer.c_name, orders.o_id, orders.o_amount " +
       "FROM cp.`lateraljoin/nested-customer.parquet` customer, LATERAL " +
       "(SELECT t.ord.o_id as o_id, t.ord.o_amount as o_amount FROM UNNEST(customer.orders) t(ord) ORDER BY " +
       "o_amount DESC LIMIT 1) orders";
 
-    ClusterFixtureBuilder builder = ClusterFixture.builder(dirTestWatcher)
-            .setOptionDefault(ExecConstants.ENABLE_UNNEST_LATERAL_KEY, true)
-            .setOptionDefault("planner.enable_topn", true);
-
-    try (ClusterFixture cluster = builder.build();
-         ClientFixture client = cluster.clientFixture()) {
-      System.out.println(client.queryBuilder()
-              .sql(Sql)
-              .explainText());
-      client.testBuilder()            .sqlQuery(Sql)
-              .unOrdered()
-              .baselineColumns("c_name", "o_id", "o_amount")
-              .baselineValues("customer1", 3.0,  294.5)
-              .baselineValues("customer2", 10.0,  724.5)
-              .baselineValues("customer3", 23.0,  772.2)
-              .baselineValues("customer4", 32.0,  1030.1)
-              .go();
-
-  }
+    try {
+    testBuilder()
+            .sqlQuery(Sql)
+            .unOrdered()
+            .baselineColumns("c_name", "o_id", "o_amount")
+            .baselineValues("customer1", 3.0,  294.5)
+            .baselineValues("customer2", 10.0,  724.5)
+            .baselineValues("customer3", 23.0,  772.2)
+            .baselineValues("customer4", 32.0,  1030.1)
+            .go();
+    } finally {
+      runAndLog("alter session set `planner.enable_topn`=true");
+    }
   }
 
   /**
