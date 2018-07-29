@@ -94,7 +94,8 @@ public class FilterPrel extends DrillFilterRelBase implements Prel {
 
   private Map<Integer, Integer> buildMap() {
     Map<Integer, Integer> map = new HashMap<>();
-    for (int i=0;i<this.getInput().getRowType().getFieldCount();i++) {
+    int fieldCount = this.getInput().getRowType().getFieldCount();
+    for (int i = 0; i< fieldCount; i++) {
       map.put(i, i+1);
     }
     return map;
