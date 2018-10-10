@@ -66,11 +66,11 @@ public class HashJoinPrule extends JoinPruleBase {
 
       if(isDist){
         createDistBothPlan(call, join, PhysicalJoinType.HASH_JOIN,
-            left, right, null /* left collation */, null /* right collation */, hashSingleKey);
+            left, right, null /* left collation */, null /* right collation */, hashSingleKey, false);
       }else{
         if (checkBroadcastConditions(call.getPlanner(), join, left, right)) {
           createBroadcastPlan(call, join, join.getCondition(), PhysicalJoinType.HASH_JOIN,
-              left, right, null /* left collation */, null /* right collation */);
+              left, right, null /* left collation */, null /* right collation */, false);
         }
       }
 

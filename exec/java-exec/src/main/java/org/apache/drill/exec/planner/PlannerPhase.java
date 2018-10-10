@@ -17,6 +17,7 @@
  */
 package org.apache.drill.exec.planner;
 
+import org.apache.drill.exec.planner.physical.HashSemiJoinPrule;
 import org.apache.drill.shaded.guava.com.google.common.collect.ImmutableSet;
 import org.apache.drill.shaded.guava.com.google.common.collect.ImmutableSet.Builder;
 import org.apache.drill.shaded.guava.com.google.common.collect.Lists;
@@ -323,6 +324,7 @@ public enum PlannerPhase {
 
       DrillLimitRule.INSTANCE,
       DrillSortRule.INSTANCE,
+      RuleInstance.SEMI_JOIN_PROJECT_RULE,
       DrillJoinRule.INSTANCE,
       DrillUnionAllRule.INSTANCE,
       DrillValuesRule.INSTANCE,
@@ -444,7 +446,6 @@ public enum PlannerPhase {
   static RuleSet getPhysicalRules(OptimizerRulesContext optimizerRulesContext) {
     final List<RelOptRule> ruleList = new ArrayList<>();
     final PlannerSettings ps = optimizerRulesContext.getPlannerSettings();
-
     ruleList.add(ConvertCountToDirectScan.AGG_ON_PROJ_ON_SCAN);
     ruleList.add(ConvertCountToDirectScan.AGG_ON_SCAN);
     ruleList.add(SortConvertPrule.INSTANCE);
@@ -479,9 +480,14 @@ public enum PlannerPhase {
 
     if (ps.isHashJoinEnabled()) {
       ruleList.add(HashJoinPrule.DIST_INSTANCE);
-
+      if (ps.isSemiJoinEnabled()) {
+        ruleList.add(HashSemiJoinPrule.DIST_INSTANCE);
+      }
       if(ps.isBroadcastJoinEnabled()){
         ruleList.add(HashJoinPrule.BROADCAST_INSTANCE);
+        if (ps.isSemiJoinEnabled()) {
+          ruleList.add(HashSemiJoinPrule.BROADCAST_INSTANCE);
+        }
       }
     }
 

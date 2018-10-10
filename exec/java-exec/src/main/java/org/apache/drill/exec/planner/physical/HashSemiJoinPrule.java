@@ -17,78 +17,63 @@
  */
 package org.apache.drill.exec.planner.physical;
 
-import java.util.List;
-
-import org.apache.calcite.rel.RelCollations;
-import org.apache.drill.exec.planner.logical.DrillJoinRel;
+import org.apache.drill.exec.planner.logical.DrillSemiJoinRel;
 import org.apache.drill.exec.planner.logical.RelOptHelper;
 import org.apache.calcite.rel.InvalidRelException;
-import org.apache.calcite.rel.RelCollation;
-import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptRuleOperand;
 import org.apache.calcite.util.trace.CalciteTrace;
-
-import org.apache.drill.shaded.guava.com.google.common.collect.Lists;
 import org.slf4j.Logger;
 
-public class MergeJoinPrule extends JoinPruleBase {
-  public static final RelOptRule DIST_INSTANCE = new MergeJoinPrule("Prel.MergeJoinDistPrule", RelOptHelper.any(DrillJoinRel.class), true);
-  public static final RelOptRule BROADCAST_INSTANCE = new MergeJoinPrule("Prel.MergeJoinBroadcastPrule", RelOptHelper.any(DrillJoinRel.class), false);
+public class HashSemiJoinPrule extends JoinPruleBase {
+  public static final RelOptRule DIST_INSTANCE = new HashSemiJoinPrule("Prel.HashSemiJoinDistPrule", RelOptHelper.any(DrillSemiJoinRel.class), true);
+  public static final RelOptRule BROADCAST_INSTANCE = new HashSemiJoinPrule("Prel.HashSemiJoinBroadcastPrule", RelOptHelper.any(DrillSemiJoinRel.class), false);
 
   protected static final Logger tracer = CalciteTrace.getPlannerTracer();
 
   private final boolean isDist;
-
-  private MergeJoinPrule(String name, RelOptRuleOperand operand, boolean isDist) {
+  private HashSemiJoinPrule(String name, RelOptRuleOperand operand, boolean isDist) {
     super(operand, name);
     this.isDist = isDist;
   }
 
   @Override
   public boolean matches(RelOptRuleCall call) {
-    return PrelUtil.getPlannerSettings(call.getPlanner()).isMergeJoinEnabled();
+    PlannerSettings settings = PrelUtil.getPlannerSettings(call.getPlanner());
+    return settings.isMemoryEstimationEnabled() || settings.isHashJoinEnabled();
   }
 
   @Override
   public void onMatch(RelOptRuleCall call) {
     PlannerSettings settings = PrelUtil.getPlannerSettings(call.getPlanner());
-    final DrillJoinRel join = call.rel(0);
-    final RelNode left = join.getLeft();
-    final RelNode right = join.getRight();
-
-    if (!checkPreconditions(join, left, right, settings)) {
+    if (!settings.isHashJoinEnabled() || !settings.isSemiJoinEnabled()) {
       return;
     }
+
+    final DrillSemiJoinRel join = call.rel(0);
+    final RelNode left = join.getLeft();
+    final RelNode right = join.getRight();
 
     boolean hashSingleKey = PrelUtil.getPlannerSettings(call.getPlanner()).isHashSingleKey();
 
     try {
-      RelCollation collationLeft = getCollation(join.getLeftKeys());
-      RelCollation collationRight = getCollation(join.getRightKeys());
 
       if(isDist){
-        createDistBothPlan(call, join, PhysicalJoinType.MERGE_JOIN, left, right, collationLeft, collationRight, hashSingleKey, false);
+        createDistBothPlan(call, join, PhysicalJoinType.HASH_JOIN,
+                left, right, null /* left collation */, null /* right collation */, hashSingleKey, true);
       }else{
         if (checkBroadcastConditions(call.getPlanner(), join, left, right)) {
-          createBroadcastPlan(call, join, join.getCondition(), PhysicalJoinType.MERGE_JOIN,
-              left, right, collationLeft, collationRight, false);
+          createBroadcastPlan(call, join, join.getCondition(), PhysicalJoinType.HASH_JOIN,
+                  left, right, null /* left collation */, null /* right collation */, true);
         }
       }
+
 
     } catch (InvalidRelException e) {
       tracer.warn(e.toString());
     }
-  }
-
-  private RelCollation getCollation(List<Integer> keys) {
-    List<RelFieldCollation> fields = Lists.newArrayList();
-    for (int key : keys) {
-      fields.add(new RelFieldCollation(key));
-    }
-    return RelCollations.of(fields);
   }
 
 }
