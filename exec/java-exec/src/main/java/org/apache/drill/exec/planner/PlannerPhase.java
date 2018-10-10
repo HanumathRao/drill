@@ -354,15 +354,18 @@ public enum PlannerPhase {
      * We have to create another copy of the ruleset with the context dependent elements;
      * this cannot be reused across queries.
      */
-    final ImmutableSet<RelOptRule> basicRules = ImmutableSet.<RelOptRule>builder()
+    ImmutableSet.Builder<RelOptRule> basicRules = ImmutableSet.<RelOptRule>builder()
         .addAll(staticRuleSet)
         .add(
             DrillMergeProjectRule.getInstance(true, RelFactories.DEFAULT_PROJECT_FACTORY,
                 optimizerRulesContext.getFunctionRegistry())
-            )
-        .build();
+            );
+    if (optimizerRulesContext.getPlannerSettings().isHashAggEnabled() &&
+        optimizerRulesContext.getPlannerSettings().isSemiJoinEnabled()) {
+      basicRules.add(RuleInstance.SEMI_JOIN_PROJECT_RULE);
+    }
 
-    return RuleSets.ofList(basicRules);
+    return RuleSets.ofList(basicRules.build());
   }
 
   /**
@@ -444,7 +447,6 @@ public enum PlannerPhase {
   static RuleSet getPhysicalRules(OptimizerRulesContext optimizerRulesContext) {
     final List<RelOptRule> ruleList = new ArrayList<>();
     final PlannerSettings ps = optimizerRulesContext.getPlannerSettings();
-
     ruleList.add(ConvertCountToDirectScan.AGG_ON_PROJ_ON_SCAN);
     ruleList.add(ConvertCountToDirectScan.AGG_ON_SCAN);
     ruleList.add(SortConvertPrule.INSTANCE);
@@ -479,9 +481,14 @@ public enum PlannerPhase {
 
     if (ps.isHashJoinEnabled()) {
       ruleList.add(HashJoinPrule.DIST_INSTANCE);
-
+      if (ps.isSemiJoinEnabled()) {
+        ruleList.add(HashJoinPrule.SEMI_DIST_INSTANCE);
+      }
       if(ps.isBroadcastJoinEnabled()){
         ruleList.add(HashJoinPrule.BROADCAST_INSTANCE);
+        if (ps.isSemiJoinEnabled()) {
+          ruleList.add(HashJoinPrule.SEMI_BROADCAST_INSTANCE);
+        }
       }
     }
 
@@ -491,7 +498,6 @@ public enum PlannerPhase {
       if(ps.isBroadcastJoinEnabled()){
         ruleList.add(MergeJoinPrule.BROADCAST_INSTANCE);
       }
-
     }
 
     // NLJ plans consist of broadcasting the right child, hence we need

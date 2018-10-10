@@ -20,6 +20,7 @@ package org.apache.drill.exec.planner.physical;
 import java.io.IOException;
 import java.util.List;
 
+import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.drill.common.logical.data.JoinCondition;
@@ -46,13 +47,13 @@ public class HashJoinPrel  extends JoinPrel {
   private RuntimeFilterDef runtimeFilterDef;
 
   public HashJoinPrel(RelOptCluster cluster, RelTraitSet traits, RelNode left, RelNode right, RexNode condition,
-                      JoinRelType joinType) throws InvalidRelException {
-    this(cluster, traits, left, right, condition, joinType, false, null);
+                      JoinRelType joinType, boolean semiJoin) throws InvalidRelException {
+    this(cluster, traits, left, right, condition, joinType, false, null, semiJoin);
   }
 
   public HashJoinPrel(RelOptCluster cluster, RelTraitSet traits, RelNode left, RelNode right, RexNode condition,
-      JoinRelType joinType, boolean swapped, RuntimeFilterDef runtimeFilterDef) throws InvalidRelException {
-    super(cluster, traits, left, right, condition, joinType);
+      JoinRelType joinType, boolean swapped, RuntimeFilterDef runtimeFilterDef, boolean semiJoin) throws InvalidRelException {
+    super(cluster, traits, left, right, condition, joinType, semiJoin);
     this.swapped = swapped;
     joincategory = JoinUtils.getJoinCategory(left, right, condition, leftKeys, rightKeys, filterNulls);
     this.runtimeFilterDef = runtimeFilterDef;
@@ -61,7 +62,7 @@ public class HashJoinPrel  extends JoinPrel {
   @Override
   public Join copy(RelTraitSet traitSet, RexNode conditionExpr, RelNode left, RelNode right, JoinRelType joinType, boolean semiJoinDone) {
     try {
-      return new HashJoinPrel(this.getCluster(), traitSet, left, right, conditionExpr, joinType, this.swapped, this.runtimeFilterDef);
+      return new HashJoinPrel(this.getCluster(), traitSet, left, right, conditionExpr, joinType, this.swapped, this.runtimeFilterDef, this.isSemiJoin);
     }catch (InvalidRelException e) {
       throw new AssertionError(e);
     }
@@ -79,10 +80,10 @@ public class HashJoinPrel  extends JoinPrel {
   }
 
   @Override
-  public org.apache.drill.exec.physical.base.PhysicalOperator getPhysicalOperator(PhysicalPlanCreator creator) throws IOException {
+  public PhysicalOperator getPhysicalOperator(PhysicalPlanCreator creator) throws IOException {
     // Depending on whether the left/right is swapped for hash inner join, pass in different
     // combinations of parameters.
-    if (! swapped) {
+    if (!swapped) {
       return getHashJoinPop(creator, left, right, leftKeys, rightKeys);
     } else {
       return getHashJoinPop(creator, right, left, rightKeys, leftKeys);
@@ -137,5 +138,8 @@ public class HashJoinPrel  extends JoinPrel {
     this.runtimeFilterDef = runtimeFilterDef;
   }
 
-
+  @Override
+  public RelWriter explainTerms(RelWriter pw) {
+    return super.explainTerms(pw).item("semi-join: ", isSemiJoin);
+  }
 }
