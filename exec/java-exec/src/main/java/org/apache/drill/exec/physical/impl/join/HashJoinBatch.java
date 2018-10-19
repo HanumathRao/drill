@@ -467,8 +467,7 @@ public class HashJoinBatch extends AbstractBinaryRecordBatch<HashJoinPOP> {
             // Initialize various settings for the probe side
             hashJoinProbe.setupHashJoinProbe(probeBatch,
               this,
-              joinType,
-              leftUpstream,
+              joinType, popConfig.isSemiJoin(), leftUpstream,
               partitions,
               cycleNum,
               container,

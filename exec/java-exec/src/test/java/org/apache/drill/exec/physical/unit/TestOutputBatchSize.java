@@ -1715,7 +1715,7 @@ public class TestOutputBatchSize extends PhysicalOpUnitTestBase {
   @Test
   public void testHashJoinMultipleOutputBatches() throws Exception {
     HashJoinPOP hashJoin = new HashJoinPOP(null, null,
-      Lists.newArrayList(joinCond("c1", "EQUALS", "c2")), JoinRelType.INNER);
+      Lists.newArrayList(joinCond("c1", "EQUALS", "c2")), JoinRelType.INNER, false);
     mockOpContext(hashJoin, initReservation, maxAllocation);
 
     numRows = 4000 * 2;
@@ -1783,7 +1783,7 @@ public class TestOutputBatchSize extends PhysicalOpUnitTestBase {
   @Test
   public void testHashJoinSingleOutputBatch() throws Exception {
     HashJoinPOP hashJoin = new HashJoinPOP(null, null,
-      Lists.newArrayList(joinCond("c1", "EQUALS", "c2")), JoinRelType.INNER);
+      Lists.newArrayList(joinCond("c1", "EQUALS", "c2")), JoinRelType.INNER, false);
     mockOpContext(hashJoin, initReservation, maxAllocation);
 
     // create multiple batches from both sides.
@@ -1854,7 +1854,7 @@ public class TestOutputBatchSize extends PhysicalOpUnitTestBase {
   public void testHashJoinUpperLimit() throws Exception {
     // test the upper limit of 65535 records per batch.
     HashJoinPOP hashJoin = new HashJoinPOP(null, null,
-      Lists.newArrayList(joinCond("c1", "EQUALS", "c2")), JoinRelType.INNER);
+      Lists.newArrayList(joinCond("c1", "EQUALS", "c2")), JoinRelType.INNER, false);
     mockOpContext(hashJoin, initReservation, maxAllocation);
 
     numRows = 100000;
@@ -1907,7 +1907,7 @@ public class TestOutputBatchSize extends PhysicalOpUnitTestBase {
   public void testHashJoinLowerLimit() throws Exception {
     // test the lower limit of at least one batch
     HashJoinPOP hashJoin = new HashJoinPOP(null, null,
-      Lists.newArrayList(joinCond("c1", "EQUALS", "c2")), JoinRelType.INNER);
+      Lists.newArrayList(joinCond("c1", "EQUALS", "c2")), JoinRelType.INNER, false);
     mockOpContext(hashJoin, initReservation, maxAllocation);
 
     numRows = 10;
@@ -1962,7 +1962,7 @@ public class TestOutputBatchSize extends PhysicalOpUnitTestBase {
   public void testRightOuterHashJoin() throws Exception {
 
     HashJoinPOP hashJoin = new HashJoinPOP(null, null,
-      Lists.newArrayList(joinCond("c1", "EQUALS", "c2")), JoinRelType.RIGHT);
+      Lists.newArrayList(joinCond("c1", "EQUALS", "c2")), JoinRelType.RIGHT, false);
     mockOpContext(hashJoin, initReservation, maxAllocation);
 
     numRows = 4000 * 2;
@@ -2031,7 +2031,7 @@ public class TestOutputBatchSize extends PhysicalOpUnitTestBase {
   public void testLeftOuterHashJoin() throws Exception {
 
     HashJoinPOP hashJoin = new HashJoinPOP(null, null,
-      Lists.newArrayList(joinCond("c1", "EQUALS", "c2")), JoinRelType.LEFT);
+      Lists.newArrayList(joinCond("c1", "EQUALS", "c2")), JoinRelType.LEFT, false);
     mockOpContext(hashJoin, initReservation, maxAllocation);
 
     numRows = 4000 * 2;

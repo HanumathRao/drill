@@ -179,7 +179,7 @@ public class TestHashJoinOutcome extends PhysicalOpUnitTestBase {
       FieldReference.getWithQuotedRef("leftcol"),
       FieldReference.getWithQuotedRef("rightcol")));
 
-    HashJoinPOP hjConf = new HashJoinPOP(null, null, conditions, JoinRelType.INNER);
+    HashJoinPOP hjConf = new HashJoinPOP(null, null, conditions, JoinRelType.INNER, false);
 
     HashJoinBatch hjBatch = new HashJoinBatch(hjConf,operatorFixture.getFragmentContext(), mockInputBatchLeft, mockInputBatchRight );
 
@@ -238,7 +238,7 @@ public class TestHashJoinOutcome extends PhysicalOpUnitTestBase {
 
     conditions.add(new JoinCondition(SqlKind.EQUALS.toString(), FieldReference.getWithQuotedRef("leftcol"), FieldReference.getWithQuotedRef("rightcol")));
 
-    HashJoinPOP hjConf = new HashJoinPOP(null, null, conditions, JoinRelType.INNER);
+    HashJoinPOP hjConf = new HashJoinPOP(null, null, conditions, JoinRelType.INNER, false);
 
     HashJoinBatch hjBatch = new HashJoinBatch(hjConf, operatorFixture.getFragmentContext(), mockInputBatchLeft, mockInputBatchRight);
 

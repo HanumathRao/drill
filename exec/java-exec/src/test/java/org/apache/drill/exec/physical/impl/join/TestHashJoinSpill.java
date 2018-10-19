@@ -37,7 +37,7 @@ public class TestHashJoinSpill extends PhysicalOpUnitTestBase {
   // Should spill, including recursive spill
   public void testSimpleHashJoinSpill() {
     HashJoinPOP joinConf = new HashJoinPOP(null, null,
-      Lists.newArrayList(joinCond("lft", "EQUALS", "rgt")), JoinRelType.INNER, null);
+      Lists.newArrayList(joinCond("lft", "EQUALS", "rgt")), JoinRelType.INNER, false, null);
     operatorFixture.getOptionManager().setLocalOption("exec.hashjoin.num_partitions", 4);
     operatorFixture.getOptionManager().setLocalOption("exec.hashjoin.num_rows_in_batch", 64);
     operatorFixture.getOptionManager().setLocalOption("exec.hashjoin.max_batches_in_memory", 8);
@@ -64,7 +64,7 @@ public class TestHashJoinSpill extends PhysicalOpUnitTestBase {
   @Test
   public void testRightOuterHashJoinSpill() {
     HashJoinPOP joinConf = new HashJoinPOP(null, null,
-      Lists.newArrayList(joinCond("lft", "EQUALS", "rgt")), JoinRelType.RIGHT, null);
+      Lists.newArrayList(joinCond("lft", "EQUALS", "rgt")), JoinRelType.RIGHT, false, null);
     operatorFixture.getOptionManager().setLocalOption("exec.hashjoin.num_partitions", 4);
     operatorFixture.getOptionManager().setLocalOption("exec.hashjoin.num_rows_in_batch", 64);
     operatorFixture.getOptionManager().setLocalOption("exec.hashjoin.max_batches_in_memory", 8);
@@ -91,7 +91,7 @@ public class TestHashJoinSpill extends PhysicalOpUnitTestBase {
   @Test
   public void testLeftOuterHashJoinSpill() {
     HashJoinPOP joinConf = new HashJoinPOP(null, null,
-      Lists.newArrayList(joinCond("lft", "EQUALS", "rgt")), JoinRelType.LEFT, null);
+      Lists.newArrayList(joinCond("lft", "EQUALS", "rgt")), JoinRelType.LEFT, false, null);
     operatorFixture.getOptionManager().setLocalOption("exec.hashjoin.num_partitions", 8);
     operatorFixture.getOptionManager().setLocalOption("exec.hashjoin.num_rows_in_batch", 64);
     operatorFixture.getOptionManager().setLocalOption("exec.hashjoin.max_batches_in_memory", 12);

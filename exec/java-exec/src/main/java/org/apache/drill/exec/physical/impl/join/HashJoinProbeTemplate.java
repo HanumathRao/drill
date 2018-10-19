@@ -84,6 +84,7 @@ public abstract class HashJoinProbeTemplate implements HashJoinProbe {
   private int bitsInMask = 0; // number of bits in the MASK
   private int rightHVColPosition;
   private int targetOutputRecords;
+  private boolean semiJoin;
 
   @Override
   public void setTargetOutputCount(int targetOutputRecords) {
@@ -96,10 +97,10 @@ public abstract class HashJoinProbeTemplate implements HashJoinProbe {
 
   /**
    *  Setup the Hash Join Probe object
-   *
-   * @param probeBatch
+   *  @param probeBatch
    * @param outgoing
    * @param joinRelType
+   * @param semiJoin
    * @param leftStartState
    * @param partitions
    * @param cycleNum
@@ -110,12 +111,13 @@ public abstract class HashJoinProbeTemplate implements HashJoinProbe {
    * @param rightHVColPosition
    */
   @Override
-  public void setupHashJoinProbe(RecordBatch probeBatch, HashJoinBatch outgoing, JoinRelType joinRelType, IterOutcome leftStartState, HashPartition[] partitions, int cycleNum, VectorContainer container, HashJoinBatch.HJSpilledPartition[] spilledInners, boolean buildSideIsEmpty, int numPartitions, int rightHVColPosition) {
+  public void setupHashJoinProbe(RecordBatch probeBatch, HashJoinBatch outgoing, JoinRelType joinRelType, boolean semiJoin, IterOutcome leftStartState, HashPartition[] partitions, int cycleNum, VectorContainer container, HashJoinBatch.HJSpilledPartition[] spilledInners, boolean buildSideIsEmpty, int numPartitions, int rightHVColPosition) {
     this.container = container;
     this.spilledInners = spilledInners;
     this.probeBatch = probeBatch;
     this.probeSchema = probeBatch.getSchema();
     this.joinType = joinRelType;
+    this.semiJoin = semiJoin;
     this.outgoingJoinBatch = outgoing;
     this.partitions = partitions;
     this.cycleNum = cycleNum;
@@ -328,7 +330,8 @@ public abstract class HashJoinProbeTemplate implements HashJoinProbe {
           /* Projected single row from the build side with matching key but there
            * may be more rows with the same key. Check if that's the case
            */
-          currentCompositeIdx = currPartition.getNextIndex(currentCompositeIdx);
+          currentCompositeIdx = semiJoin ? -1 : // if semi than skip build-side duplicated
+            currPartition.getNextIndex(currentCompositeIdx); // else check for the next dup
           if (currentCompositeIdx == -1) {
             /* We only had one row in the build side that matched the current key
              * from the probe side. Drain the next row in the probe side.

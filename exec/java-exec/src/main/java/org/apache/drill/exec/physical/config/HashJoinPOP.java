@@ -47,17 +47,16 @@ public class HashJoinPOP extends AbstractJoinPop {
   public HashJoinPOP(@JsonProperty("left") PhysicalOperator left, @JsonProperty("right") PhysicalOperator right,
                      @JsonProperty("conditions") List<JoinCondition> conditions,
                      @JsonProperty("joinType") JoinRelType joinType,
+                     @JsonProperty("semiJoin") boolean semiJoin,
                      @JsonProperty("runtimeFilterDef") RuntimeFilterDef runtimeFilterDef) {
-    super(left, right, joinType, null, conditions);
+    super(left, right, joinType, semiJoin, null, conditions);
     Preconditions.checkArgument(joinType != null, "Join type is missing for HashJoin Pop");
     this.runtimeFilterDef = runtimeFilterDef;
   }
 
   @VisibleForTesting
-  public HashJoinPOP(PhysicalOperator left, PhysicalOperator right,
-                     List<JoinCondition> conditions,
-                     JoinRelType joinType) {
-    super(left, right, joinType, null, conditions);
+  public HashJoinPOP(PhysicalOperator left, PhysicalOperator right, List<JoinCondition> conditions, JoinRelType joinType, boolean semiJoin) {
+    super(left, right, joinType, semiJoin, null, conditions);
     Preconditions.checkArgument(joinType != null, "Join type is missing for HashJoin Pop");
   }
 
@@ -66,7 +65,7 @@ public class HashJoinPOP extends AbstractJoinPop {
   public PhysicalOperator getNewWithChildren(List<PhysicalOperator> children) {
         Preconditions.checkArgument(children.size() == 2);
 
-        HashJoinPOP newHashJoin = new HashJoinPOP(children.get(0), children.get(1), conditions, joinType, runtimeFilterDef);
+        HashJoinPOP newHashJoin = new HashJoinPOP(children.get(0), children.get(1), conditions, joinType, semiJoin, runtimeFilterDef);
         newHashJoin.setMaxAllocation(getMaxAllocation());
         return newHashJoin;
   }
@@ -78,7 +77,7 @@ public class HashJoinPOP extends AbstractJoinPop {
             for (JoinCondition c : conditions) {
                 flippedConditions.add(c.flip());
             }
-            return new HashJoinPOP(right, left, flippedConditions, JoinRelType.LEFT, runtimeFilterDef);
+            return new HashJoinPOP(right, left, flippedConditions, JoinRelType.LEFT, semiJoin, runtimeFilterDef);
         } else {
             return this;
       }

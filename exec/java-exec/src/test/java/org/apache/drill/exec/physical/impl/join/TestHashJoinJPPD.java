@@ -44,7 +44,7 @@ public class TestHashJoinJPPD extends PhysicalOpUnitTestBase {
     bloomFilterDefs.add(bloomFilterDef);
     RuntimeFilterDef runtimeFilterDef = new RuntimeFilterDef(true, false, bloomFilterDefs, false );
     HashJoinPOP joinConf = new HashJoinPOP(null, null,
-      Lists.newArrayList(joinCond("lft", "EQUALS", "rgt")), JoinRelType.INNER, runtimeFilterDef);
+      Lists.newArrayList(joinCond("lft", "EQUALS", "rgt")), JoinRelType.INNER, false, runtimeFilterDef);
     operatorFixture.getOptionManager().setLocalOption("exec.hashjoin.num_partitions", 4);
     operatorFixture.getOptionManager().setLocalOption("exec.hashjoin.num_rows_in_batch", 64);
     operatorFixture.getOptionManager().setLocalOption("exec.hashjoin.max_batches_in_memory", 8);
@@ -77,7 +77,7 @@ public class TestHashJoinJPPD extends PhysicalOpUnitTestBase {
     bloomFilterDefs.add(bloomFilterDef1);
     RuntimeFilterDef runtimeFilterDef = new RuntimeFilterDef(true, false, bloomFilterDefs, false );
     HashJoinPOP joinConf = new HashJoinPOP(null, null,
-      Lists.newArrayList(joinCond("lft", "EQUALS", "rgt"), joinCond("a", "EQUALS", "b")), JoinRelType.INNER, runtimeFilterDef);
+      Lists.newArrayList(joinCond("lft", "EQUALS", "rgt"), joinCond("a", "EQUALS", "b")), JoinRelType.INNER, false, runtimeFilterDef);
     operatorFixture.getOptionManager().setLocalOption("exec.hashjoin.num_partitions", 4);
     operatorFixture.getOptionManager().setLocalOption("exec.hashjoin.num_rows_in_batch", 128);
     operatorFixture.getOptionManager().setLocalOption("exec.hashjoin.max_batches_in_memory", 8);
