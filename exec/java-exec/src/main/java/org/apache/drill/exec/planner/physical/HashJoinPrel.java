@@ -140,6 +140,6 @@ public class HashJoinPrel  extends JoinPrel {
 
   @Override
   public RelWriter explainTerms(RelWriter pw) {
-    return super.explainTerms(pw).item("semi-join: ", true);
+    return super.explainTerms(pw).item("semi-join: ", isSemiJoin);
   }
 }

@@ -23,7 +23,6 @@ import org.apache.drill.exec.physical.impl.join.JoinUtils;
 import org.apache.drill.exec.physical.impl.join.JoinUtils.JoinCategory;
 import org.apache.drill.exec.planner.common.DrillJoinRelBase;
 import org.apache.drill.exec.planner.logical.DrillJoin;
-import org.apache.drill.exec.planner.logical.DrillJoinRel;
 import org.apache.drill.exec.planner.physical.DrillDistributionTrait.DistributionField;
 import org.apache.calcite.rel.InvalidRelException;
 import org.apache.calcite.rel.core.JoinRelType;
@@ -48,8 +47,8 @@ public abstract class JoinPruleBase extends Prule {
     super(operand, description);
   }
 
-  protected boolean checkPreconditions(DrillJoinRel join, RelNode left, RelNode right,
-      PlannerSettings settings) {
+  protected boolean checkPreconditions(DrillJoin join, RelNode left, RelNode right,
+                                       PlannerSettings settings) {
     List<Integer> leftKeys = Lists.newArrayList();
     List<Integer> rightKeys = Lists.newArrayList();
     List<Boolean> filterNulls = Lists.newArrayList();

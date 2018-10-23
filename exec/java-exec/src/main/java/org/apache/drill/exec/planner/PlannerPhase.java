@@ -17,7 +17,6 @@
  */
 package org.apache.drill.exec.planner;
 
-import org.apache.drill.exec.planner.physical.HashSemiJoinPrule;
 import org.apache.drill.shaded.guava.com.google.common.collect.ImmutableSet;
 import org.apache.drill.shaded.guava.com.google.common.collect.ImmutableSet.Builder;
 import org.apache.drill.shaded.guava.com.google.common.collect.Lists;
@@ -324,7 +323,6 @@ public enum PlannerPhase {
 
       DrillLimitRule.INSTANCE,
       DrillSortRule.INSTANCE,
-      RuleInstance.SEMI_JOIN_PROJECT_RULE,
       DrillJoinRule.INSTANCE,
       DrillUnionAllRule.INSTANCE,
       DrillValuesRule.INSTANCE,
@@ -356,15 +354,17 @@ public enum PlannerPhase {
      * We have to create another copy of the ruleset with the context dependent elements;
      * this cannot be reused across queries.
      */
-    final ImmutableSet<RelOptRule> basicRules = ImmutableSet.<RelOptRule>builder()
+    ImmutableSet.Builder<RelOptRule> basicRules = ImmutableSet.<RelOptRule>builder()
         .addAll(staticRuleSet)
         .add(
             DrillMergeProjectRule.getInstance(true, RelFactories.DEFAULT_PROJECT_FACTORY,
                 optimizerRulesContext.getFunctionRegistry())
-            )
-        .build();
+            );
+    if (optimizerRulesContext.getPlannerSettings().isSemiJoinEnabled()) {
+      basicRules.add(RuleInstance.SEMI_JOIN_PROJECT_RULE);
+    }
 
-    return RuleSets.ofList(basicRules);
+    return RuleSets.ofList(basicRules.build());
   }
 
   /**
@@ -481,12 +481,12 @@ public enum PlannerPhase {
     if (ps.isHashJoinEnabled()) {
       ruleList.add(HashJoinPrule.DIST_INSTANCE);
       if (ps.isSemiJoinEnabled()) {
-        ruleList.add(HashSemiJoinPrule.DIST_INSTANCE);
+        ruleList.add(HashJoinPrule.SEMI_DIST_INSTANCE);
       }
       if(ps.isBroadcastJoinEnabled()){
         ruleList.add(HashJoinPrule.BROADCAST_INSTANCE);
         if (ps.isSemiJoinEnabled()) {
-          ruleList.add(HashSemiJoinPrule.BROADCAST_INSTANCE);
+          ruleList.add(HashJoinPrule.SEMI_BROADCAST_INSTANCE);
         }
       }
     }
@@ -497,7 +497,6 @@ public enum PlannerPhase {
       if(ps.isBroadcastJoinEnabled()){
         ruleList.add(MergeJoinPrule.BROADCAST_INSTANCE);
       }
-
     }
 
     // NLJ plans consist of broadcasting the right child, hence we need

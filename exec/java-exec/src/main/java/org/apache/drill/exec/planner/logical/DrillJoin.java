@@ -17,6 +17,7 @@
  */
 package org.apache.drill.exec.planner.logical;
 
+import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.drill.exec.planner.common.DrillRelNode;
@@ -37,4 +38,10 @@ public interface DrillJoin extends DrillRelNode {
 
   /* Join condition of the join relation */
   RexNode getCondition();
+
+  /* Left RelNode of the Join Relation */
+  RelNode getLeft();
+
+  /* Right RelNode of the Join Relation */
+  RelNode getRight();
 }
