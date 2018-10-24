@@ -159,7 +159,7 @@ public abstract class JoinPrel extends DrillJoinRelBase implements Prel {
   }
 
   @Override public boolean isValid(Litmus litmus, Context context) {
-    if (!super.isValid(litmus, context)) {
+    if (!this.isSemiJoin && !super.isValid(litmus, context)) {
       return false;
     }
     if (getRowType().getFieldCount()
