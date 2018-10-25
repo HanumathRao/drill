@@ -73,7 +73,7 @@ public class HashJoinPrel  extends JoinPrel {
     if (PrelUtil.getSettings(getCluster()).useDefaultCosting()) {
       return super.computeSelfCost(planner, mq).multiplyBy(.1);
     }
-    if (joincategory == JoinCategory.CARTESIAN || joincategory == JoinCategory.INEQUALITY) {
+    if (swapped && isSemiJoin || joincategory == JoinCategory.CARTESIAN || joincategory == JoinCategory.INEQUALITY) {
       return planner.getCostFactory().makeInfiniteCost();
     }
     return computeHashJoinCost(planner, mq);
