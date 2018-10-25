@@ -83,7 +83,7 @@ public class HashJoinPrel  extends JoinPrel {
   public PhysicalOperator getPhysicalOperator(PhysicalPlanCreator creator) throws IOException {
     // Depending on whether the left/right is swapped for hash inner join, pass in different
     // combinations of parameters.
-    if (! swapped) {
+    if (!swapped || isSemiJoin) {
       return getHashJoinPop(creator, left, right, leftKeys, rightKeys);
     } else {
       return getHashJoinPop(creator, right, left, rightKeys, leftKeys);
