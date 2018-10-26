@@ -360,7 +360,7 @@ public enum PlannerPhase {
             DrillMergeProjectRule.getInstance(true, RelFactories.DEFAULT_PROJECT_FACTORY,
                 optimizerRulesContext.getFunctionRegistry())
             );
-    if (optimizerRulesContext.getPlannerSettings().isHashAggEnabled() &&
+    if (optimizerRulesContext.getPlannerSettings().isHashJoinEnabled() &&
         optimizerRulesContext.getPlannerSettings().isSemiJoinEnabled()) {
       basicRules.add(RuleInstance.SEMI_JOIN_PROJECT_RULE);
     }
