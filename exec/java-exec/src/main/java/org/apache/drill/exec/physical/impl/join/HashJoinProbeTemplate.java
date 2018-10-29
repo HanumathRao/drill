@@ -90,6 +90,7 @@ public abstract class HashJoinProbeTemplate implements HashJoinProbe {
   private int bitsInMask = 0; // number of bits in the MASK
   private int rightHVColPosition;
   private int targetOutputRecords;
+  private boolean semiJoin;
 
   @Override
   public void setTargetOutputCount(int targetOutputRecords) {
@@ -106,6 +107,7 @@ public abstract class HashJoinProbeTemplate implements HashJoinProbe {
    * @param probeBatch
    * @param outgoing
    * @param joinRelType
+   * @param semiJoin
    * @param leftStartState
    * @param partitions
    * @param cycleNum
@@ -116,7 +118,10 @@ public abstract class HashJoinProbeTemplate implements HashJoinProbe {
    * @param rightHVColPosition
    */
   @Override
-  public void setupHashJoinProbe(RecordBatch probeBatch, HashJoinBatch outgoing, JoinRelType joinRelType, IterOutcome leftStartState, HashPartition[] partitions, int cycleNum, VectorContainer container, HashJoinBatch.HashJoinSpilledPartition[] spilledInners, boolean buildSideIsEmpty, int numPartitions, int rightHVColPosition) {
+  public void setupHashJoinProbe(RecordBatch probeBatch, HashJoinBatch outgoing, JoinRelType joinRelType, boolean semiJoin,
+                                 IterOutcome leftStartState, HashPartition[] partitions, int cycleNum,
+                                 VectorContainer container, HashJoinBatch.HashJoinSpilledPartition[] spilledInners,
+                                 boolean buildSideIsEmpty, int numPartitions, int rightHVColPosition) {
     this.container = container;
     this.spilledInners = spilledInners;
     this.probeBatch = probeBatch;
@@ -128,6 +133,7 @@ public abstract class HashJoinProbeTemplate implements HashJoinProbe {
     this.buildSideIsEmpty = buildSideIsEmpty;
     this.numPartitions = numPartitions;
     this.rightHVColPosition = rightHVColPosition;
+    this.semiJoin = semiJoin;
 
     partitionMask = numPartitions - 1; // e.g. 32 --> 0x1F
     bitsInMask = Integer.bitCount(partitionMask); // e.g. 0x1F -> 5
@@ -317,6 +323,16 @@ public abstract class HashJoinProbeTemplate implements HashJoinProbe {
 
           probeIndex = currPartition.probeForKey(recordsProcessed, hashCode);
 
+        }
+
+        if ( semiJoin ) {
+          if ( probeIndex != -1 ) {
+            // output the probe side only
+            outputRecords =
+              outputRow(null, 0, probeBatch.getContainer(), recordsProcessed);
+          }
+          recordsProcessed++;
+          continue; // no build-side duplicates, go on to the next probe-side row
         }
 
         if (probeIndex != -1) {
