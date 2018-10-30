@@ -132,7 +132,7 @@ public abstract class HashJoinProbeTemplate implements HashJoinProbe {
     this.cycleNum = cycleNum;
     this.buildSideIsEmpty = buildSideIsEmpty;
     this.numPartitions = numPartitions;
-    this.numberOfBuildSideColumns = rightHVColPosition; // position (0 based) of added column == #columns
+    this.numberOfBuildSideColumns = semiJoin ? 0 : rightHVColPosition; // position (0 based) of added column == #columns
     this.semiJoin = semiJoin;
 
     partitionMask = numPartitions - 1; // e.g. 32 --> 0x1F
