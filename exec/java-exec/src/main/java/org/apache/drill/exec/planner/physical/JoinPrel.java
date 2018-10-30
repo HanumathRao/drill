@@ -162,6 +162,11 @@ public abstract class JoinPrel extends DrillJoinRelBase implements Prel {
     return isSemiJoin;
   }
 
+  /* A Drill physical rel which is semi join will have output row type with fields from only
+     left side of the join. Calcite's join rel expects to have the output row type from
+     left and right side of the join. This function is overloaded to not throw exceptions for
+     a Drill semi join physical rel.
+   */
   @Override public boolean isValid(Litmus litmus, Context context) {
     if (!this.isSemiJoin && !super.isValid(litmus, context)) {
       return false;

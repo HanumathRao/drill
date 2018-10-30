@@ -101,4 +101,18 @@ public class TestSemiJoin extends BaseTestQuery {
       assertTrue(queryPlan.contains("semi-join: =[true]"));
     }
   }
+
+  @Test
+  public void testMultiColumnInClauseWithSemiJoin() throws Exception {
+    String sql = "select * from cp.`employee.json` where (employee_id, full_name) in (select employee_id, full_name from cp.`employee.json` )";
+
+    ClusterFixtureBuilder builder = ClusterFixture.builder(dirTestWatcher)
+            .setOptionDefault(PlannerSettings.SEMIJOIN.getOptionName(), true);
+
+    try (ClusterFixture cluster = builder.build();
+         ClientFixture client = cluster.clientFixture()) {
+      String queryPlan = client.queryBuilder().sql(sql).explainText();
+      assertTrue(queryPlan.contains("semi-join: =[true]"));
+    }
+  }
 }

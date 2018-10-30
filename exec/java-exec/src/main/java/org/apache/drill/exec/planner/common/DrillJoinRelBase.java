@@ -46,7 +46,7 @@ import org.apache.drill.shaded.guava.com.google.common.collect.Lists;
 /**
  * Base class for logical and physical Joins implemented in Drill.
  */
-public abstract class DrillJoinRelBase extends Join implements DrillRelNode, DrillJoin {
+public abstract class DrillJoinRelBase extends Join implements DrillJoin {
   protected List<Integer> leftKeys = Lists.newArrayList();
   protected List<Integer> rightKeys = Lists.newArrayList();
 

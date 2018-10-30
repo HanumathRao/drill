@@ -20,6 +20,7 @@ package org.apache.drill.exec.planner.physical;
 import java.io.IOException;
 import java.util.List;
 
+import com.google.common.base.Preconditions;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
@@ -65,6 +66,7 @@ public class HashJoinPrel  extends JoinPrel {
       JoinRelType joinType, boolean swapped, RuntimeFilterDef runtimeFilterDef,
       boolean isRowKeyJoin, int joinControl, boolean semiJoin) throws InvalidRelException {
     super(cluster, traits, left, right, condition, joinType, semiJoin);
+    Preconditions.checkArgument(isSemiJoin && !swapped || swapped && !isSemiJoin || (!swapped && !isSemiJoin));
     this.swapped = swapped;
     this.isRowKeyJoin = isRowKeyJoin;
     joincategory = JoinUtils.getJoinCategory(left, right, condition, leftKeys, rightKeys, filterNulls);

@@ -28,13 +28,13 @@ import java.util.List;
  */
 public interface DrillJoin extends DrillRelNode {
 
-  /*Columns of left table that are part of join condition */
+  /* Columns of left table that are part of join condition */
   List<Integer> getLeftKeys();
 
-  /*Columns of right table that are part of join condition */
+  /* Columns of right table that are part of join condition */
   List<Integer> getRightKeys();
 
-  /*JoinType of the join operation*/
+  /* JoinType of the join operation*/
   JoinRelType getJoinType();
 
   /* Join condition of the join relation */
