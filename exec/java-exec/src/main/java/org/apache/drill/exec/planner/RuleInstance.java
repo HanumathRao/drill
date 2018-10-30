@@ -17,7 +17,9 @@
  */
 package org.apache.drill.exec.planner;
 
+import com.google.common.base.Preconditions;
 import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.volcano.AbstractConverter;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.Join;
@@ -62,7 +64,13 @@ public interface RuleInstance {
           DrillRelFactories.LOGICAL_BUILDER);
 
   SemiJoinRule SEMI_JOIN_PROJECT_RULE = new SemiJoinRule.ProjectToSemiJoinRule(Project.class, Join.class, Aggregate.class,
-          DrillRelFactories.LOGICAL_BUILDER, "DrillSemiJoinRule:project");
+          DrillRelFactories.LOGICAL_BUILDER, "DrillSemiJoinRule:project") {
+    public boolean matches(RelOptRuleCall call) {
+      Preconditions.checkArgument(call.rel(1) instanceof Join);
+      Join join = call.rel(1);
+      return !(join.getCondition().isAlwaysTrue() || join.getCondition().isAlwaysFalse());
+    }
+  };
 
   JoinPushExpressionsRule JOIN_PUSH_EXPRESSIONS_RULE =
       new JoinPushExpressionsRule(Join.class,
