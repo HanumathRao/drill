@@ -19,16 +19,12 @@ package org.apache.drill.exec.planner.logical;
 
 import com.google.common.base.Preconditions;
 import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelCollation;
-import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.core.SemiJoin;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Pair;
 import org.apache.drill.common.expression.FieldReference;
@@ -36,7 +32,6 @@ import org.apache.drill.common.logical.data.Join;
 import org.apache.drill.common.logical.data.JoinCondition;
 import org.apache.drill.common.logical.data.LogicalOperator;
 import org.apache.drill.common.logical.data.LogicalSemiJoin;
-import org.apache.drill.exec.planner.physical.DrillDistributionTrait;
 import org.apache.drill.shaded.guava.com.google.common.collect.Lists;
 
 import java.util.ArrayList;
@@ -59,30 +54,6 @@ public class DrillSemiJoinRel extends SemiJoin implements DrillJoin, DrillRel {
           condition,
           leftKeys,
           rightKeys);
-    Preconditions.checkArgument(validateTraits(traitSet, left, right));
-  }
-
-  private static boolean validateTraits(RelTraitSet traitSet, RelNode left, RelNode right) {
-    ImmutableBitSet bitSet = ImmutableBitSet.range(left.getRowType().getFieldCount(),
-            left.getRowType().getFieldCount() + right.getRowType().getFieldCount());
-    for (RelTrait trait: traitSet) {
-      if (trait.getTraitDef().getTraitClass().equals(RelCollation.class)) {
-        RelCollation collationTrait = (RelCollation)trait;
-        for (RelFieldCollation field : collationTrait.getFieldCollations()) {
-          if (bitSet.indexOf(field.getFieldIndex()) < 0) {
-            return false;
-          }
-        }
-      } else if (trait.getTraitDef().getTraitClass().equals(DrillDistributionTrait.class)) {
-        DrillDistributionTrait distributionTrait = (DrillDistributionTrait) trait;
-        for (DrillDistributionTrait.DistributionField field : distributionTrait.getFields()) {
-          if (bitSet.indexOf(field.getFieldId()) > 0) {
-            return false;
-          }
-        }
-      }
-    }
-    return true;
   }
 
   public static SemiJoin create(RelNode left, RelNode right, RexNode condition,

@@ -20,10 +20,13 @@ package org.apache.drill.exec.planner.physical;
 import java.io.IOException;
 import java.util.List;
 
-import com.google.common.base.Preconditions;
+import org.apache.calcite.plan.RelTrait;
+import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.drill.common.logical.data.JoinCondition;
 
 import org.apache.drill.exec.physical.base.PhysicalOperator;
@@ -67,11 +70,38 @@ public class HashJoinPrel  extends JoinPrel {
       boolean isRowKeyJoin, int joinControl, boolean semiJoin) throws InvalidRelException {
     super(cluster, traits, left, right, condition, joinType, semiJoin);
     Preconditions.checkArgument(isSemiJoin && !swapped || swapped && !isSemiJoin || (!swapped && !isSemiJoin));
+    if (isSemiJoin) {
+      Preconditions.checkArgument(!swapped, "swapping of inputs is not allowed for semi-joins");
+      Preconditions.checkArgument(validateTraits(traitSet, left, right));
+    }
     this.swapped = swapped;
     this.isRowKeyJoin = isRowKeyJoin;
     joincategory = JoinUtils.getJoinCategory(left, right, condition, leftKeys, rightKeys, filterNulls);
     this.runtimeFilterDef = runtimeFilterDef;
     this.joinControl = joinControl;
+  }
+
+  private static boolean validateTraits(RelTraitSet traitSet, RelNode left, RelNode right) {
+    ImmutableBitSet bitSet = ImmutableBitSet.range(left.getRowType().getFieldCount(),
+            left.getRowType().getFieldCount() + right.getRowType().getFieldCount());
+    for (RelTrait trait: traitSet) {
+      if (trait.getTraitDef().getTraitClass().equals(RelCollation.class)) {
+        RelCollation collationTrait = (RelCollation)trait;
+        for (RelFieldCollation field : collationTrait.getFieldCollations()) {
+          if (bitSet.indexOf(field.getFieldIndex()) > 0) {
+            return false;
+          }
+        }
+      } else if (trait.getTraitDef().getTraitClass().equals(DrillDistributionTrait.class)) {
+        DrillDistributionTrait distributionTrait = (DrillDistributionTrait) trait;
+        for (DrillDistributionTrait.DistributionField field : distributionTrait.getFields()) {
+          if (bitSet.indexOf(field.getFieldId()) > 0) {
+            return false;
+          }
+        }
+      }
+    }
+    return true;
   }
 
   @Override
