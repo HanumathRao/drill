@@ -76,10 +76,11 @@ public class TestSemiJoin extends BaseTestQuery {
   @Test
   public void testLargeInClauseToSemiJoin() throws Exception {
     String sql = "select employee_id, full_name from cp.`employee.json` " +
-            "where employee_id in (351, 352, 353, 451, 452, 453, 551, 552, 553, 651, 652, 653, 751, 752, 753, 851, 852, 853, 951, 952, 953)";
+            "where employee_id in (351, 352, 353, 451, 452, 453, 551, 552, 553, 651, 652, 653, 751, 752, 753, 851, 851,  852, 853, 951, 952, 953, 954, 956)";
 
     ClusterFixtureBuilder builder = ClusterFixture.builder(dirTestWatcher)
-            .setOptionDefault(PlannerSettings.SEMIJOIN.getOptionName(), true);
+            .setOptionDefault(PlannerSettings.SEMIJOIN.getOptionName(), true)
+            .setOptionDefault(PlannerSettings.IN_SUBQUERY_THRESHOLD.getOptionName(), 10);
 
     try (ClusterFixture cluster = builder.build();
          ClientFixture client = cluster.clientFixture()) {
