@@ -238,7 +238,7 @@ public class DefaultSqlHandler extends AbstractSqlHandler {
       final RelNode pruned = transform(PlannerType.HEP_BOTTOM_UP, PlannerPhase.DIRECTORY_PRUNING, setOpTransposeNode);
       final RelTraitSet logicalTraits = pruned.getTraitSet().plus(DrillRel.DRILL_LOGICAL);
 
-      final RelNode convertedRelNode;
+      RelNode convertedRelNode;
       if (!context.getPlannerSettings().isHepOptEnabled()) {
         // hep is disabled, use volcano
         convertedRelNode = transform(PlannerType.VOLCANO, PlannerPhase.LOGICAL_PRUNE_AND_JOIN, pruned, logicalTraits);
@@ -277,6 +277,10 @@ public class DefaultSqlHandler extends AbstractSqlHandler {
         }
       }
 
+      if (context.getPlannerSettings().isSemiJoinEnabled() &&
+          context.getPlannerSettings().isHashJoinEnabled()) {
+        convertedRelNode = transform(PlannerType.HEP_BOTTOM_UP, PlannerPhase.SEMIJOIN_CONVERSION, convertedRelNode);
+      }
       // Convert SUM to $SUM0
       final RelNode convertedRelNodeWithSum0 = transform(PlannerType.HEP_BOTTOM_UP, PlannerPhase.SUM_CONVERSION, convertedRelNode);
 
