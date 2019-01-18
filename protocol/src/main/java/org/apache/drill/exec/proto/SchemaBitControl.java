@@ -24,6 +24,133 @@ package org.apache.drill.exec.proto;
 public final class SchemaBitControl
 {
 
+    public static final class SchedulingStatusForAQueue
+    {
+        public static final org.apache.drill.exec.proto.SchemaBitControl.SchedulingStatusForAQueue.MessageSchema WRITE =
+            new org.apache.drill.exec.proto.SchemaBitControl.SchedulingStatusForAQueue.MessageSchema();
+        public static final org.apache.drill.exec.proto.SchemaBitControl.SchedulingStatusForAQueue.BuilderSchema MERGE =
+            new org.apache.drill.exec.proto.SchemaBitControl.SchedulingStatusForAQueue.BuilderSchema();
+        
+        public static class MessageSchema implements com.dyuproject.protostuff.Schema<org.apache.drill.exec.proto.BitControl.SchedulingStatusForAQueue>
+        {
+            public void writeTo(com.dyuproject.protostuff.Output output, org.apache.drill.exec.proto.BitControl.SchedulingStatusForAQueue message) throws java.io.IOException
+            {
+                if(message.hasStatus())
+                    output.writeEnum(1, message.getStatus().getNumber(), false);
+                if(message.hasQueueID())
+                    output.writeInt32(2, message.getQueueID(), false);
+                if(message.hasQueryId())
+                    output.writeObject(3, message.getQueryId(), org.apache.drill.exec.proto.SchemaUserBitShared.QueryId.WRITE, false);
+
+            }
+            public boolean isInitialized(org.apache.drill.exec.proto.BitControl.SchedulingStatusForAQueue message)
+            {
+                return message.isInitialized();
+            }
+            public java.lang.String getFieldName(int number)
+            {
+                return org.apache.drill.exec.proto.SchemaBitControl.SchedulingStatusForAQueue.getFieldName(number);
+            }
+            public int getFieldNumber(java.lang.String name)
+            {
+                return org.apache.drill.exec.proto.SchemaBitControl.SchedulingStatusForAQueue.getFieldNumber(name);
+            }
+            public java.lang.Class<org.apache.drill.exec.proto.BitControl.SchedulingStatusForAQueue> typeClass()
+            {
+                return org.apache.drill.exec.proto.BitControl.SchedulingStatusForAQueue.class;
+            }
+            public java.lang.String messageName()
+            {
+                return org.apache.drill.exec.proto.BitControl.SchedulingStatusForAQueue.class.getSimpleName();
+            }
+            public java.lang.String messageFullName()
+            {
+                return org.apache.drill.exec.proto.BitControl.SchedulingStatusForAQueue.class.getName();
+            }
+            //unused
+            public void mergeFrom(com.dyuproject.protostuff.Input input, org.apache.drill.exec.proto.BitControl.SchedulingStatusForAQueue message) throws java.io.IOException {}
+            public org.apache.drill.exec.proto.BitControl.SchedulingStatusForAQueue newMessage() { return null; }
+        }
+        public static class BuilderSchema implements com.dyuproject.protostuff.Schema<org.apache.drill.exec.proto.BitControl.SchedulingStatusForAQueue.Builder>
+        {
+            public void mergeFrom(com.dyuproject.protostuff.Input input, org.apache.drill.exec.proto.BitControl.SchedulingStatusForAQueue.Builder builder) throws java.io.IOException
+            {
+                for(int number = input.readFieldNumber(this);; number = input.readFieldNumber(this))
+                {
+                    switch(number)
+                    {
+                        case 0:
+                            return;
+                        case 1:
+                            builder.setStatus(org.apache.drill.exec.proto.BitControl.SchedulingStatusType.valueOf(input.readEnum()));
+                            break;
+                        case 2:
+                            builder.setQueueID(input.readInt32());
+                            break;
+                        case 3:
+                            builder.setQueryId(input.mergeObject(org.apache.drill.exec.proto.UserBitShared.QueryId.newBuilder(), org.apache.drill.exec.proto.SchemaUserBitShared.QueryId.MERGE));
+
+                            break;
+                        default:
+                            input.handleUnknownField(number, this);
+                    }
+                }
+            }
+            public boolean isInitialized(org.apache.drill.exec.proto.BitControl.SchedulingStatusForAQueue.Builder builder)
+            {
+                return builder.isInitialized();
+            }
+            public org.apache.drill.exec.proto.BitControl.SchedulingStatusForAQueue.Builder newMessage()
+            {
+                return org.apache.drill.exec.proto.BitControl.SchedulingStatusForAQueue.newBuilder();
+            }
+            public java.lang.String getFieldName(int number)
+            {
+                return org.apache.drill.exec.proto.SchemaBitControl.SchedulingStatusForAQueue.getFieldName(number);
+            }
+            public int getFieldNumber(java.lang.String name)
+            {
+                return org.apache.drill.exec.proto.SchemaBitControl.SchedulingStatusForAQueue.getFieldNumber(name);
+            }
+            public java.lang.Class<org.apache.drill.exec.proto.BitControl.SchedulingStatusForAQueue.Builder> typeClass()
+            {
+                return org.apache.drill.exec.proto.BitControl.SchedulingStatusForAQueue.Builder.class;
+            }
+            public java.lang.String messageName()
+            {
+                return org.apache.drill.exec.proto.BitControl.SchedulingStatusForAQueue.class.getSimpleName();
+            }
+            public java.lang.String messageFullName()
+            {
+                return org.apache.drill.exec.proto.BitControl.SchedulingStatusForAQueue.class.getName();
+            }
+            //unused
+            public void writeTo(com.dyuproject.protostuff.Output output, org.apache.drill.exec.proto.BitControl.SchedulingStatusForAQueue.Builder builder) throws java.io.IOException {}
+        }
+        public static java.lang.String getFieldName(int number)
+        {
+            switch(number)
+            {
+                case 1: return "status";
+                case 2: return "queueID";
+                case 3: return "queryId";
+                default: return null;
+            }
+        }
+        public static int getFieldNumber(java.lang.String name)
+        {
+            java.lang.Integer number = fieldMap.get(name);
+            return number == null ? 0 : number.intValue();
+        }
+        private static final java.util.HashMap<java.lang.String,java.lang.Integer> fieldMap = new java.util.HashMap<java.lang.String,java.lang.Integer>();
+        static
+        {
+            fieldMap.put("status", 1);
+            fieldMap.put("queueID", 2);
+            fieldMap.put("queryId", 3);
+        }
+    }
+
     public static final class BitControlHandshake
     {
         public static final org.apache.drill.exec.proto.SchemaBitControl.BitControlHandshake.MessageSchema WRITE =
@@ -622,6 +749,255 @@ public final class SchemaBitControl
         {
             fieldMap.put("type", 1);
             fieldMap.put("message", 2);
+        }
+    }
+
+    public static final class ScheduleQueryMessage
+    {
+        public static final org.apache.drill.exec.proto.SchemaBitControl.ScheduleQueryMessage.MessageSchema WRITE =
+            new org.apache.drill.exec.proto.SchemaBitControl.ScheduleQueryMessage.MessageSchema();
+        public static final org.apache.drill.exec.proto.SchemaBitControl.ScheduleQueryMessage.BuilderSchema MERGE =
+            new org.apache.drill.exec.proto.SchemaBitControl.ScheduleQueryMessage.BuilderSchema();
+        
+        public static class MessageSchema implements com.dyuproject.protostuff.Schema<org.apache.drill.exec.proto.BitControl.ScheduleQueryMessage>
+        {
+            public void writeTo(com.dyuproject.protostuff.Output output, org.apache.drill.exec.proto.BitControl.ScheduleQueryMessage message) throws java.io.IOException
+            {
+                if(message.hasSender())
+                    output.writeObject(1, message.getSender(), org.apache.drill.exec.proto.SchemaCoordinationProtos.DrillbitEndpoint.WRITE, false);
+
+                if(message.hasQueueID())
+                    output.writeInt32(2, message.getQueueID(), false);
+                if(message.hasQueryId())
+                    output.writeObject(3, message.getQueryId(), org.apache.drill.exec.proto.SchemaUserBitShared.QueryId.WRITE, false);
+
+            }
+            public boolean isInitialized(org.apache.drill.exec.proto.BitControl.ScheduleQueryMessage message)
+            {
+                return message.isInitialized();
+            }
+            public java.lang.String getFieldName(int number)
+            {
+                return org.apache.drill.exec.proto.SchemaBitControl.ScheduleQueryMessage.getFieldName(number);
+            }
+            public int getFieldNumber(java.lang.String name)
+            {
+                return org.apache.drill.exec.proto.SchemaBitControl.ScheduleQueryMessage.getFieldNumber(name);
+            }
+            public java.lang.Class<org.apache.drill.exec.proto.BitControl.ScheduleQueryMessage> typeClass()
+            {
+                return org.apache.drill.exec.proto.BitControl.ScheduleQueryMessage.class;
+            }
+            public java.lang.String messageName()
+            {
+                return org.apache.drill.exec.proto.BitControl.ScheduleQueryMessage.class.getSimpleName();
+            }
+            public java.lang.String messageFullName()
+            {
+                return org.apache.drill.exec.proto.BitControl.ScheduleQueryMessage.class.getName();
+            }
+            //unused
+            public void mergeFrom(com.dyuproject.protostuff.Input input, org.apache.drill.exec.proto.BitControl.ScheduleQueryMessage message) throws java.io.IOException {}
+            public org.apache.drill.exec.proto.BitControl.ScheduleQueryMessage newMessage() { return null; }
+        }
+        public static class BuilderSchema implements com.dyuproject.protostuff.Schema<org.apache.drill.exec.proto.BitControl.ScheduleQueryMessage.Builder>
+        {
+            public void mergeFrom(com.dyuproject.protostuff.Input input, org.apache.drill.exec.proto.BitControl.ScheduleQueryMessage.Builder builder) throws java.io.IOException
+            {
+                for(int number = input.readFieldNumber(this);; number = input.readFieldNumber(this))
+                {
+                    switch(number)
+                    {
+                        case 0:
+                            return;
+                        case 1:
+                            builder.setSender(input.mergeObject(org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpoint.newBuilder(), org.apache.drill.exec.proto.SchemaCoordinationProtos.DrillbitEndpoint.MERGE));
+
+                            break;
+                        case 2:
+                            builder.setQueueID(input.readInt32());
+                            break;
+                        case 3:
+                            builder.setQueryId(input.mergeObject(org.apache.drill.exec.proto.UserBitShared.QueryId.newBuilder(), org.apache.drill.exec.proto.SchemaUserBitShared.QueryId.MERGE));
+
+                            break;
+                        default:
+                            input.handleUnknownField(number, this);
+                    }
+                }
+            }
+            public boolean isInitialized(org.apache.drill.exec.proto.BitControl.ScheduleQueryMessage.Builder builder)
+            {
+                return builder.isInitialized();
+            }
+            public org.apache.drill.exec.proto.BitControl.ScheduleQueryMessage.Builder newMessage()
+            {
+                return org.apache.drill.exec.proto.BitControl.ScheduleQueryMessage.newBuilder();
+            }
+            public java.lang.String getFieldName(int number)
+            {
+                return org.apache.drill.exec.proto.SchemaBitControl.ScheduleQueryMessage.getFieldName(number);
+            }
+            public int getFieldNumber(java.lang.String name)
+            {
+                return org.apache.drill.exec.proto.SchemaBitControl.ScheduleQueryMessage.getFieldNumber(name);
+            }
+            public java.lang.Class<org.apache.drill.exec.proto.BitControl.ScheduleQueryMessage.Builder> typeClass()
+            {
+                return org.apache.drill.exec.proto.BitControl.ScheduleQueryMessage.Builder.class;
+            }
+            public java.lang.String messageName()
+            {
+                return org.apache.drill.exec.proto.BitControl.ScheduleQueryMessage.class.getSimpleName();
+            }
+            public java.lang.String messageFullName()
+            {
+                return org.apache.drill.exec.proto.BitControl.ScheduleQueryMessage.class.getName();
+            }
+            //unused
+            public void writeTo(com.dyuproject.protostuff.Output output, org.apache.drill.exec.proto.BitControl.ScheduleQueryMessage.Builder builder) throws java.io.IOException {}
+        }
+        public static java.lang.String getFieldName(int number)
+        {
+            switch(number)
+            {
+                case 1: return "sender";
+                case 2: return "queueID";
+                case 3: return "queryId";
+                default: return null;
+            }
+        }
+        public static int getFieldNumber(java.lang.String name)
+        {
+            java.lang.Integer number = fieldMap.get(name);
+            return number == null ? 0 : number.intValue();
+        }
+        private static final java.util.HashMap<java.lang.String,java.lang.Integer> fieldMap = new java.util.HashMap<java.lang.String,java.lang.Integer>();
+        static
+        {
+            fieldMap.put("sender", 1);
+            fieldMap.put("queueID", 2);
+            fieldMap.put("queryId", 3);
+        }
+    }
+
+    public static final class AdmitQueryMessage
+    {
+        public static final org.apache.drill.exec.proto.SchemaBitControl.AdmitQueryMessage.MessageSchema WRITE =
+            new org.apache.drill.exec.proto.SchemaBitControl.AdmitQueryMessage.MessageSchema();
+        public static final org.apache.drill.exec.proto.SchemaBitControl.AdmitQueryMessage.BuilderSchema MERGE =
+            new org.apache.drill.exec.proto.SchemaBitControl.AdmitQueryMessage.BuilderSchema();
+        
+        public static class MessageSchema implements com.dyuproject.protostuff.Schema<org.apache.drill.exec.proto.BitControl.AdmitQueryMessage>
+        {
+            public void writeTo(com.dyuproject.protostuff.Output output, org.apache.drill.exec.proto.BitControl.AdmitQueryMessage message) throws java.io.IOException
+            {
+                if(message.hasQueueID())
+                    output.writeInt32(1, message.getQueueID(), false);
+                if(message.hasQueryId())
+                    output.writeObject(2, message.getQueryId(), org.apache.drill.exec.proto.SchemaUserBitShared.QueryId.WRITE, false);
+
+            }
+            public boolean isInitialized(org.apache.drill.exec.proto.BitControl.AdmitQueryMessage message)
+            {
+                return message.isInitialized();
+            }
+            public java.lang.String getFieldName(int number)
+            {
+                return org.apache.drill.exec.proto.SchemaBitControl.AdmitQueryMessage.getFieldName(number);
+            }
+            public int getFieldNumber(java.lang.String name)
+            {
+                return org.apache.drill.exec.proto.SchemaBitControl.AdmitQueryMessage.getFieldNumber(name);
+            }
+            public java.lang.Class<org.apache.drill.exec.proto.BitControl.AdmitQueryMessage> typeClass()
+            {
+                return org.apache.drill.exec.proto.BitControl.AdmitQueryMessage.class;
+            }
+            public java.lang.String messageName()
+            {
+                return org.apache.drill.exec.proto.BitControl.AdmitQueryMessage.class.getSimpleName();
+            }
+            public java.lang.String messageFullName()
+            {
+                return org.apache.drill.exec.proto.BitControl.AdmitQueryMessage.class.getName();
+            }
+            //unused
+            public void mergeFrom(com.dyuproject.protostuff.Input input, org.apache.drill.exec.proto.BitControl.AdmitQueryMessage message) throws java.io.IOException {}
+            public org.apache.drill.exec.proto.BitControl.AdmitQueryMessage newMessage() { return null; }
+        }
+        public static class BuilderSchema implements com.dyuproject.protostuff.Schema<org.apache.drill.exec.proto.BitControl.AdmitQueryMessage.Builder>
+        {
+            public void mergeFrom(com.dyuproject.protostuff.Input input, org.apache.drill.exec.proto.BitControl.AdmitQueryMessage.Builder builder) throws java.io.IOException
+            {
+                for(int number = input.readFieldNumber(this);; number = input.readFieldNumber(this))
+                {
+                    switch(number)
+                    {
+                        case 0:
+                            return;
+                        case 1:
+                            builder.setQueueID(input.readInt32());
+                            break;
+                        case 2:
+                            builder.setQueryId(input.mergeObject(org.apache.drill.exec.proto.UserBitShared.QueryId.newBuilder(), org.apache.drill.exec.proto.SchemaUserBitShared.QueryId.MERGE));
+
+                            break;
+                        default:
+                            input.handleUnknownField(number, this);
+                    }
+                }
+            }
+            public boolean isInitialized(org.apache.drill.exec.proto.BitControl.AdmitQueryMessage.Builder builder)
+            {
+                return builder.isInitialized();
+            }
+            public org.apache.drill.exec.proto.BitControl.AdmitQueryMessage.Builder newMessage()
+            {
+                return org.apache.drill.exec.proto.BitControl.AdmitQueryMessage.newBuilder();
+            }
+            public java.lang.String getFieldName(int number)
+            {
+                return org.apache.drill.exec.proto.SchemaBitControl.AdmitQueryMessage.getFieldName(number);
+            }
+            public int getFieldNumber(java.lang.String name)
+            {
+                return org.apache.drill.exec.proto.SchemaBitControl.AdmitQueryMessage.getFieldNumber(name);
+            }
+            public java.lang.Class<org.apache.drill.exec.proto.BitControl.AdmitQueryMessage.Builder> typeClass()
+            {
+                return org.apache.drill.exec.proto.BitControl.AdmitQueryMessage.Builder.class;
+            }
+            public java.lang.String messageName()
+            {
+                return org.apache.drill.exec.proto.BitControl.AdmitQueryMessage.class.getSimpleName();
+            }
+            public java.lang.String messageFullName()
+            {
+                return org.apache.drill.exec.proto.BitControl.AdmitQueryMessage.class.getName();
+            }
+            //unused
+            public void writeTo(com.dyuproject.protostuff.Output output, org.apache.drill.exec.proto.BitControl.AdmitQueryMessage.Builder builder) throws java.io.IOException {}
+        }
+        public static java.lang.String getFieldName(int number)
+        {
+            switch(number)
+            {
+                case 1: return "queueID";
+                case 2: return "queryId";
+                default: return null;
+            }
+        }
+        public static int getFieldNumber(java.lang.String name)
+        {
+            java.lang.Integer number = fieldMap.get(name);
+            return number == null ? 0 : number.intValue();
+        }
+        private static final java.util.HashMap<java.lang.String,java.lang.Integer> fieldMap = new java.util.HashMap<java.lang.String,java.lang.Integer>();
+        static
+        {
+            fieldMap.put("queueID", 1);
+            fieldMap.put("queryId", 2);
         }
     }
 

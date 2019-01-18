@@ -790,7 +790,7 @@ public class DrillClient implements Closeable, ConnectionThrottle {
 
   /**
    * Execute the given prepared statement and return the results.
-   *
+   *diameter
    * @param preparedStatementHandle Prepared statement handle returned in response to
    *                                {@link #createPreparedStatement(String)}.
    * @return List of {@link QueryDataBatch}s. It is responsibility of the caller to release query data batches.

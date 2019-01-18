@@ -41,5 +41,4 @@ public abstract class AbstractOpWrapperVisitor<RET, EXCEP extends Throwable> ext
   public RET visitReceivingExchange(Exchange exchange, Wrapper wrapper) throws EXCEP {
     return visitOp(exchange, wrapper);
   }
-
 }

@@ -88,12 +88,12 @@ public class Fragment implements Iterable<Fragment.ExchangeFragmentPair> {
 
   public class ExchangeFragmentPair {
     private Exchange exchange;
-    private Fragment node;
+    private Fragment fragmentXchgTo;
 
-    public ExchangeFragmentPair(Exchange exchange, Fragment node) {
+    public ExchangeFragmentPair(Exchange exchange, Fragment fragXchgTo) {
       super();
       this.exchange = exchange;
-      this.node = node;
+      this.fragmentXchgTo = fragXchgTo;
     }
 
     public Exchange getExchange() {
@@ -101,7 +101,7 @@ public class Fragment implements Iterable<Fragment.ExchangeFragmentPair> {
     }
 
     public Fragment getNode() {
-      return node;
+      return fragmentXchgTo;
     }
 
     @Override
@@ -109,7 +109,7 @@ public class Fragment implements Iterable<Fragment.ExchangeFragmentPair> {
       final int prime = 31;
       int result = 1;
       result = prime * result + ((exchange == null) ? 0 : exchange.hashCode());
-      result = prime * result + ((node == null) ? 0 : node.hashCode());
+      result = prime * result + ((fragmentXchgTo == null) ? 0 : fragmentXchgTo.hashCode());
       return result;
     }
 
