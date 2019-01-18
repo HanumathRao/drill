@@ -26,6 +26,8 @@ enum RpcType {
   REQ_QUERY_CANCEL = 15;
   REQ_UNPAUSE_FRAGMENT = 16; // send a resume message for a fragment, returns Ack
   REQ_CUSTOM = 17;
+  REQ_SCHEDULE_QUERY_TO_QUEUE = 20;
+  REQ_QUEUE_SCHED_STATUS = 21;
 
   // bit responses
   RESP_FRAGMENT_HANDLE = 11;
@@ -36,6 +38,20 @@ enum RpcType {
 
   // both bit request and response
   SASL_MESSAGE = 19;
+}
+
+enum SchedulingStatusType {
+  ADMIT_QUERY_TO_QUEUE = 0;
+  WAIT_QUERY_FOR_QUEUE = 1;
+  SERVER_BUSY = 2;
+  NOT_A_LEADER_FOR_QUEUE = 3;
+}
+
+message SchedulingStatusForAQueue {
+  required SchedulingStatusType status = 1;
+  required int32 queueID = 2;
+  required exec.shared.QueryId query_id = 3;
+  required DrillbitEndpoint leader = 4;
 }
 
 message BitControlHandshake{
@@ -61,6 +77,17 @@ message InitializeFragments {
 message CustomMessage {
   optional int32 type = 1;
   optional bytes message = 2;
+}
+
+message ScheduleQueryMessage {
+  required DrillbitEndpoint sender = 1;
+  required int32 queueID = 2;
+  required exec.shared.QueryId query_id = 3;
+}
+
+message AdmitQueryMessage {
+  required int32 queueID = 1;
+  required exec.shared.QueryId query_id = 2;
 }
 
 message PlanFragment {

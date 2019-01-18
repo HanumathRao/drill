@@ -35,8 +35,4 @@ public class Response {
     this.pBody = pBody;
     this.dBodies = dBodies;
   }
-
-
-
-
 }

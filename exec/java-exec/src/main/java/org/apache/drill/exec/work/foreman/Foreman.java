@@ -408,6 +408,13 @@ public class Foreman implements Runnable {
     validatePlan(plan);
 
     queryRM.visitAbstractPlan(plan);
+    //queryRM should also provide an interface to get the current Selected queue.
+    //queryRM.getSelectedQueue() -- This should either return a QueueProperties for the selected Queue or null.
+    //If null is returned then optimizer should have method to compute the MRB required by the plan.
+    //If null then queryRM should have another method for getting the selectedQueue given the MRB count as well. This might result in Queue not selected also if so then it
+    //should return which is the nearest Queue which would have satisfied and it's properties.
+    //If null use the above information and try to downgrade the resource consumption for this plan.
+    //Once we have selected the queue, pick the leader and send a schedule message to the queue.
     final QueryWorkUnit work = getQueryWorkUnit(plan);
     if (enableRuntimeFilter) {
       runtimeFilterRouter = new RuntimeFilterRouter(work, drillbitContext);

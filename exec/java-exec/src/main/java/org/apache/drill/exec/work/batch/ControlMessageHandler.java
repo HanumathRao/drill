@@ -21,6 +21,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.DrillBuf;
 import org.apache.drill.common.exceptions.ExecutionSetupException;
 import org.apache.drill.exec.ops.FragmentContextImpl;
+import org.apache.drill.exec.proto.BitControl;
+import org.apache.drill.exec.proto.BitControl.ScheduleQueryMessage;
 import org.apache.drill.exec.proto.BitControl.CustomMessage;
 import org.apache.drill.exec.proto.BitControl.FinishedReceiver;
 import org.apache.drill.exec.proto.BitControl.FragmentStatus;
@@ -69,6 +71,25 @@ public class ControlMessageHandler implements RequestHandler<ControlConnection> 
     }
 
     switch (rpcType) {
+    case RpcType.REQ_SCHEDULE_QUERY_TO_QUEUE_VALUE : {
+      final ScheduleQueryMessage handle = get(pBody, ScheduleQueryMessage.PARSER);
+      Ack result = scheduleQueryInQueue(handle);
+      if (result.getOk()) {
+        sender.send(ControlRpcConfig.OK);
+      } else {
+        sender.send(ControlRpcConfig.FAIL);
+      }
+    }
+
+    case RpcType.REQ_QUEUE_SCHED_STATUS_VALUE: {
+      final BitControl.SchedulingStatusForAQueue handle = get(pBody, BitControl.SchedulingStatusForAQueue.PARSER);
+      Ack result = handleQueueStatus(handle);
+      if (result.getOk()) {
+        sender.send(ControlRpcConfig.OK);
+      } else {
+        sender.send(ControlRpcConfig.FAIL);
+      }
+    }
 
     case RpcType.REQ_CANCEL_FRAGMENT_VALUE: {
       final FragmentHandle handle = get(pBody, FragmentHandle.PARSER);
@@ -226,6 +247,22 @@ public class ControlMessageHandler implements RequestHandler<ControlConnection> 
     // fragment completed or does not exist
     logger.warn("Dropping request to resume fragment. {} does not exist.", QueryIdHelper.getQueryIdentifier(handle));
     return Acks.OK;
+  }
+
+  public Ack scheduleQueryInQueue(final ScheduleQueryMessage queryMessage) {
+    Ack ack;
+    try {
+      //timed out value is taken from the configuration.
+      if(bee.scheduleQuery(null, queryMessage.getQueryId(), queryMessage.getQueueID())) {
+        ack = Acks.OK;
+      } else {
+        ack = Acks.FAIL;
+      }
+    } catch(Exception ex) {
+      ack = Acks.FAIL;
+    }
+
+    return ack;
   }
 
   public Ack receivingFragmentFinished(final FinishedReceiver finishedReceiver) {

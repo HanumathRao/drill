@@ -49,7 +49,7 @@ import java.util.Collection;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
-
+import java.util.Map;
 import static org.apache.drill.shaded.guava.com.google.common.base.Preconditions.checkNotNull;
 
 public class DrillbitContext implements AutoCloseable {
@@ -74,6 +74,7 @@ public class DrillbitContext implements AutoCloseable {
   private final DrillOperatorTable table;
   private final QueryProfileStoreContext profileStoreContext;
   private ResourceManager resourceManager;
+  private final Map<String, DrillbitEndpoint> leaderMap;
 
   public DrillbitContext(
       DrillbitEndpoint endpoint,
@@ -121,6 +122,7 @@ public class DrillbitContext implements AutoCloseable {
 
     //This profile store context is built from the profileStoreProvider
     profileStoreContext = new QueryProfileStoreContext(context.getConfig(), profileStoreProvider, coord);
+    leaderMap = null;
   }
 
   public QueryProfileStoreContext getProfileStoreContext() {

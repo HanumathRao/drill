@@ -164,10 +164,9 @@ public class SimpleParallelizer implements ParallelizationParameters {
 
     initFragmentWrappers(rootFragment, planningSet);
 
-    final Set<Wrapper> leafFragments = constructFragmentDependencyGraph(planningSet);
+    final Set<Wrapper> rootFragments = constructFragmentDependencyGraph(planningSet);
 
-    // Start parallelizing from leaf fragments
-    for (Wrapper wrapper : leafFragments) {
+    for (Wrapper wrapper : rootFragments) {
       parallelizeFragment(wrapper, planningSet, activeEndpoints);
     }
     planningSet.findRootWrapper(rootFragment);
@@ -193,29 +192,31 @@ public class SimpleParallelizer implements ParallelizationParameters {
   private static Set<Wrapper> constructFragmentDependencyGraph(PlanningSet planningSet) {
 
     // Set up dependency of fragments based on the affinity of exchange that separates the fragments.
-    for(Wrapper currentFragmentWrapper : planningSet) {
-      ExchangeFragmentPair sendingExchange = currentFragmentWrapper.getNode().getSendingExchangePair();
-      if (sendingExchange != null) {
-        ParallelizationDependency dependency = sendingExchange.getExchange().getParallelizationDependency();
-        Wrapper receivingFragmentWrapper = planningSet.get(sendingExchange.getNode());
+    for(Wrapper currentFragment : planningSet) {
+      ExchangeFragmentPair sendingXchgForCurrFrag = currentFragment.getNode().getSendingExchangePair();
+      if (sendingXchgForCurrFrag != null) {
+        ParallelizationDependency dependency = sendingXchgForCurrFrag.getExchange().getParallelizationDependency();
+        Wrapper receivingFragmentWrapper = planningSet.get(sendingXchgForCurrFrag.getNode());
 
+        //Mostly Receivers of the current fragment depend on the sender of the child fragments. However there is a special case
+        //for DeMux Exchanges where the Sender of the current fragment depends on the receiver of the parent fragment.
         if (dependency == ParallelizationDependency.RECEIVER_DEPENDS_ON_SENDER) {
-          receivingFragmentWrapper.addFragmentDependency(currentFragmentWrapper);
+          receivingFragmentWrapper.addFragmentDependency(currentFragment);
         } else if (dependency == ParallelizationDependency.SENDER_DEPENDS_ON_RECEIVER) {
-          currentFragmentWrapper.addFragmentDependency(receivingFragmentWrapper);
+          currentFragment.addFragmentDependency(receivingFragmentWrapper);
         }
       }
     }
 
-    // Identify leaf fragments. Leaf fragments are fragments that have no other fragments depending on them for
-    // parallelization info. First assume all fragments are leaf fragments. Go through the fragments one by one and
-    // remove the fragment on which the current fragment depends on.
-
+    //The following code gets the root fragment by removing all the dependent fragments on which root fragments depend upon.
+    //This is fine because the later parallelizer code traverses from these root fragments to their respective dependent
+    //fragments.
     final Set<Wrapper> roots = Sets.newHashSet();
     for(Wrapper w : planningSet) {
       roots.add(w);
     }
 
+    //roots will be left over with the fragments which are not depended upon by any other fragments.
     for(Wrapper wrapper : planningSet) {
       final List<Wrapper> fragmentDependencies = wrapper.getFragmentDependencies();
       if (fragmentDependencies != null && fragmentDependencies.size() > 0) {

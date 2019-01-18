@@ -58,6 +58,10 @@ public class ControlTunnel {
     this.manager = manager;
   }
 
+//  public void sendQueryAdmitMessage(RpcOutcomeListener<Ack> outcomeListener, BitControl.ScheduleQueryMessage message) {
+//    SendQueue
+//  }
+
   public void sendFragments(RpcOutcomeListener<Ack> outcomeListener, InitializeFragments fragments){
     SendFragment b = new SendFragment(outcomeListener, fragments);
     manager.runCommand(b);

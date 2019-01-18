@@ -103,29 +103,37 @@ public final class BitControl {
      */
     REQ_CUSTOM(11, 17),
     /**
+     * <code>REQ_SCHEDULE_QUERY_TO_QUEUE = 20;</code>
+     */
+    REQ_SCHEDULE_QUERY_TO_QUEUE(12, 20),
+    /**
+     * <code>REQ_QUEUE_SCHED_STATUS = 21;</code>
+     */
+    REQ_QUEUE_SCHED_STATUS(13, 21),
+    /**
      * <code>RESP_FRAGMENT_HANDLE = 11;</code>
      *
      * <pre>
      * bit responses
      * </pre>
      */
-    RESP_FRAGMENT_HANDLE(12, 11),
+    RESP_FRAGMENT_HANDLE(14, 11),
     /**
      * <code>RESP_FRAGMENT_STATUS = 12;</code>
      */
-    RESP_FRAGMENT_STATUS(13, 12),
+    RESP_FRAGMENT_STATUS(15, 12),
     /**
      * <code>RESP_BIT_STATUS = 13;</code>
      */
-    RESP_BIT_STATUS(14, 13),
+    RESP_BIT_STATUS(16, 13),
     /**
      * <code>RESP_QUERY_STATUS = 14;</code>
      */
-    RESP_QUERY_STATUS(15, 14),
+    RESP_QUERY_STATUS(17, 14),
     /**
      * <code>RESP_CUSTOM = 18;</code>
      */
-    RESP_CUSTOM(16, 18),
+    RESP_CUSTOM(18, 18),
     /**
      * <code>SASL_MESSAGE = 19;</code>
      *
@@ -133,7 +141,7 @@ public final class BitControl {
      * both bit request and response
      * </pre>
      */
-    SASL_MESSAGE(17, 19),
+    SASL_MESSAGE(19, 19),
     ;
 
     /**
@@ -205,6 +213,14 @@ public final class BitControl {
      */
     public static final int REQ_CUSTOM_VALUE = 17;
     /**
+     * <code>REQ_SCHEDULE_QUERY_TO_QUEUE = 20;</code>
+     */
+    public static final int REQ_SCHEDULE_QUERY_TO_QUEUE_VALUE = 20;
+    /**
+     * <code>REQ_QUEUE_SCHED_STATUS = 21;</code>
+     */
+    public static final int REQ_QUEUE_SCHED_STATUS_VALUE = 21;
+    /**
      * <code>RESP_FRAGMENT_HANDLE = 11;</code>
      *
      * <pre>
@@ -254,6 +270,8 @@ public final class BitControl {
         case 15: return REQ_QUERY_CANCEL;
         case 16: return REQ_UNPAUSE_FRAGMENT;
         case 17: return REQ_CUSTOM;
+        case 20: return REQ_SCHEDULE_QUERY_TO_QUEUE;
+        case 21: return REQ_QUEUE_SCHED_STATUS;
         case 11: return RESP_FRAGMENT_HANDLE;
         case 12: return RESP_FRAGMENT_STATUS;
         case 13: return RESP_BIT_STATUS;
@@ -309,6 +327,808 @@ public final class BitControl {
     }
 
     // @@protoc_insertion_point(enum_scope:exec.bit.control.RpcType)
+  }
+
+  /**
+   * Protobuf enum {@code exec.bit.control.SchedulingStatusType}
+   */
+  public enum SchedulingStatusType
+      implements com.google.protobuf.ProtocolMessageEnum {
+    /**
+     * <code>ADMIT_QUERY_TO_QUEUE = 0;</code>
+     */
+    ADMIT_QUERY_TO_QUEUE(0, 0),
+    /**
+     * <code>WAIT_QUERY_FOR_QUEUE = 1;</code>
+     */
+    WAIT_QUERY_FOR_QUEUE(1, 1),
+    /**
+     * <code>SERVER_BUSY = 2;</code>
+     */
+    SERVER_BUSY(2, 2),
+    /**
+     * <code>NOT_A_LEADER_FOR_QUEUE = 3;</code>
+     */
+    NOT_A_LEADER_FOR_QUEUE(3, 3),
+    ;
+
+    /**
+     * <code>ADMIT_QUERY_TO_QUEUE = 0;</code>
+     */
+    public static final int ADMIT_QUERY_TO_QUEUE_VALUE = 0;
+    /**
+     * <code>WAIT_QUERY_FOR_QUEUE = 1;</code>
+     */
+    public static final int WAIT_QUERY_FOR_QUEUE_VALUE = 1;
+    /**
+     * <code>SERVER_BUSY = 2;</code>
+     */
+    public static final int SERVER_BUSY_VALUE = 2;
+    /**
+     * <code>NOT_A_LEADER_FOR_QUEUE = 3;</code>
+     */
+    public static final int NOT_A_LEADER_FOR_QUEUE_VALUE = 3;
+
+
+    public final int getNumber() { return value; }
+
+    public static SchedulingStatusType valueOf(int value) {
+      switch (value) {
+        case 0: return ADMIT_QUERY_TO_QUEUE;
+        case 1: return WAIT_QUERY_FOR_QUEUE;
+        case 2: return SERVER_BUSY;
+        case 3: return NOT_A_LEADER_FOR_QUEUE;
+        default: return null;
+      }
+    }
+
+    public static com.google.protobuf.Internal.EnumLiteMap<SchedulingStatusType>
+        internalGetValueMap() {
+      return internalValueMap;
+    }
+    private static com.google.protobuf.Internal.EnumLiteMap<SchedulingStatusType>
+        internalValueMap =
+          new com.google.protobuf.Internal.EnumLiteMap<SchedulingStatusType>() {
+            public SchedulingStatusType findValueByNumber(int number) {
+              return SchedulingStatusType.valueOf(number);
+            }
+          };
+
+    public final com.google.protobuf.Descriptors.EnumValueDescriptor
+        getValueDescriptor() {
+      return getDescriptor().getValues().get(index);
+    }
+    public final com.google.protobuf.Descriptors.EnumDescriptor
+        getDescriptorForType() {
+      return getDescriptor();
+    }
+    public static final com.google.protobuf.Descriptors.EnumDescriptor
+        getDescriptor() {
+      return org.apache.drill.exec.proto.BitControl.getDescriptor().getEnumTypes().get(1);
+    }
+
+    private static final SchedulingStatusType[] VALUES = values();
+
+    public static SchedulingStatusType valueOf(
+        com.google.protobuf.Descriptors.EnumValueDescriptor desc) {
+      if (desc.getType() != getDescriptor()) {
+        throw new java.lang.IllegalArgumentException(
+          "EnumValueDescriptor is not for this type.");
+      }
+      return VALUES[desc.getIndex()];
+    }
+
+    private final int index;
+    private final int value;
+
+    private SchedulingStatusType(int index, int value) {
+      this.index = index;
+      this.value = value;
+    }
+
+    // @@protoc_insertion_point(enum_scope:exec.bit.control.SchedulingStatusType)
+  }
+
+  public interface SchedulingStatusForAQueueOrBuilder
+      extends com.google.protobuf.MessageOrBuilder {
+
+    // required .exec.bit.control.SchedulingStatusType status = 1;
+    /**
+     * <code>required .exec.bit.control.SchedulingStatusType status = 1;</code>
+     */
+    boolean hasStatus();
+    /**
+     * <code>required .exec.bit.control.SchedulingStatusType status = 1;</code>
+     */
+    org.apache.drill.exec.proto.BitControl.SchedulingStatusType getStatus();
+
+    // required int32 queueID = 2;
+    /**
+     * <code>required int32 queueID = 2;</code>
+     */
+    boolean hasQueueID();
+    /**
+     * <code>required int32 queueID = 2;</code>
+     */
+    int getQueueID();
+
+    // required .exec.shared.QueryId query_id = 3;
+    /**
+     * <code>required .exec.shared.QueryId query_id = 3;</code>
+     */
+    boolean hasQueryId();
+    /**
+     * <code>required .exec.shared.QueryId query_id = 3;</code>
+     */
+    org.apache.drill.exec.proto.UserBitShared.QueryId getQueryId();
+    /**
+     * <code>required .exec.shared.QueryId query_id = 3;</code>
+     */
+    org.apache.drill.exec.proto.UserBitShared.QueryIdOrBuilder getQueryIdOrBuilder();
+  }
+  /**
+   * Protobuf type {@code exec.bit.control.SchedulingStatusForAQueue}
+   */
+  public static final class SchedulingStatusForAQueue extends
+      com.google.protobuf.GeneratedMessage
+      implements SchedulingStatusForAQueueOrBuilder {
+    // Use SchedulingStatusForAQueue.newBuilder() to construct.
+    private SchedulingStatusForAQueue(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+      super(builder);
+      this.unknownFields = builder.getUnknownFields();
+    }
+    private SchedulingStatusForAQueue(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
+    private static final SchedulingStatusForAQueue defaultInstance;
+    public static SchedulingStatusForAQueue getDefaultInstance() {
+      return defaultInstance;
+    }
+
+    public SchedulingStatusForAQueue getDefaultInstanceForType() {
+      return defaultInstance;
+    }
+
+    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    @java.lang.Override
+    public final com.google.protobuf.UnknownFieldSet
+        getUnknownFields() {
+      return this.unknownFields;
+    }
+    private SchedulingStatusForAQueue(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      initFields();
+      int mutable_bitField0_ = 0;
+      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+          com.google.protobuf.UnknownFieldSet.newBuilder();
+      try {
+        boolean done = false;
+        while (!done) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              done = true;
+              break;
+            default: {
+              if (!parseUnknownField(input, unknownFields,
+                                     extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
+            case 8: {
+              int rawValue = input.readEnum();
+              org.apache.drill.exec.proto.BitControl.SchedulingStatusType value = org.apache.drill.exec.proto.BitControl.SchedulingStatusType.valueOf(rawValue);
+              if (value == null) {
+                unknownFields.mergeVarintField(1, rawValue);
+              } else {
+                bitField0_ |= 0x00000001;
+                status_ = value;
+              }
+              break;
+            }
+            case 16: {
+              bitField0_ |= 0x00000002;
+              queueID_ = input.readInt32();
+              break;
+            }
+            case 26: {
+              org.apache.drill.exec.proto.UserBitShared.QueryId.Builder subBuilder = null;
+              if (((bitField0_ & 0x00000004) == 0x00000004)) {
+                subBuilder = queryId_.toBuilder();
+              }
+              queryId_ = input.readMessage(org.apache.drill.exec.proto.UserBitShared.QueryId.PARSER, extensionRegistry);
+              if (subBuilder != null) {
+                subBuilder.mergeFrom(queryId_);
+                queryId_ = subBuilder.buildPartial();
+              }
+              bitField0_ |= 0x00000004;
+              break;
+            }
+          }
+        }
+      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        throw e.setUnfinishedMessage(this);
+      } catch (java.io.IOException e) {
+        throw new com.google.protobuf.InvalidProtocolBufferException(
+            e.getMessage()).setUnfinishedMessage(this);
+      } finally {
+        this.unknownFields = unknownFields.build();
+        makeExtensionsImmutable();
+      }
+    }
+    public static final com.google.protobuf.Descriptors.Descriptor
+        getDescriptor() {
+      return org.apache.drill.exec.proto.BitControl.internal_static_exec_bit_control_SchedulingStatusForAQueue_descriptor;
+    }
+
+    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return org.apache.drill.exec.proto.BitControl.internal_static_exec_bit_control_SchedulingStatusForAQueue_fieldAccessorTable
+          .ensureFieldAccessorsInitialized(
+              org.apache.drill.exec.proto.BitControl.SchedulingStatusForAQueue.class, org.apache.drill.exec.proto.BitControl.SchedulingStatusForAQueue.Builder.class);
+    }
+
+    public static com.google.protobuf.Parser<SchedulingStatusForAQueue> PARSER =
+        new com.google.protobuf.AbstractParser<SchedulingStatusForAQueue>() {
+      public SchedulingStatusForAQueue parsePartialFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return new SchedulingStatusForAQueue(input, extensionRegistry);
+      }
+    };
+
+    @java.lang.Override
+    public com.google.protobuf.Parser<SchedulingStatusForAQueue> getParserForType() {
+      return PARSER;
+    }
+
+    private int bitField0_;
+    // required .exec.bit.control.SchedulingStatusType status = 1;
+    public static final int STATUS_FIELD_NUMBER = 1;
+    private org.apache.drill.exec.proto.BitControl.SchedulingStatusType status_;
+    /**
+     * <code>required .exec.bit.control.SchedulingStatusType status = 1;</code>
+     */
+    public boolean hasStatus() {
+      return ((bitField0_ & 0x00000001) == 0x00000001);
+    }
+    /**
+     * <code>required .exec.bit.control.SchedulingStatusType status = 1;</code>
+     */
+    public org.apache.drill.exec.proto.BitControl.SchedulingStatusType getStatus() {
+      return status_;
+    }
+
+    // required int32 queueID = 2;
+    public static final int QUEUEID_FIELD_NUMBER = 2;
+    private int queueID_;
+    /**
+     * <code>required int32 queueID = 2;</code>
+     */
+    public boolean hasQueueID() {
+      return ((bitField0_ & 0x00000002) == 0x00000002);
+    }
+    /**
+     * <code>required int32 queueID = 2;</code>
+     */
+    public int getQueueID() {
+      return queueID_;
+    }
+
+    // required .exec.shared.QueryId query_id = 3;
+    public static final int QUERY_ID_FIELD_NUMBER = 3;
+    private org.apache.drill.exec.proto.UserBitShared.QueryId queryId_;
+    /**
+     * <code>required .exec.shared.QueryId query_id = 3;</code>
+     */
+    public boolean hasQueryId() {
+      return ((bitField0_ & 0x00000004) == 0x00000004);
+    }
+    /**
+     * <code>required .exec.shared.QueryId query_id = 3;</code>
+     */
+    public org.apache.drill.exec.proto.UserBitShared.QueryId getQueryId() {
+      return queryId_;
+    }
+    /**
+     * <code>required .exec.shared.QueryId query_id = 3;</code>
+     */
+    public org.apache.drill.exec.proto.UserBitShared.QueryIdOrBuilder getQueryIdOrBuilder() {
+      return queryId_;
+    }
+
+    private void initFields() {
+      status_ = org.apache.drill.exec.proto.BitControl.SchedulingStatusType.ADMIT_QUERY_TO_QUEUE;
+      queueID_ = 0;
+      queryId_ = org.apache.drill.exec.proto.UserBitShared.QueryId.getDefaultInstance();
+    }
+    private byte memoizedIsInitialized = -1;
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized != -1) return isInitialized == 1;
+
+      if (!hasStatus()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasQueueID()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasQueryId()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      memoizedIsInitialized = 1;
+      return true;
+    }
+
+    public void writeTo(com.google.protobuf.CodedOutputStream output)
+                        throws java.io.IOException {
+      getSerializedSize();
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        output.writeEnum(1, status_.getNumber());
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        output.writeInt32(2, queueID_);
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        output.writeMessage(3, queryId_);
+      }
+      getUnknownFields().writeTo(output);
+    }
+
+    private int memoizedSerializedSize = -1;
+    public int getSerializedSize() {
+      int size = memoizedSerializedSize;
+      if (size != -1) return size;
+
+      size = 0;
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeEnumSize(1, status_.getNumber());
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeInt32Size(2, queueID_);
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeMessageSize(3, queryId_);
+      }
+      size += getUnknownFields().getSerializedSize();
+      memoizedSerializedSize = size;
+      return size;
+    }
+
+    private static final long serialVersionUID = 0L;
+    @java.lang.Override
+    protected java.lang.Object writeReplace()
+        throws java.io.ObjectStreamException {
+      return super.writeReplace();
+    }
+
+    public static org.apache.drill.exec.proto.BitControl.SchedulingStatusForAQueue parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static org.apache.drill.exec.proto.BitControl.SchedulingStatusForAQueue parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static org.apache.drill.exec.proto.BitControl.SchedulingStatusForAQueue parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static org.apache.drill.exec.proto.BitControl.SchedulingStatusForAQueue parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static org.apache.drill.exec.proto.BitControl.SchedulingStatusForAQueue parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static org.apache.drill.exec.proto.BitControl.SchedulingStatusForAQueue parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+    public static org.apache.drill.exec.proto.BitControl.SchedulingStatusForAQueue parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input);
+    }
+    public static org.apache.drill.exec.proto.BitControl.SchedulingStatusForAQueue parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+    }
+    public static org.apache.drill.exec.proto.BitControl.SchedulingStatusForAQueue parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static org.apache.drill.exec.proto.BitControl.SchedulingStatusForAQueue parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() { return Builder.create(); }
+    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder(org.apache.drill.exec.proto.BitControl.SchedulingStatusForAQueue prototype) {
+      return newBuilder().mergeFrom(prototype);
+    }
+    public Builder toBuilder() { return newBuilder(this); }
+
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+    /**
+     * Protobuf type {@code exec.bit.control.SchedulingStatusForAQueue}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessage.Builder<Builder>
+       implements org.apache.drill.exec.proto.BitControl.SchedulingStatusForAQueueOrBuilder {
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return org.apache.drill.exec.proto.BitControl.internal_static_exec_bit_control_SchedulingStatusForAQueue_descriptor;
+      }
+
+      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return org.apache.drill.exec.proto.BitControl.internal_static_exec_bit_control_SchedulingStatusForAQueue_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                org.apache.drill.exec.proto.BitControl.SchedulingStatusForAQueue.class, org.apache.drill.exec.proto.BitControl.SchedulingStatusForAQueue.Builder.class);
+      }
+
+      // Construct using org.apache.drill.exec.proto.BitControl.SchedulingStatusForAQueue.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+
+      private Builder(
+          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+      private void maybeForceBuilderInitialization() {
+        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+          getQueryIdFieldBuilder();
+        }
+      }
+      private static Builder create() {
+        return new Builder();
+      }
+
+      public Builder clear() {
+        super.clear();
+        status_ = org.apache.drill.exec.proto.BitControl.SchedulingStatusType.ADMIT_QUERY_TO_QUEUE;
+        bitField0_ = (bitField0_ & ~0x00000001);
+        queueID_ = 0;
+        bitField0_ = (bitField0_ & ~0x00000002);
+        if (queryIdBuilder_ == null) {
+          queryId_ = org.apache.drill.exec.proto.UserBitShared.QueryId.getDefaultInstance();
+        } else {
+          queryIdBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000004);
+        return this;
+      }
+
+      public Builder clone() {
+        return create().mergeFrom(buildPartial());
+      }
+
+      public com.google.protobuf.Descriptors.Descriptor
+          getDescriptorForType() {
+        return org.apache.drill.exec.proto.BitControl.internal_static_exec_bit_control_SchedulingStatusForAQueue_descriptor;
+      }
+
+      public org.apache.drill.exec.proto.BitControl.SchedulingStatusForAQueue getDefaultInstanceForType() {
+        return org.apache.drill.exec.proto.BitControl.SchedulingStatusForAQueue.getDefaultInstance();
+      }
+
+      public org.apache.drill.exec.proto.BitControl.SchedulingStatusForAQueue build() {
+        org.apache.drill.exec.proto.BitControl.SchedulingStatusForAQueue result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+
+      public org.apache.drill.exec.proto.BitControl.SchedulingStatusForAQueue buildPartial() {
+        org.apache.drill.exec.proto.BitControl.SchedulingStatusForAQueue result = new org.apache.drill.exec.proto.BitControl.SchedulingStatusForAQueue(this);
+        int from_bitField0_ = bitField0_;
+        int to_bitField0_ = 0;
+        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+          to_bitField0_ |= 0x00000001;
+        }
+        result.status_ = status_;
+        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+          to_bitField0_ |= 0x00000002;
+        }
+        result.queueID_ = queueID_;
+        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+          to_bitField0_ |= 0x00000004;
+        }
+        if (queryIdBuilder_ == null) {
+          result.queryId_ = queryId_;
+        } else {
+          result.queryId_ = queryIdBuilder_.build();
+        }
+        result.bitField0_ = to_bitField0_;
+        onBuilt();
+        return result;
+      }
+
+      public Builder mergeFrom(com.google.protobuf.Message other) {
+        if (other instanceof org.apache.drill.exec.proto.BitControl.SchedulingStatusForAQueue) {
+          return mergeFrom((org.apache.drill.exec.proto.BitControl.SchedulingStatusForAQueue)other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+
+      public Builder mergeFrom(org.apache.drill.exec.proto.BitControl.SchedulingStatusForAQueue other) {
+        if (other == org.apache.drill.exec.proto.BitControl.SchedulingStatusForAQueue.getDefaultInstance()) return this;
+        if (other.hasStatus()) {
+          setStatus(other.getStatus());
+        }
+        if (other.hasQueueID()) {
+          setQueueID(other.getQueueID());
+        }
+        if (other.hasQueryId()) {
+          mergeQueryId(other.getQueryId());
+        }
+        this.mergeUnknownFields(other.getUnknownFields());
+        return this;
+      }
+
+      public final boolean isInitialized() {
+        if (!hasStatus()) {
+          
+          return false;
+        }
+        if (!hasQueueID()) {
+          
+          return false;
+        }
+        if (!hasQueryId()) {
+          
+          return false;
+        }
+        return true;
+      }
+
+      public Builder mergeFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        org.apache.drill.exec.proto.BitControl.SchedulingStatusForAQueue parsedMessage = null;
+        try {
+          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          parsedMessage = (org.apache.drill.exec.proto.BitControl.SchedulingStatusForAQueue) e.getUnfinishedMessage();
+          throw e;
+        } finally {
+          if (parsedMessage != null) {
+            mergeFrom(parsedMessage);
+          }
+        }
+        return this;
+      }
+      private int bitField0_;
+
+      // required .exec.bit.control.SchedulingStatusType status = 1;
+      private org.apache.drill.exec.proto.BitControl.SchedulingStatusType status_ = org.apache.drill.exec.proto.BitControl.SchedulingStatusType.ADMIT_QUERY_TO_QUEUE;
+      /**
+       * <code>required .exec.bit.control.SchedulingStatusType status = 1;</code>
+       */
+      public boolean hasStatus() {
+        return ((bitField0_ & 0x00000001) == 0x00000001);
+      }
+      /**
+       * <code>required .exec.bit.control.SchedulingStatusType status = 1;</code>
+       */
+      public org.apache.drill.exec.proto.BitControl.SchedulingStatusType getStatus() {
+        return status_;
+      }
+      /**
+       * <code>required .exec.bit.control.SchedulingStatusType status = 1;</code>
+       */
+      public Builder setStatus(org.apache.drill.exec.proto.BitControl.SchedulingStatusType value) {
+        if (value == null) {
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000001;
+        status_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required .exec.bit.control.SchedulingStatusType status = 1;</code>
+       */
+      public Builder clearStatus() {
+        bitField0_ = (bitField0_ & ~0x00000001);
+        status_ = org.apache.drill.exec.proto.BitControl.SchedulingStatusType.ADMIT_QUERY_TO_QUEUE;
+        onChanged();
+        return this;
+      }
+
+      // required int32 queueID = 2;
+      private int queueID_ ;
+      /**
+       * <code>required int32 queueID = 2;</code>
+       */
+      public boolean hasQueueID() {
+        return ((bitField0_ & 0x00000002) == 0x00000002);
+      }
+      /**
+       * <code>required int32 queueID = 2;</code>
+       */
+      public int getQueueID() {
+        return queueID_;
+      }
+      /**
+       * <code>required int32 queueID = 2;</code>
+       */
+      public Builder setQueueID(int value) {
+        bitField0_ |= 0x00000002;
+        queueID_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required int32 queueID = 2;</code>
+       */
+      public Builder clearQueueID() {
+        bitField0_ = (bitField0_ & ~0x00000002);
+        queueID_ = 0;
+        onChanged();
+        return this;
+      }
+
+      // required .exec.shared.QueryId query_id = 3;
+      private org.apache.drill.exec.proto.UserBitShared.QueryId queryId_ = org.apache.drill.exec.proto.UserBitShared.QueryId.getDefaultInstance();
+      private com.google.protobuf.SingleFieldBuilder<
+          org.apache.drill.exec.proto.UserBitShared.QueryId, org.apache.drill.exec.proto.UserBitShared.QueryId.Builder, org.apache.drill.exec.proto.UserBitShared.QueryIdOrBuilder> queryIdBuilder_;
+      /**
+       * <code>required .exec.shared.QueryId query_id = 3;</code>
+       */
+      public boolean hasQueryId() {
+        return ((bitField0_ & 0x00000004) == 0x00000004);
+      }
+      /**
+       * <code>required .exec.shared.QueryId query_id = 3;</code>
+       */
+      public org.apache.drill.exec.proto.UserBitShared.QueryId getQueryId() {
+        if (queryIdBuilder_ == null) {
+          return queryId_;
+        } else {
+          return queryIdBuilder_.getMessage();
+        }
+      }
+      /**
+       * <code>required .exec.shared.QueryId query_id = 3;</code>
+       */
+      public Builder setQueryId(org.apache.drill.exec.proto.UserBitShared.QueryId value) {
+        if (queryIdBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          queryId_ = value;
+          onChanged();
+        } else {
+          queryIdBuilder_.setMessage(value);
+        }
+        bitField0_ |= 0x00000004;
+        return this;
+      }
+      /**
+       * <code>required .exec.shared.QueryId query_id = 3;</code>
+       */
+      public Builder setQueryId(
+          org.apache.drill.exec.proto.UserBitShared.QueryId.Builder builderForValue) {
+        if (queryIdBuilder_ == null) {
+          queryId_ = builderForValue.build();
+          onChanged();
+        } else {
+          queryIdBuilder_.setMessage(builderForValue.build());
+        }
+        bitField0_ |= 0x00000004;
+        return this;
+      }
+      /**
+       * <code>required .exec.shared.QueryId query_id = 3;</code>
+       */
+      public Builder mergeQueryId(org.apache.drill.exec.proto.UserBitShared.QueryId value) {
+        if (queryIdBuilder_ == null) {
+          if (((bitField0_ & 0x00000004) == 0x00000004) &&
+              queryId_ != org.apache.drill.exec.proto.UserBitShared.QueryId.getDefaultInstance()) {
+            queryId_ =
+              org.apache.drill.exec.proto.UserBitShared.QueryId.newBuilder(queryId_).mergeFrom(value).buildPartial();
+          } else {
+            queryId_ = value;
+          }
+          onChanged();
+        } else {
+          queryIdBuilder_.mergeFrom(value);
+        }
+        bitField0_ |= 0x00000004;
+        return this;
+      }
+      /**
+       * <code>required .exec.shared.QueryId query_id = 3;</code>
+       */
+      public Builder clearQueryId() {
+        if (queryIdBuilder_ == null) {
+          queryId_ = org.apache.drill.exec.proto.UserBitShared.QueryId.getDefaultInstance();
+          onChanged();
+        } else {
+          queryIdBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000004);
+        return this;
+      }
+      /**
+       * <code>required .exec.shared.QueryId query_id = 3;</code>
+       */
+      public org.apache.drill.exec.proto.UserBitShared.QueryId.Builder getQueryIdBuilder() {
+        bitField0_ |= 0x00000004;
+        onChanged();
+        return getQueryIdFieldBuilder().getBuilder();
+      }
+      /**
+       * <code>required .exec.shared.QueryId query_id = 3;</code>
+       */
+      public org.apache.drill.exec.proto.UserBitShared.QueryIdOrBuilder getQueryIdOrBuilder() {
+        if (queryIdBuilder_ != null) {
+          return queryIdBuilder_.getMessageOrBuilder();
+        } else {
+          return queryId_;
+        }
+      }
+      /**
+       * <code>required .exec.shared.QueryId query_id = 3;</code>
+       */
+      private com.google.protobuf.SingleFieldBuilder<
+          org.apache.drill.exec.proto.UserBitShared.QueryId, org.apache.drill.exec.proto.UserBitShared.QueryId.Builder, org.apache.drill.exec.proto.UserBitShared.QueryIdOrBuilder> 
+          getQueryIdFieldBuilder() {
+        if (queryIdBuilder_ == null) {
+          queryIdBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+              org.apache.drill.exec.proto.UserBitShared.QueryId, org.apache.drill.exec.proto.UserBitShared.QueryId.Builder, org.apache.drill.exec.proto.UserBitShared.QueryIdOrBuilder>(
+                  queryId_,
+                  getParentForChildren(),
+                  isClean());
+          queryId_ = null;
+        }
+        return queryIdBuilder_;
+      }
+
+      // @@protoc_insertion_point(builder_scope:exec.bit.control.SchedulingStatusForAQueue)
+    }
+
+    static {
+      defaultInstance = new SchedulingStatusForAQueue(true);
+      defaultInstance.initFields();
+    }
+
+    // @@protoc_insertion_point(class_scope:exec.bit.control.SchedulingStatusForAQueue)
   }
 
   public interface BitControlHandshakeOrBuilder
@@ -3699,6 +4519,1414 @@ public final class BitControl {
     }
 
     // @@protoc_insertion_point(class_scope:exec.bit.control.CustomMessage)
+  }
+
+  public interface ScheduleQueryMessageOrBuilder
+      extends com.google.protobuf.MessageOrBuilder {
+
+    // required .exec.DrillbitEndpoint sender = 1;
+    /**
+     * <code>required .exec.DrillbitEndpoint sender = 1;</code>
+     */
+    boolean hasSender();
+    /**
+     * <code>required .exec.DrillbitEndpoint sender = 1;</code>
+     */
+    org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpoint getSender();
+    /**
+     * <code>required .exec.DrillbitEndpoint sender = 1;</code>
+     */
+    org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpointOrBuilder getSenderOrBuilder();
+
+    // required int32 queueID = 2;
+    /**
+     * <code>required int32 queueID = 2;</code>
+     */
+    boolean hasQueueID();
+    /**
+     * <code>required int32 queueID = 2;</code>
+     */
+    int getQueueID();
+
+    // required .exec.shared.QueryId query_id = 3;
+    /**
+     * <code>required .exec.shared.QueryId query_id = 3;</code>
+     */
+    boolean hasQueryId();
+    /**
+     * <code>required .exec.shared.QueryId query_id = 3;</code>
+     */
+    org.apache.drill.exec.proto.UserBitShared.QueryId getQueryId();
+    /**
+     * <code>required .exec.shared.QueryId query_id = 3;</code>
+     */
+    org.apache.drill.exec.proto.UserBitShared.QueryIdOrBuilder getQueryIdOrBuilder();
+  }
+  /**
+   * Protobuf type {@code exec.bit.control.ScheduleQueryMessage}
+   */
+  public static final class ScheduleQueryMessage extends
+      com.google.protobuf.GeneratedMessage
+      implements ScheduleQueryMessageOrBuilder {
+    // Use ScheduleQueryMessage.newBuilder() to construct.
+    private ScheduleQueryMessage(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+      super(builder);
+      this.unknownFields = builder.getUnknownFields();
+    }
+    private ScheduleQueryMessage(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
+    private static final ScheduleQueryMessage defaultInstance;
+    public static ScheduleQueryMessage getDefaultInstance() {
+      return defaultInstance;
+    }
+
+    public ScheduleQueryMessage getDefaultInstanceForType() {
+      return defaultInstance;
+    }
+
+    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    @java.lang.Override
+    public final com.google.protobuf.UnknownFieldSet
+        getUnknownFields() {
+      return this.unknownFields;
+    }
+    private ScheduleQueryMessage(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      initFields();
+      int mutable_bitField0_ = 0;
+      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+          com.google.protobuf.UnknownFieldSet.newBuilder();
+      try {
+        boolean done = false;
+        while (!done) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              done = true;
+              break;
+            default: {
+              if (!parseUnknownField(input, unknownFields,
+                                     extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
+            case 10: {
+              org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpoint.Builder subBuilder = null;
+              if (((bitField0_ & 0x00000001) == 0x00000001)) {
+                subBuilder = sender_.toBuilder();
+              }
+              sender_ = input.readMessage(org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpoint.PARSER, extensionRegistry);
+              if (subBuilder != null) {
+                subBuilder.mergeFrom(sender_);
+                sender_ = subBuilder.buildPartial();
+              }
+              bitField0_ |= 0x00000001;
+              break;
+            }
+            case 16: {
+              bitField0_ |= 0x00000002;
+              queueID_ = input.readInt32();
+              break;
+            }
+            case 26: {
+              org.apache.drill.exec.proto.UserBitShared.QueryId.Builder subBuilder = null;
+              if (((bitField0_ & 0x00000004) == 0x00000004)) {
+                subBuilder = queryId_.toBuilder();
+              }
+              queryId_ = input.readMessage(org.apache.drill.exec.proto.UserBitShared.QueryId.PARSER, extensionRegistry);
+              if (subBuilder != null) {
+                subBuilder.mergeFrom(queryId_);
+                queryId_ = subBuilder.buildPartial();
+              }
+              bitField0_ |= 0x00000004;
+              break;
+            }
+          }
+        }
+      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        throw e.setUnfinishedMessage(this);
+      } catch (java.io.IOException e) {
+        throw new com.google.protobuf.InvalidProtocolBufferException(
+            e.getMessage()).setUnfinishedMessage(this);
+      } finally {
+        this.unknownFields = unknownFields.build();
+        makeExtensionsImmutable();
+      }
+    }
+    public static final com.google.protobuf.Descriptors.Descriptor
+        getDescriptor() {
+      return org.apache.drill.exec.proto.BitControl.internal_static_exec_bit_control_ScheduleQueryMessage_descriptor;
+    }
+
+    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return org.apache.drill.exec.proto.BitControl.internal_static_exec_bit_control_ScheduleQueryMessage_fieldAccessorTable
+          .ensureFieldAccessorsInitialized(
+              org.apache.drill.exec.proto.BitControl.ScheduleQueryMessage.class, org.apache.drill.exec.proto.BitControl.ScheduleQueryMessage.Builder.class);
+    }
+
+    public static com.google.protobuf.Parser<ScheduleQueryMessage> PARSER =
+        new com.google.protobuf.AbstractParser<ScheduleQueryMessage>() {
+      public ScheduleQueryMessage parsePartialFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return new ScheduleQueryMessage(input, extensionRegistry);
+      }
+    };
+
+    @java.lang.Override
+    public com.google.protobuf.Parser<ScheduleQueryMessage> getParserForType() {
+      return PARSER;
+    }
+
+    private int bitField0_;
+    // required .exec.DrillbitEndpoint sender = 1;
+    public static final int SENDER_FIELD_NUMBER = 1;
+    private org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpoint sender_;
+    /**
+     * <code>required .exec.DrillbitEndpoint sender = 1;</code>
+     */
+    public boolean hasSender() {
+      return ((bitField0_ & 0x00000001) == 0x00000001);
+    }
+    /**
+     * <code>required .exec.DrillbitEndpoint sender = 1;</code>
+     */
+    public org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpoint getSender() {
+      return sender_;
+    }
+    /**
+     * <code>required .exec.DrillbitEndpoint sender = 1;</code>
+     */
+    public org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpointOrBuilder getSenderOrBuilder() {
+      return sender_;
+    }
+
+    // required int32 queueID = 2;
+    public static final int QUEUEID_FIELD_NUMBER = 2;
+    private int queueID_;
+    /**
+     * <code>required int32 queueID = 2;</code>
+     */
+    public boolean hasQueueID() {
+      return ((bitField0_ & 0x00000002) == 0x00000002);
+    }
+    /**
+     * <code>required int32 queueID = 2;</code>
+     */
+    public int getQueueID() {
+      return queueID_;
+    }
+
+    // required .exec.shared.QueryId query_id = 3;
+    public static final int QUERY_ID_FIELD_NUMBER = 3;
+    private org.apache.drill.exec.proto.UserBitShared.QueryId queryId_;
+    /**
+     * <code>required .exec.shared.QueryId query_id = 3;</code>
+     */
+    public boolean hasQueryId() {
+      return ((bitField0_ & 0x00000004) == 0x00000004);
+    }
+    /**
+     * <code>required .exec.shared.QueryId query_id = 3;</code>
+     */
+    public org.apache.drill.exec.proto.UserBitShared.QueryId getQueryId() {
+      return queryId_;
+    }
+    /**
+     * <code>required .exec.shared.QueryId query_id = 3;</code>
+     */
+    public org.apache.drill.exec.proto.UserBitShared.QueryIdOrBuilder getQueryIdOrBuilder() {
+      return queryId_;
+    }
+
+    private void initFields() {
+      sender_ = org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpoint.getDefaultInstance();
+      queueID_ = 0;
+      queryId_ = org.apache.drill.exec.proto.UserBitShared.QueryId.getDefaultInstance();
+    }
+    private byte memoizedIsInitialized = -1;
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized != -1) return isInitialized == 1;
+
+      if (!hasSender()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasQueueID()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasQueryId()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      memoizedIsInitialized = 1;
+      return true;
+    }
+
+    public void writeTo(com.google.protobuf.CodedOutputStream output)
+                        throws java.io.IOException {
+      getSerializedSize();
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        output.writeMessage(1, sender_);
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        output.writeInt32(2, queueID_);
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        output.writeMessage(3, queryId_);
+      }
+      getUnknownFields().writeTo(output);
+    }
+
+    private int memoizedSerializedSize = -1;
+    public int getSerializedSize() {
+      int size = memoizedSerializedSize;
+      if (size != -1) return size;
+
+      size = 0;
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeMessageSize(1, sender_);
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeInt32Size(2, queueID_);
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeMessageSize(3, queryId_);
+      }
+      size += getUnknownFields().getSerializedSize();
+      memoizedSerializedSize = size;
+      return size;
+    }
+
+    private static final long serialVersionUID = 0L;
+    @java.lang.Override
+    protected java.lang.Object writeReplace()
+        throws java.io.ObjectStreamException {
+      return super.writeReplace();
+    }
+
+    public static org.apache.drill.exec.proto.BitControl.ScheduleQueryMessage parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static org.apache.drill.exec.proto.BitControl.ScheduleQueryMessage parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static org.apache.drill.exec.proto.BitControl.ScheduleQueryMessage parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static org.apache.drill.exec.proto.BitControl.ScheduleQueryMessage parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static org.apache.drill.exec.proto.BitControl.ScheduleQueryMessage parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static org.apache.drill.exec.proto.BitControl.ScheduleQueryMessage parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+    public static org.apache.drill.exec.proto.BitControl.ScheduleQueryMessage parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input);
+    }
+    public static org.apache.drill.exec.proto.BitControl.ScheduleQueryMessage parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+    }
+    public static org.apache.drill.exec.proto.BitControl.ScheduleQueryMessage parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static org.apache.drill.exec.proto.BitControl.ScheduleQueryMessage parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() { return Builder.create(); }
+    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder(org.apache.drill.exec.proto.BitControl.ScheduleQueryMessage prototype) {
+      return newBuilder().mergeFrom(prototype);
+    }
+    public Builder toBuilder() { return newBuilder(this); }
+
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+    /**
+     * Protobuf type {@code exec.bit.control.ScheduleQueryMessage}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessage.Builder<Builder>
+       implements org.apache.drill.exec.proto.BitControl.ScheduleQueryMessageOrBuilder {
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return org.apache.drill.exec.proto.BitControl.internal_static_exec_bit_control_ScheduleQueryMessage_descriptor;
+      }
+
+      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return org.apache.drill.exec.proto.BitControl.internal_static_exec_bit_control_ScheduleQueryMessage_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                org.apache.drill.exec.proto.BitControl.ScheduleQueryMessage.class, org.apache.drill.exec.proto.BitControl.ScheduleQueryMessage.Builder.class);
+      }
+
+      // Construct using org.apache.drill.exec.proto.BitControl.ScheduleQueryMessage.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+
+      private Builder(
+          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+      private void maybeForceBuilderInitialization() {
+        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+          getSenderFieldBuilder();
+          getQueryIdFieldBuilder();
+        }
+      }
+      private static Builder create() {
+        return new Builder();
+      }
+
+      public Builder clear() {
+        super.clear();
+        if (senderBuilder_ == null) {
+          sender_ = org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpoint.getDefaultInstance();
+        } else {
+          senderBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000001);
+        queueID_ = 0;
+        bitField0_ = (bitField0_ & ~0x00000002);
+        if (queryIdBuilder_ == null) {
+          queryId_ = org.apache.drill.exec.proto.UserBitShared.QueryId.getDefaultInstance();
+        } else {
+          queryIdBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000004);
+        return this;
+      }
+
+      public Builder clone() {
+        return create().mergeFrom(buildPartial());
+      }
+
+      public com.google.protobuf.Descriptors.Descriptor
+          getDescriptorForType() {
+        return org.apache.drill.exec.proto.BitControl.internal_static_exec_bit_control_ScheduleQueryMessage_descriptor;
+      }
+
+      public org.apache.drill.exec.proto.BitControl.ScheduleQueryMessage getDefaultInstanceForType() {
+        return org.apache.drill.exec.proto.BitControl.ScheduleQueryMessage.getDefaultInstance();
+      }
+
+      public org.apache.drill.exec.proto.BitControl.ScheduleQueryMessage build() {
+        org.apache.drill.exec.proto.BitControl.ScheduleQueryMessage result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+
+      public org.apache.drill.exec.proto.BitControl.ScheduleQueryMessage buildPartial() {
+        org.apache.drill.exec.proto.BitControl.ScheduleQueryMessage result = new org.apache.drill.exec.proto.BitControl.ScheduleQueryMessage(this);
+        int from_bitField0_ = bitField0_;
+        int to_bitField0_ = 0;
+        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+          to_bitField0_ |= 0x00000001;
+        }
+        if (senderBuilder_ == null) {
+          result.sender_ = sender_;
+        } else {
+          result.sender_ = senderBuilder_.build();
+        }
+        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+          to_bitField0_ |= 0x00000002;
+        }
+        result.queueID_ = queueID_;
+        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+          to_bitField0_ |= 0x00000004;
+        }
+        if (queryIdBuilder_ == null) {
+          result.queryId_ = queryId_;
+        } else {
+          result.queryId_ = queryIdBuilder_.build();
+        }
+        result.bitField0_ = to_bitField0_;
+        onBuilt();
+        return result;
+      }
+
+      public Builder mergeFrom(com.google.protobuf.Message other) {
+        if (other instanceof org.apache.drill.exec.proto.BitControl.ScheduleQueryMessage) {
+          return mergeFrom((org.apache.drill.exec.proto.BitControl.ScheduleQueryMessage)other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+
+      public Builder mergeFrom(org.apache.drill.exec.proto.BitControl.ScheduleQueryMessage other) {
+        if (other == org.apache.drill.exec.proto.BitControl.ScheduleQueryMessage.getDefaultInstance()) return this;
+        if (other.hasSender()) {
+          mergeSender(other.getSender());
+        }
+        if (other.hasQueueID()) {
+          setQueueID(other.getQueueID());
+        }
+        if (other.hasQueryId()) {
+          mergeQueryId(other.getQueryId());
+        }
+        this.mergeUnknownFields(other.getUnknownFields());
+        return this;
+      }
+
+      public final boolean isInitialized() {
+        if (!hasSender()) {
+          
+          return false;
+        }
+        if (!hasQueueID()) {
+          
+          return false;
+        }
+        if (!hasQueryId()) {
+          
+          return false;
+        }
+        return true;
+      }
+
+      public Builder mergeFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        org.apache.drill.exec.proto.BitControl.ScheduleQueryMessage parsedMessage = null;
+        try {
+          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          parsedMessage = (org.apache.drill.exec.proto.BitControl.ScheduleQueryMessage) e.getUnfinishedMessage();
+          throw e;
+        } finally {
+          if (parsedMessage != null) {
+            mergeFrom(parsedMessage);
+          }
+        }
+        return this;
+      }
+      private int bitField0_;
+
+      // required .exec.DrillbitEndpoint sender = 1;
+      private org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpoint sender_ = org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpoint.getDefaultInstance();
+      private com.google.protobuf.SingleFieldBuilder<
+          org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpoint, org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpoint.Builder, org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpointOrBuilder> senderBuilder_;
+      /**
+       * <code>required .exec.DrillbitEndpoint sender = 1;</code>
+       */
+      public boolean hasSender() {
+        return ((bitField0_ & 0x00000001) == 0x00000001);
+      }
+      /**
+       * <code>required .exec.DrillbitEndpoint sender = 1;</code>
+       */
+      public org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpoint getSender() {
+        if (senderBuilder_ == null) {
+          return sender_;
+        } else {
+          return senderBuilder_.getMessage();
+        }
+      }
+      /**
+       * <code>required .exec.DrillbitEndpoint sender = 1;</code>
+       */
+      public Builder setSender(org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpoint value) {
+        if (senderBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          sender_ = value;
+          onChanged();
+        } else {
+          senderBuilder_.setMessage(value);
+        }
+        bitField0_ |= 0x00000001;
+        return this;
+      }
+      /**
+       * <code>required .exec.DrillbitEndpoint sender = 1;</code>
+       */
+      public Builder setSender(
+          org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpoint.Builder builderForValue) {
+        if (senderBuilder_ == null) {
+          sender_ = builderForValue.build();
+          onChanged();
+        } else {
+          senderBuilder_.setMessage(builderForValue.build());
+        }
+        bitField0_ |= 0x00000001;
+        return this;
+      }
+      /**
+       * <code>required .exec.DrillbitEndpoint sender = 1;</code>
+       */
+      public Builder mergeSender(org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpoint value) {
+        if (senderBuilder_ == null) {
+          if (((bitField0_ & 0x00000001) == 0x00000001) &&
+              sender_ != org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpoint.getDefaultInstance()) {
+            sender_ =
+              org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpoint.newBuilder(sender_).mergeFrom(value).buildPartial();
+          } else {
+            sender_ = value;
+          }
+          onChanged();
+        } else {
+          senderBuilder_.mergeFrom(value);
+        }
+        bitField0_ |= 0x00000001;
+        return this;
+      }
+      /**
+       * <code>required .exec.DrillbitEndpoint sender = 1;</code>
+       */
+      public Builder clearSender() {
+        if (senderBuilder_ == null) {
+          sender_ = org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpoint.getDefaultInstance();
+          onChanged();
+        } else {
+          senderBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000001);
+        return this;
+      }
+      /**
+       * <code>required .exec.DrillbitEndpoint sender = 1;</code>
+       */
+      public org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpoint.Builder getSenderBuilder() {
+        bitField0_ |= 0x00000001;
+        onChanged();
+        return getSenderFieldBuilder().getBuilder();
+      }
+      /**
+       * <code>required .exec.DrillbitEndpoint sender = 1;</code>
+       */
+      public org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpointOrBuilder getSenderOrBuilder() {
+        if (senderBuilder_ != null) {
+          return senderBuilder_.getMessageOrBuilder();
+        } else {
+          return sender_;
+        }
+      }
+      /**
+       * <code>required .exec.DrillbitEndpoint sender = 1;</code>
+       */
+      private com.google.protobuf.SingleFieldBuilder<
+          org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpoint, org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpoint.Builder, org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpointOrBuilder> 
+          getSenderFieldBuilder() {
+        if (senderBuilder_ == null) {
+          senderBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+              org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpoint, org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpoint.Builder, org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpointOrBuilder>(
+                  sender_,
+                  getParentForChildren(),
+                  isClean());
+          sender_ = null;
+        }
+        return senderBuilder_;
+      }
+
+      // required int32 queueID = 2;
+      private int queueID_ ;
+      /**
+       * <code>required int32 queueID = 2;</code>
+       */
+      public boolean hasQueueID() {
+        return ((bitField0_ & 0x00000002) == 0x00000002);
+      }
+      /**
+       * <code>required int32 queueID = 2;</code>
+       */
+      public int getQueueID() {
+        return queueID_;
+      }
+      /**
+       * <code>required int32 queueID = 2;</code>
+       */
+      public Builder setQueueID(int value) {
+        bitField0_ |= 0x00000002;
+        queueID_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required int32 queueID = 2;</code>
+       */
+      public Builder clearQueueID() {
+        bitField0_ = (bitField0_ & ~0x00000002);
+        queueID_ = 0;
+        onChanged();
+        return this;
+      }
+
+      // required .exec.shared.QueryId query_id = 3;
+      private org.apache.drill.exec.proto.UserBitShared.QueryId queryId_ = org.apache.drill.exec.proto.UserBitShared.QueryId.getDefaultInstance();
+      private com.google.protobuf.SingleFieldBuilder<
+          org.apache.drill.exec.proto.UserBitShared.QueryId, org.apache.drill.exec.proto.UserBitShared.QueryId.Builder, org.apache.drill.exec.proto.UserBitShared.QueryIdOrBuilder> queryIdBuilder_;
+      /**
+       * <code>required .exec.shared.QueryId query_id = 3;</code>
+       */
+      public boolean hasQueryId() {
+        return ((bitField0_ & 0x00000004) == 0x00000004);
+      }
+      /**
+       * <code>required .exec.shared.QueryId query_id = 3;</code>
+       */
+      public org.apache.drill.exec.proto.UserBitShared.QueryId getQueryId() {
+        if (queryIdBuilder_ == null) {
+          return queryId_;
+        } else {
+          return queryIdBuilder_.getMessage();
+        }
+      }
+      /**
+       * <code>required .exec.shared.QueryId query_id = 3;</code>
+       */
+      public Builder setQueryId(org.apache.drill.exec.proto.UserBitShared.QueryId value) {
+        if (queryIdBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          queryId_ = value;
+          onChanged();
+        } else {
+          queryIdBuilder_.setMessage(value);
+        }
+        bitField0_ |= 0x00000004;
+        return this;
+      }
+      /**
+       * <code>required .exec.shared.QueryId query_id = 3;</code>
+       */
+      public Builder setQueryId(
+          org.apache.drill.exec.proto.UserBitShared.QueryId.Builder builderForValue) {
+        if (queryIdBuilder_ == null) {
+          queryId_ = builderForValue.build();
+          onChanged();
+        } else {
+          queryIdBuilder_.setMessage(builderForValue.build());
+        }
+        bitField0_ |= 0x00000004;
+        return this;
+      }
+      /**
+       * <code>required .exec.shared.QueryId query_id = 3;</code>
+       */
+      public Builder mergeQueryId(org.apache.drill.exec.proto.UserBitShared.QueryId value) {
+        if (queryIdBuilder_ == null) {
+          if (((bitField0_ & 0x00000004) == 0x00000004) &&
+              queryId_ != org.apache.drill.exec.proto.UserBitShared.QueryId.getDefaultInstance()) {
+            queryId_ =
+              org.apache.drill.exec.proto.UserBitShared.QueryId.newBuilder(queryId_).mergeFrom(value).buildPartial();
+          } else {
+            queryId_ = value;
+          }
+          onChanged();
+        } else {
+          queryIdBuilder_.mergeFrom(value);
+        }
+        bitField0_ |= 0x00000004;
+        return this;
+      }
+      /**
+       * <code>required .exec.shared.QueryId query_id = 3;</code>
+       */
+      public Builder clearQueryId() {
+        if (queryIdBuilder_ == null) {
+          queryId_ = org.apache.drill.exec.proto.UserBitShared.QueryId.getDefaultInstance();
+          onChanged();
+        } else {
+          queryIdBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000004);
+        return this;
+      }
+      /**
+       * <code>required .exec.shared.QueryId query_id = 3;</code>
+       */
+      public org.apache.drill.exec.proto.UserBitShared.QueryId.Builder getQueryIdBuilder() {
+        bitField0_ |= 0x00000004;
+        onChanged();
+        return getQueryIdFieldBuilder().getBuilder();
+      }
+      /**
+       * <code>required .exec.shared.QueryId query_id = 3;</code>
+       */
+      public org.apache.drill.exec.proto.UserBitShared.QueryIdOrBuilder getQueryIdOrBuilder() {
+        if (queryIdBuilder_ != null) {
+          return queryIdBuilder_.getMessageOrBuilder();
+        } else {
+          return queryId_;
+        }
+      }
+      /**
+       * <code>required .exec.shared.QueryId query_id = 3;</code>
+       */
+      private com.google.protobuf.SingleFieldBuilder<
+          org.apache.drill.exec.proto.UserBitShared.QueryId, org.apache.drill.exec.proto.UserBitShared.QueryId.Builder, org.apache.drill.exec.proto.UserBitShared.QueryIdOrBuilder> 
+          getQueryIdFieldBuilder() {
+        if (queryIdBuilder_ == null) {
+          queryIdBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+              org.apache.drill.exec.proto.UserBitShared.QueryId, org.apache.drill.exec.proto.UserBitShared.QueryId.Builder, org.apache.drill.exec.proto.UserBitShared.QueryIdOrBuilder>(
+                  queryId_,
+                  getParentForChildren(),
+                  isClean());
+          queryId_ = null;
+        }
+        return queryIdBuilder_;
+      }
+
+      // @@protoc_insertion_point(builder_scope:exec.bit.control.ScheduleQueryMessage)
+    }
+
+    static {
+      defaultInstance = new ScheduleQueryMessage(true);
+      defaultInstance.initFields();
+    }
+
+    // @@protoc_insertion_point(class_scope:exec.bit.control.ScheduleQueryMessage)
+  }
+
+  public interface AdmitQueryMessageOrBuilder
+      extends com.google.protobuf.MessageOrBuilder {
+
+    // required int32 queueID = 1;
+    /**
+     * <code>required int32 queueID = 1;</code>
+     */
+    boolean hasQueueID();
+    /**
+     * <code>required int32 queueID = 1;</code>
+     */
+    int getQueueID();
+
+    // required .exec.shared.QueryId query_id = 2;
+    /**
+     * <code>required .exec.shared.QueryId query_id = 2;</code>
+     */
+    boolean hasQueryId();
+    /**
+     * <code>required .exec.shared.QueryId query_id = 2;</code>
+     */
+    org.apache.drill.exec.proto.UserBitShared.QueryId getQueryId();
+    /**
+     * <code>required .exec.shared.QueryId query_id = 2;</code>
+     */
+    org.apache.drill.exec.proto.UserBitShared.QueryIdOrBuilder getQueryIdOrBuilder();
+  }
+  /**
+   * Protobuf type {@code exec.bit.control.AdmitQueryMessage}
+   */
+  public static final class AdmitQueryMessage extends
+      com.google.protobuf.GeneratedMessage
+      implements AdmitQueryMessageOrBuilder {
+    // Use AdmitQueryMessage.newBuilder() to construct.
+    private AdmitQueryMessage(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+      super(builder);
+      this.unknownFields = builder.getUnknownFields();
+    }
+    private AdmitQueryMessage(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
+    private static final AdmitQueryMessage defaultInstance;
+    public static AdmitQueryMessage getDefaultInstance() {
+      return defaultInstance;
+    }
+
+    public AdmitQueryMessage getDefaultInstanceForType() {
+      return defaultInstance;
+    }
+
+    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    @java.lang.Override
+    public final com.google.protobuf.UnknownFieldSet
+        getUnknownFields() {
+      return this.unknownFields;
+    }
+    private AdmitQueryMessage(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      initFields();
+      int mutable_bitField0_ = 0;
+      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+          com.google.protobuf.UnknownFieldSet.newBuilder();
+      try {
+        boolean done = false;
+        while (!done) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              done = true;
+              break;
+            default: {
+              if (!parseUnknownField(input, unknownFields,
+                                     extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
+            case 8: {
+              bitField0_ |= 0x00000001;
+              queueID_ = input.readInt32();
+              break;
+            }
+            case 18: {
+              org.apache.drill.exec.proto.UserBitShared.QueryId.Builder subBuilder = null;
+              if (((bitField0_ & 0x00000002) == 0x00000002)) {
+                subBuilder = queryId_.toBuilder();
+              }
+              queryId_ = input.readMessage(org.apache.drill.exec.proto.UserBitShared.QueryId.PARSER, extensionRegistry);
+              if (subBuilder != null) {
+                subBuilder.mergeFrom(queryId_);
+                queryId_ = subBuilder.buildPartial();
+              }
+              bitField0_ |= 0x00000002;
+              break;
+            }
+          }
+        }
+      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        throw e.setUnfinishedMessage(this);
+      } catch (java.io.IOException e) {
+        throw new com.google.protobuf.InvalidProtocolBufferException(
+            e.getMessage()).setUnfinishedMessage(this);
+      } finally {
+        this.unknownFields = unknownFields.build();
+        makeExtensionsImmutable();
+      }
+    }
+    public static final com.google.protobuf.Descriptors.Descriptor
+        getDescriptor() {
+      return org.apache.drill.exec.proto.BitControl.internal_static_exec_bit_control_AdmitQueryMessage_descriptor;
+    }
+
+    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return org.apache.drill.exec.proto.BitControl.internal_static_exec_bit_control_AdmitQueryMessage_fieldAccessorTable
+          .ensureFieldAccessorsInitialized(
+              org.apache.drill.exec.proto.BitControl.AdmitQueryMessage.class, org.apache.drill.exec.proto.BitControl.AdmitQueryMessage.Builder.class);
+    }
+
+    public static com.google.protobuf.Parser<AdmitQueryMessage> PARSER =
+        new com.google.protobuf.AbstractParser<AdmitQueryMessage>() {
+      public AdmitQueryMessage parsePartialFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return new AdmitQueryMessage(input, extensionRegistry);
+      }
+    };
+
+    @java.lang.Override
+    public com.google.protobuf.Parser<AdmitQueryMessage> getParserForType() {
+      return PARSER;
+    }
+
+    private int bitField0_;
+    // required int32 queueID = 1;
+    public static final int QUEUEID_FIELD_NUMBER = 1;
+    private int queueID_;
+    /**
+     * <code>required int32 queueID = 1;</code>
+     */
+    public boolean hasQueueID() {
+      return ((bitField0_ & 0x00000001) == 0x00000001);
+    }
+    /**
+     * <code>required int32 queueID = 1;</code>
+     */
+    public int getQueueID() {
+      return queueID_;
+    }
+
+    // required .exec.shared.QueryId query_id = 2;
+    public static final int QUERY_ID_FIELD_NUMBER = 2;
+    private org.apache.drill.exec.proto.UserBitShared.QueryId queryId_;
+    /**
+     * <code>required .exec.shared.QueryId query_id = 2;</code>
+     */
+    public boolean hasQueryId() {
+      return ((bitField0_ & 0x00000002) == 0x00000002);
+    }
+    /**
+     * <code>required .exec.shared.QueryId query_id = 2;</code>
+     */
+    public org.apache.drill.exec.proto.UserBitShared.QueryId getQueryId() {
+      return queryId_;
+    }
+    /**
+     * <code>required .exec.shared.QueryId query_id = 2;</code>
+     */
+    public org.apache.drill.exec.proto.UserBitShared.QueryIdOrBuilder getQueryIdOrBuilder() {
+      return queryId_;
+    }
+
+    private void initFields() {
+      queueID_ = 0;
+      queryId_ = org.apache.drill.exec.proto.UserBitShared.QueryId.getDefaultInstance();
+    }
+    private byte memoizedIsInitialized = -1;
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized != -1) return isInitialized == 1;
+
+      if (!hasQueueID()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasQueryId()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      memoizedIsInitialized = 1;
+      return true;
+    }
+
+    public void writeTo(com.google.protobuf.CodedOutputStream output)
+                        throws java.io.IOException {
+      getSerializedSize();
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        output.writeInt32(1, queueID_);
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        output.writeMessage(2, queryId_);
+      }
+      getUnknownFields().writeTo(output);
+    }
+
+    private int memoizedSerializedSize = -1;
+    public int getSerializedSize() {
+      int size = memoizedSerializedSize;
+      if (size != -1) return size;
+
+      size = 0;
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeInt32Size(1, queueID_);
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeMessageSize(2, queryId_);
+      }
+      size += getUnknownFields().getSerializedSize();
+      memoizedSerializedSize = size;
+      return size;
+    }
+
+    private static final long serialVersionUID = 0L;
+    @java.lang.Override
+    protected java.lang.Object writeReplace()
+        throws java.io.ObjectStreamException {
+      return super.writeReplace();
+    }
+
+    public static org.apache.drill.exec.proto.BitControl.AdmitQueryMessage parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static org.apache.drill.exec.proto.BitControl.AdmitQueryMessage parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static org.apache.drill.exec.proto.BitControl.AdmitQueryMessage parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static org.apache.drill.exec.proto.BitControl.AdmitQueryMessage parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static org.apache.drill.exec.proto.BitControl.AdmitQueryMessage parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static org.apache.drill.exec.proto.BitControl.AdmitQueryMessage parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+    public static org.apache.drill.exec.proto.BitControl.AdmitQueryMessage parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input);
+    }
+    public static org.apache.drill.exec.proto.BitControl.AdmitQueryMessage parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+    }
+    public static org.apache.drill.exec.proto.BitControl.AdmitQueryMessage parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static org.apache.drill.exec.proto.BitControl.AdmitQueryMessage parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() { return Builder.create(); }
+    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder(org.apache.drill.exec.proto.BitControl.AdmitQueryMessage prototype) {
+      return newBuilder().mergeFrom(prototype);
+    }
+    public Builder toBuilder() { return newBuilder(this); }
+
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+    /**
+     * Protobuf type {@code exec.bit.control.AdmitQueryMessage}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessage.Builder<Builder>
+       implements org.apache.drill.exec.proto.BitControl.AdmitQueryMessageOrBuilder {
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return org.apache.drill.exec.proto.BitControl.internal_static_exec_bit_control_AdmitQueryMessage_descriptor;
+      }
+
+      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return org.apache.drill.exec.proto.BitControl.internal_static_exec_bit_control_AdmitQueryMessage_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                org.apache.drill.exec.proto.BitControl.AdmitQueryMessage.class, org.apache.drill.exec.proto.BitControl.AdmitQueryMessage.Builder.class);
+      }
+
+      // Construct using org.apache.drill.exec.proto.BitControl.AdmitQueryMessage.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+
+      private Builder(
+          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+      private void maybeForceBuilderInitialization() {
+        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+          getQueryIdFieldBuilder();
+        }
+      }
+      private static Builder create() {
+        return new Builder();
+      }
+
+      public Builder clear() {
+        super.clear();
+        queueID_ = 0;
+        bitField0_ = (bitField0_ & ~0x00000001);
+        if (queryIdBuilder_ == null) {
+          queryId_ = org.apache.drill.exec.proto.UserBitShared.QueryId.getDefaultInstance();
+        } else {
+          queryIdBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000002);
+        return this;
+      }
+
+      public Builder clone() {
+        return create().mergeFrom(buildPartial());
+      }
+
+      public com.google.protobuf.Descriptors.Descriptor
+          getDescriptorForType() {
+        return org.apache.drill.exec.proto.BitControl.internal_static_exec_bit_control_AdmitQueryMessage_descriptor;
+      }
+
+      public org.apache.drill.exec.proto.BitControl.AdmitQueryMessage getDefaultInstanceForType() {
+        return org.apache.drill.exec.proto.BitControl.AdmitQueryMessage.getDefaultInstance();
+      }
+
+      public org.apache.drill.exec.proto.BitControl.AdmitQueryMessage build() {
+        org.apache.drill.exec.proto.BitControl.AdmitQueryMessage result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+
+      public org.apache.drill.exec.proto.BitControl.AdmitQueryMessage buildPartial() {
+        org.apache.drill.exec.proto.BitControl.AdmitQueryMessage result = new org.apache.drill.exec.proto.BitControl.AdmitQueryMessage(this);
+        int from_bitField0_ = bitField0_;
+        int to_bitField0_ = 0;
+        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+          to_bitField0_ |= 0x00000001;
+        }
+        result.queueID_ = queueID_;
+        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+          to_bitField0_ |= 0x00000002;
+        }
+        if (queryIdBuilder_ == null) {
+          result.queryId_ = queryId_;
+        } else {
+          result.queryId_ = queryIdBuilder_.build();
+        }
+        result.bitField0_ = to_bitField0_;
+        onBuilt();
+        return result;
+      }
+
+      public Builder mergeFrom(com.google.protobuf.Message other) {
+        if (other instanceof org.apache.drill.exec.proto.BitControl.AdmitQueryMessage) {
+          return mergeFrom((org.apache.drill.exec.proto.BitControl.AdmitQueryMessage)other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+
+      public Builder mergeFrom(org.apache.drill.exec.proto.BitControl.AdmitQueryMessage other) {
+        if (other == org.apache.drill.exec.proto.BitControl.AdmitQueryMessage.getDefaultInstance()) return this;
+        if (other.hasQueueID()) {
+          setQueueID(other.getQueueID());
+        }
+        if (other.hasQueryId()) {
+          mergeQueryId(other.getQueryId());
+        }
+        this.mergeUnknownFields(other.getUnknownFields());
+        return this;
+      }
+
+      public final boolean isInitialized() {
+        if (!hasQueueID()) {
+          
+          return false;
+        }
+        if (!hasQueryId()) {
+          
+          return false;
+        }
+        return true;
+      }
+
+      public Builder mergeFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        org.apache.drill.exec.proto.BitControl.AdmitQueryMessage parsedMessage = null;
+        try {
+          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          parsedMessage = (org.apache.drill.exec.proto.BitControl.AdmitQueryMessage) e.getUnfinishedMessage();
+          throw e;
+        } finally {
+          if (parsedMessage != null) {
+            mergeFrom(parsedMessage);
+          }
+        }
+        return this;
+      }
+      private int bitField0_;
+
+      // required int32 queueID = 1;
+      private int queueID_ ;
+      /**
+       * <code>required int32 queueID = 1;</code>
+       */
+      public boolean hasQueueID() {
+        return ((bitField0_ & 0x00000001) == 0x00000001);
+      }
+      /**
+       * <code>required int32 queueID = 1;</code>
+       */
+      public int getQueueID() {
+        return queueID_;
+      }
+      /**
+       * <code>required int32 queueID = 1;</code>
+       */
+      public Builder setQueueID(int value) {
+        bitField0_ |= 0x00000001;
+        queueID_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required int32 queueID = 1;</code>
+       */
+      public Builder clearQueueID() {
+        bitField0_ = (bitField0_ & ~0x00000001);
+        queueID_ = 0;
+        onChanged();
+        return this;
+      }
+
+      // required .exec.shared.QueryId query_id = 2;
+      private org.apache.drill.exec.proto.UserBitShared.QueryId queryId_ = org.apache.drill.exec.proto.UserBitShared.QueryId.getDefaultInstance();
+      private com.google.protobuf.SingleFieldBuilder<
+          org.apache.drill.exec.proto.UserBitShared.QueryId, org.apache.drill.exec.proto.UserBitShared.QueryId.Builder, org.apache.drill.exec.proto.UserBitShared.QueryIdOrBuilder> queryIdBuilder_;
+      /**
+       * <code>required .exec.shared.QueryId query_id = 2;</code>
+       */
+      public boolean hasQueryId() {
+        return ((bitField0_ & 0x00000002) == 0x00000002);
+      }
+      /**
+       * <code>required .exec.shared.QueryId query_id = 2;</code>
+       */
+      public org.apache.drill.exec.proto.UserBitShared.QueryId getQueryId() {
+        if (queryIdBuilder_ == null) {
+          return queryId_;
+        } else {
+          return queryIdBuilder_.getMessage();
+        }
+      }
+      /**
+       * <code>required .exec.shared.QueryId query_id = 2;</code>
+       */
+      public Builder setQueryId(org.apache.drill.exec.proto.UserBitShared.QueryId value) {
+        if (queryIdBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          queryId_ = value;
+          onChanged();
+        } else {
+          queryIdBuilder_.setMessage(value);
+        }
+        bitField0_ |= 0x00000002;
+        return this;
+      }
+      /**
+       * <code>required .exec.shared.QueryId query_id = 2;</code>
+       */
+      public Builder setQueryId(
+          org.apache.drill.exec.proto.UserBitShared.QueryId.Builder builderForValue) {
+        if (queryIdBuilder_ == null) {
+          queryId_ = builderForValue.build();
+          onChanged();
+        } else {
+          queryIdBuilder_.setMessage(builderForValue.build());
+        }
+        bitField0_ |= 0x00000002;
+        return this;
+      }
+      /**
+       * <code>required .exec.shared.QueryId query_id = 2;</code>
+       */
+      public Builder mergeQueryId(org.apache.drill.exec.proto.UserBitShared.QueryId value) {
+        if (queryIdBuilder_ == null) {
+          if (((bitField0_ & 0x00000002) == 0x00000002) &&
+              queryId_ != org.apache.drill.exec.proto.UserBitShared.QueryId.getDefaultInstance()) {
+            queryId_ =
+              org.apache.drill.exec.proto.UserBitShared.QueryId.newBuilder(queryId_).mergeFrom(value).buildPartial();
+          } else {
+            queryId_ = value;
+          }
+          onChanged();
+        } else {
+          queryIdBuilder_.mergeFrom(value);
+        }
+        bitField0_ |= 0x00000002;
+        return this;
+      }
+      /**
+       * <code>required .exec.shared.QueryId query_id = 2;</code>
+       */
+      public Builder clearQueryId() {
+        if (queryIdBuilder_ == null) {
+          queryId_ = org.apache.drill.exec.proto.UserBitShared.QueryId.getDefaultInstance();
+          onChanged();
+        } else {
+          queryIdBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000002);
+        return this;
+      }
+      /**
+       * <code>required .exec.shared.QueryId query_id = 2;</code>
+       */
+      public org.apache.drill.exec.proto.UserBitShared.QueryId.Builder getQueryIdBuilder() {
+        bitField0_ |= 0x00000002;
+        onChanged();
+        return getQueryIdFieldBuilder().getBuilder();
+      }
+      /**
+       * <code>required .exec.shared.QueryId query_id = 2;</code>
+       */
+      public org.apache.drill.exec.proto.UserBitShared.QueryIdOrBuilder getQueryIdOrBuilder() {
+        if (queryIdBuilder_ != null) {
+          return queryIdBuilder_.getMessageOrBuilder();
+        } else {
+          return queryId_;
+        }
+      }
+      /**
+       * <code>required .exec.shared.QueryId query_id = 2;</code>
+       */
+      private com.google.protobuf.SingleFieldBuilder<
+          org.apache.drill.exec.proto.UserBitShared.QueryId, org.apache.drill.exec.proto.UserBitShared.QueryId.Builder, org.apache.drill.exec.proto.UserBitShared.QueryIdOrBuilder> 
+          getQueryIdFieldBuilder() {
+        if (queryIdBuilder_ == null) {
+          queryIdBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+              org.apache.drill.exec.proto.UserBitShared.QueryId, org.apache.drill.exec.proto.UserBitShared.QueryId.Builder, org.apache.drill.exec.proto.UserBitShared.QueryIdOrBuilder>(
+                  queryId_,
+                  getParentForChildren(),
+                  isClean());
+          queryId_ = null;
+        }
+        return queryIdBuilder_;
+      }
+
+      // @@protoc_insertion_point(builder_scope:exec.bit.control.AdmitQueryMessage)
+    }
+
+    static {
+      defaultInstance = new AdmitQueryMessage(true);
+      defaultInstance.initFields();
+    }
+
+    // @@protoc_insertion_point(class_scope:exec.bit.control.AdmitQueryMessage)
   }
 
   public interface PlanFragmentOrBuilder
@@ -9324,6 +11552,11 @@ public final class BitControl {
   }
 
   private static com.google.protobuf.Descriptors.Descriptor
+    internal_static_exec_bit_control_SchedulingStatusForAQueue_descriptor;
+  private static
+    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_exec_bit_control_SchedulingStatusForAQueue_fieldAccessorTable;
+  private static com.google.protobuf.Descriptors.Descriptor
     internal_static_exec_bit_control_BitControlHandshake_descriptor;
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
@@ -9348,6 +11581,16 @@ public final class BitControl {
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_exec_bit_control_CustomMessage_fieldAccessorTable;
+  private static com.google.protobuf.Descriptors.Descriptor
+    internal_static_exec_bit_control_ScheduleQueryMessage_descriptor;
+  private static
+    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_exec_bit_control_ScheduleQueryMessage_fieldAccessorTable;
+  private static com.google.protobuf.Descriptors.Descriptor
+    internal_static_exec_bit_control_AdmitQueryMessage_descriptor;
+  private static
+    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_exec_bit_control_AdmitQueryMessage_fieldAccessorTable;
   private static com.google.protobuf.Descriptors.Descriptor
     internal_static_exec_bit_control_PlanFragment_descriptor;
   private static
@@ -9384,116 +11627,148 @@ public final class BitControl {
     java.lang.String[] descriptorData = {
       "\n\020BitControl.proto\022\020exec.bit.control\032\025Ex" +
       "ecutionProtos.proto\032\022Coordination.proto\032" +
-      "\023UserBitShared.proto\"\255\001\n\023BitControlHands" +
-      "hake\022\023\n\013rpc_version\030\001 \001(\005\0225\n\007channel\030\002 \001" +
-      "(\0162\027.exec.shared.RpcChannel:\013BIT_CONTROL" +
-      "\022(\n\010endpoint\030\003 \001(\0132\026.exec.DrillbitEndpoi" +
-      "nt\022 \n\030authenticationMechanisms\030\004 \003(\t\"F\n\t" +
-      "BitStatus\0229\n\017fragment_status\030\001 \003(\0132 .exe" +
-      "c.bit.control.FragmentStatus\"n\n\016Fragment" +
-      "Status\0222\n\007profile\030\001 \001(\0132!.exec.shared.Mi",
-      "norFragmentProfile\022(\n\006handle\030\002 \001(\0132\030.exe" +
-      "c.bit.FragmentHandle\"G\n\023InitializeFragme" +
-      "nts\0220\n\010fragment\030\001 \003(\0132\036.exec.bit.control" +
-      ".PlanFragment\".\n\rCustomMessage\022\014\n\004type\030\001" +
-      " \001(\005\022\017\n\007message\030\002 \001(\014\"\374\003\n\014PlanFragment\022(" +
-      "\n\006handle\030\001 \001(\0132\030.exec.bit.FragmentHandle" +
-      "\022\024\n\014network_cost\030\004 \001(\002\022\020\n\010cpu_cost\030\005 \001(\002" +
-      "\022\021\n\tdisk_cost\030\006 \001(\002\022\023\n\013memory_cost\030\007 \001(\002" +
-      "\022\025\n\rfragment_json\030\010 \001(\t\022\025\n\rleaf_fragment" +
-      "\030\t \001(\010\022*\n\nassignment\030\n \001(\0132\026.exec.Drillb",
-      "itEndpoint\022\'\n\007foreman\030\013 \001(\0132\026.exec.Drill" +
-      "bitEndpoint\022\035\n\013mem_initial\030\014 \001(\003:\010200000" +
-      "00\022\033\n\007mem_max\030\r \001(\003:\n2000000000\0221\n\013crede" +
-      "ntials\030\016 \001(\0132\034.exec.shared.UserCredentia" +
-      "ls\022\024\n\014options_json\030\017 \001(\t\022:\n\007context\030\020 \001(" +
-      "\0132).exec.bit.control.QueryContextInforma" +
-      "tion\022.\n\tcollector\030\021 \003(\0132\033.exec.bit.contr" +
-      "ol.Collector\"\210\001\n\tCollector\022\"\n\032opposite_m" +
-      "ajor_fragment_id\030\001 \001(\005\022#\n\027incoming_minor" +
-      "_fragment\030\002 \003(\005B\002\020\001\022\035\n\025supports_out_of_o",
-      "rder\030\003 \001(\010\022\023\n\013is_spooling\030\004 \001(\010\"w\n\027Query" +
-      "ContextInformation\022\030\n\020query_start_time\030\001" +
-      " \001(\003\022\021\n\ttime_zone\030\002 \001(\005\022\033\n\023default_schem" +
-      "a_name\030\003 \001(\t\022\022\n\nsession_id\030\004 \001(\t\"f\n\017Work" +
-      "QueueStatus\022(\n\010endpoint\030\001 \001(\0132\026.exec.Dri" +
-      "llbitEndpoint\022\024\n\014queue_length\030\002 \001(\005\022\023\n\013r" +
-      "eport_time\030\003 \001(\003\"h\n\020FinishedReceiver\022*\n\010" +
-      "receiver\030\001 \001(\0132\030.exec.bit.FragmentHandle" +
-      "\022(\n\006sender\030\002 \001(\0132\030.exec.bit.FragmentHand" +
-      "le*\206\003\n\007RpcType\022\r\n\tHANDSHAKE\020\000\022\007\n\003ACK\020\001\022\013",
-      "\n\007GOODBYE\020\002\022\034\n\030REQ_INITIALIZE_FRAGMENTS\020" +
-      "\003\022\027\n\023REQ_CANCEL_FRAGMENT\020\006\022\031\n\025REQ_RECEIV" +
-      "ER_FINISHED\020\007\022\027\n\023REQ_FRAGMENT_STATUS\020\010\022\022" +
-      "\n\016REQ_BIT_STATUS\020\t\022\024\n\020REQ_QUERY_STATUS\020\n" +
-      "\022\024\n\020REQ_QUERY_CANCEL\020\017\022\030\n\024REQ_UNPAUSE_FR" +
-      "AGMENT\020\020\022\016\n\nREQ_CUSTOM\020\021\022\030\n\024RESP_FRAGMEN" +
-      "T_HANDLE\020\013\022\030\n\024RESP_FRAGMENT_STATUS\020\014\022\023\n\017" +
-      "RESP_BIT_STATUS\020\r\022\025\n\021RESP_QUERY_STATUS\020\016" +
-      "\022\017\n\013RESP_CUSTOM\020\022\022\020\n\014SASL_MESSAGE\020\023B+\n\033o" +
-      "rg.apache.drill.exec.protoB\nBitControlH\001"
+      "\023UserBitShared.proto\"\214\001\n\031SchedulingStatu" +
+      "sForAQueue\0226\n\006status\030\001 \002(\0162&.exec.bit.co" +
+      "ntrol.SchedulingStatusType\022\017\n\007queueID\030\002 " +
+      "\002(\005\022&\n\010query_id\030\003 \002(\0132\024.exec.shared.Quer" +
+      "yId\"\255\001\n\023BitControlHandshake\022\023\n\013rpc_versi" +
+      "on\030\001 \001(\005\0225\n\007channel\030\002 \001(\0162\027.exec.shared." +
+      "RpcChannel:\013BIT_CONTROL\022(\n\010endpoint\030\003 \001(" +
+      "\0132\026.exec.DrillbitEndpoint\022 \n\030authenticat",
+      "ionMechanisms\030\004 \003(\t\"F\n\tBitStatus\0229\n\017frag" +
+      "ment_status\030\001 \003(\0132 .exec.bit.control.Fra" +
+      "gmentStatus\"n\n\016FragmentStatus\0222\n\007profile" +
+      "\030\001 \001(\0132!.exec.shared.MinorFragmentProfil" +
+      "e\022(\n\006handle\030\002 \001(\0132\030.exec.bit.FragmentHan" +
+      "dle\"G\n\023InitializeFragments\0220\n\010fragment\030\001" +
+      " \003(\0132\036.exec.bit.control.PlanFragment\".\n\r" +
+      "CustomMessage\022\014\n\004type\030\001 \001(\005\022\017\n\007message\030\002" +
+      " \001(\014\"w\n\024ScheduleQueryMessage\022&\n\006sender\030\001" +
+      " \002(\0132\026.exec.DrillbitEndpoint\022\017\n\007queueID\030",
+      "\002 \002(\005\022&\n\010query_id\030\003 \002(\0132\024.exec.shared.Qu" +
+      "eryId\"L\n\021AdmitQueryMessage\022\017\n\007queueID\030\001 " +
+      "\002(\005\022&\n\010query_id\030\002 \002(\0132\024.exec.shared.Quer" +
+      "yId\"\374\003\n\014PlanFragment\022(\n\006handle\030\001 \001(\0132\030.e" +
+      "xec.bit.FragmentHandle\022\024\n\014network_cost\030\004" +
+      " \001(\002\022\020\n\010cpu_cost\030\005 \001(\002\022\021\n\tdisk_cost\030\006 \001(" +
+      "\002\022\023\n\013memory_cost\030\007 \001(\002\022\025\n\rfragment_json\030" +
+      "\010 \001(\t\022\025\n\rleaf_fragment\030\t \001(\010\022*\n\nassignme" +
+      "nt\030\n \001(\0132\026.exec.DrillbitEndpoint\022\'\n\007fore" +
+      "man\030\013 \001(\0132\026.exec.DrillbitEndpoint\022\035\n\013mem",
+      "_initial\030\014 \001(\003:\01020000000\022\033\n\007mem_max\030\r \001(" +
+      "\003:\n2000000000\0221\n\013credentials\030\016 \001(\0132\034.exe" +
+      "c.shared.UserCredentials\022\024\n\014options_json" +
+      "\030\017 \001(\t\022:\n\007context\030\020 \001(\0132).exec.bit.contr" +
+      "ol.QueryContextInformation\022.\n\tcollector\030" +
+      "\021 \003(\0132\033.exec.bit.control.Collector\"\210\001\n\tC" +
+      "ollector\022\"\n\032opposite_major_fragment_id\030\001" +
+      " \001(\005\022#\n\027incoming_minor_fragment\030\002 \003(\005B\002\020" +
+      "\001\022\035\n\025supports_out_of_order\030\003 \001(\010\022\023\n\013is_s" +
+      "pooling\030\004 \001(\010\"w\n\027QueryContextInformation",
+      "\022\030\n\020query_start_time\030\001 \001(\003\022\021\n\ttime_zone\030" +
+      "\002 \001(\005\022\033\n\023default_schema_name\030\003 \001(\t\022\022\n\nse" +
+      "ssion_id\030\004 \001(\t\"f\n\017WorkQueueStatus\022(\n\010end" +
+      "point\030\001 \001(\0132\026.exec.DrillbitEndpoint\022\024\n\014q" +
+      "ueue_length\030\002 \001(\005\022\023\n\013report_time\030\003 \001(\003\"h" +
+      "\n\020FinishedReceiver\022*\n\010receiver\030\001 \001(\0132\030.e" +
+      "xec.bit.FragmentHandle\022(\n\006sender\030\002 \001(\0132\030" +
+      ".exec.bit.FragmentHandle*\303\003\n\007RpcType\022\r\n\t" +
+      "HANDSHAKE\020\000\022\007\n\003ACK\020\001\022\013\n\007GOODBYE\020\002\022\034\n\030REQ" +
+      "_INITIALIZE_FRAGMENTS\020\003\022\027\n\023REQ_CANCEL_FR",
+      "AGMENT\020\006\022\031\n\025REQ_RECEIVER_FINISHED\020\007\022\027\n\023R" +
+      "EQ_FRAGMENT_STATUS\020\010\022\022\n\016REQ_BIT_STATUS\020\t" +
+      "\022\024\n\020REQ_QUERY_STATUS\020\n\022\024\n\020REQ_QUERY_CANC" +
+      "EL\020\017\022\030\n\024REQ_UNPAUSE_FRAGMENT\020\020\022\016\n\nREQ_CU" +
+      "STOM\020\021\022\037\n\033REQ_SCHEDULE_QUERY_TO_QUEUE\020\024\022" +
+      "\032\n\026REQ_QUEUE_SCHED_STATUS\020\025\022\030\n\024RESP_FRAG" +
+      "MENT_HANDLE\020\013\022\030\n\024RESP_FRAGMENT_STATUS\020\014\022" +
+      "\023\n\017RESP_BIT_STATUS\020\r\022\025\n\021RESP_QUERY_STATU" +
+      "S\020\016\022\017\n\013RESP_CUSTOM\020\022\022\020\n\014SASL_MESSAGE\020\023*w" +
+      "\n\024SchedulingStatusType\022\030\n\024ADMIT_QUERY_TO",
+      "_QUEUE\020\000\022\030\n\024WAIT_QUERY_FOR_QUEUE\020\001\022\017\n\013SE" +
+      "RVER_BUSY\020\002\022\032\n\026NOT_A_LEADER_FOR_QUEUE\020\003B" +
+      "+\n\033org.apache.drill.exec.protoB\nBitContr" +
+      "olH\001"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
         public com.google.protobuf.ExtensionRegistry assignDescriptors(
             com.google.protobuf.Descriptors.FileDescriptor root) {
           descriptor = root;
-          internal_static_exec_bit_control_BitControlHandshake_descriptor =
+          internal_static_exec_bit_control_SchedulingStatusForAQueue_descriptor =
             getDescriptor().getMessageTypes().get(0);
+          internal_static_exec_bit_control_SchedulingStatusForAQueue_fieldAccessorTable = new
+            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+              internal_static_exec_bit_control_SchedulingStatusForAQueue_descriptor,
+              new java.lang.String[] { "Status", "QueueID", "QueryId", });
+          internal_static_exec_bit_control_BitControlHandshake_descriptor =
+            getDescriptor().getMessageTypes().get(1);
           internal_static_exec_bit_control_BitControlHandshake_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_exec_bit_control_BitControlHandshake_descriptor,
               new java.lang.String[] { "RpcVersion", "Channel", "Endpoint", "AuthenticationMechanisms", });
           internal_static_exec_bit_control_BitStatus_descriptor =
-            getDescriptor().getMessageTypes().get(1);
+            getDescriptor().getMessageTypes().get(2);
           internal_static_exec_bit_control_BitStatus_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_exec_bit_control_BitStatus_descriptor,
               new java.lang.String[] { "FragmentStatus", });
           internal_static_exec_bit_control_FragmentStatus_descriptor =
-            getDescriptor().getMessageTypes().get(2);
+            getDescriptor().getMessageTypes().get(3);
           internal_static_exec_bit_control_FragmentStatus_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_exec_bit_control_FragmentStatus_descriptor,
               new java.lang.String[] { "Profile", "Handle", });
           internal_static_exec_bit_control_InitializeFragments_descriptor =
-            getDescriptor().getMessageTypes().get(3);
+            getDescriptor().getMessageTypes().get(4);
           internal_static_exec_bit_control_InitializeFragments_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_exec_bit_control_InitializeFragments_descriptor,
               new java.lang.String[] { "Fragment", });
           internal_static_exec_bit_control_CustomMessage_descriptor =
-            getDescriptor().getMessageTypes().get(4);
+            getDescriptor().getMessageTypes().get(5);
           internal_static_exec_bit_control_CustomMessage_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_exec_bit_control_CustomMessage_descriptor,
               new java.lang.String[] { "Type", "Message", });
+          internal_static_exec_bit_control_ScheduleQueryMessage_descriptor =
+            getDescriptor().getMessageTypes().get(6);
+          internal_static_exec_bit_control_ScheduleQueryMessage_fieldAccessorTable = new
+            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+              internal_static_exec_bit_control_ScheduleQueryMessage_descriptor,
+              new java.lang.String[] { "Sender", "QueueID", "QueryId", });
+          internal_static_exec_bit_control_AdmitQueryMessage_descriptor =
+            getDescriptor().getMessageTypes().get(7);
+          internal_static_exec_bit_control_AdmitQueryMessage_fieldAccessorTable = new
+            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+              internal_static_exec_bit_control_AdmitQueryMessage_descriptor,
+              new java.lang.String[] { "QueueID", "QueryId", });
           internal_static_exec_bit_control_PlanFragment_descriptor =
-            getDescriptor().getMessageTypes().get(5);
+            getDescriptor().getMessageTypes().get(8);
           internal_static_exec_bit_control_PlanFragment_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_exec_bit_control_PlanFragment_descriptor,
               new java.lang.String[] { "Handle", "NetworkCost", "CpuCost", "DiskCost", "MemoryCost", "FragmentJson", "LeafFragment", "Assignment", "Foreman", "MemInitial", "MemMax", "Credentials", "OptionsJson", "Context", "Collector", });
           internal_static_exec_bit_control_Collector_descriptor =
-            getDescriptor().getMessageTypes().get(6);
+            getDescriptor().getMessageTypes().get(9);
           internal_static_exec_bit_control_Collector_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_exec_bit_control_Collector_descriptor,
               new java.lang.String[] { "OppositeMajorFragmentId", "IncomingMinorFragment", "SupportsOutOfOrder", "IsSpooling", });
           internal_static_exec_bit_control_QueryContextInformation_descriptor =
-            getDescriptor().getMessageTypes().get(7);
+            getDescriptor().getMessageTypes().get(10);
           internal_static_exec_bit_control_QueryContextInformation_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_exec_bit_control_QueryContextInformation_descriptor,
               new java.lang.String[] { "QueryStartTime", "TimeZone", "DefaultSchemaName", "SessionId", });
           internal_static_exec_bit_control_WorkQueueStatus_descriptor =
-            getDescriptor().getMessageTypes().get(8);
+            getDescriptor().getMessageTypes().get(11);
           internal_static_exec_bit_control_WorkQueueStatus_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_exec_bit_control_WorkQueueStatus_descriptor,
               new java.lang.String[] { "Endpoint", "QueueLength", "ReportTime", });
           internal_static_exec_bit_control_FinishedReceiver_descriptor =
-            getDescriptor().getMessageTypes().get(9);
+            getDescriptor().getMessageTypes().get(12);
           internal_static_exec_bit_control_FinishedReceiver_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_exec_bit_control_FinishedReceiver_descriptor,
