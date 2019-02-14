@@ -1,5 +1,3 @@
-package org.apache.drill.exec.planner.fragment;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -17,6 +15,7 @@ package org.apache.drill.exec.planner.fragment;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.drill.exec.planner.fragment;
 
 import org.apache.drill.exec.ops.QueryContext;
 import org.apache.drill.exec.physical.base.Exchange;
@@ -53,9 +52,10 @@ public class MemoryCalculator extends AbstractOpWrapperVisitor<Void, RuntimeExce
 
   private void merge(Wrapper currFrag, Map<DrillbitEndpoint, Integer> minorFragsPerDrillBit, Function<Integer, Integer> getMemory) {
     NodeResource.merge(currFrag.getResourceMap(),
-                       minorFragsPerDrillBit.entrySet().stream().collect(Collectors.toMap((Map.Entry<DrillbitEndpoint, Integer> x) -> x.getKey(),
-                                                                                          (Map.Entry<DrillbitEndpoint, Integer> x) -> NodeResource.create(0,
-                                                                                                                                          getMemory.apply(x.getValue())))));
+                       minorFragsPerDrillBit.entrySet()
+                                            .stream().collect(Collectors.toMap((Map.Entry<DrillbitEndpoint, Integer> x) -> x.getKey(),
+                                                                               (Map.Entry<DrillbitEndpoint, Integer> x) -> NodeResource.create(0,
+                                                                                                                          getMemory.apply(x.getValue())))));
   }
 
   @Override
