@@ -38,7 +38,6 @@ import org.apache.drill.exec.physical.base.FragmentRoot;
 import org.apache.drill.exec.physical.base.PhysicalOperator;
 import org.apache.drill.exec.planner.fragment.Fragment;
 import org.apache.drill.exec.planner.fragment.MakeFragmentsVisitor;
-import org.apache.drill.exec.planner.fragment.SimpleParallelizer;
 import org.apache.drill.exec.planner.sql.DirectPlan;
 import org.apache.drill.exec.planner.sql.DrillSqlWorker;
 import org.apache.drill.exec.proto.BitControl.PlanFragment;
@@ -415,7 +414,7 @@ public class Foreman implements Runnable {
     //should return which is the nearest Queue which would have satisfied and it's properties.
     //If null use the above information and try to downgrade the resource consumption for this plan.
     //Once we have selected the queue, pick the leader and send a schedule message to the queue.
-    final QueryWorkUnit work = getQueryWorkUnit(plan);
+    final QueryWorkUnit work = getQueryWorkUnit(plan, queryRM);
     if (enableRuntimeFilter) {
       runtimeFilterRouter = new RuntimeFilterRouter(work, drillbitContext);
       runtimeFilterRouter.collectRuntimeFilterParallelAndControlInfo();
@@ -470,7 +469,7 @@ public class Foreman implements Runnable {
     } catch (IOException e) {
       throw new ExecutionSetupException(String.format("Unable to parse FragmentRoot from fragment: %s", rootFragment.getFragmentJson()));
     }
-    queryRM.setCost(rootOperator.getCost());
+    queryRM.setCost(rootOperator.getCost().getOutputRowCount());
 
     fragmentsRunner.setFragmentsInfo(planFragments, rootFragment, rootOperator);
 
@@ -568,14 +567,18 @@ public class Foreman implements Runnable {
     }
   }
 
-  private QueryWorkUnit getQueryWorkUnit(final PhysicalPlan plan) throws ExecutionSetupException {
+  private QueryWorkUnit getQueryWorkUnit(final PhysicalPlan plan,
+                                         QueryResourceManager rm) throws ExecutionSetupException {
+
     final PhysicalOperator rootOperator = plan.getSortedOperators(false).iterator().next();
+
     final Fragment rootFragment = rootOperator.accept(MakeFragmentsVisitor.INSTANCE, null);
-    final SimpleParallelizer parallelizer = new SimpleParallelizer(queryContext);
-    return parallelizer.getFragments(
-        queryContext.getOptions().getOptionList(), queryContext.getCurrentEndpoint(),
-        queryId, queryContext.getOnlineEndpoints(), rootFragment,
-        initiatingClient.getSession(), queryContext.getQueryContextInfo());
+
+    return rm.getParallelizer().generateWorkUnits(queryContext.getOptions().getOptionList(),
+                                                  queryContext.getCurrentEndpoint(),
+                                                  queryId, queryContext.getOnlineEndpoints(),
+                                                  rootFragment, initiatingClient.getSession(),
+                                                  queryContext.getQueryContextInfo());
   }
 
   private void logWorkUnit(QueryWorkUnit queryWorkUnit) {

@@ -17,6 +17,7 @@
  */
 package org.apache.drill.exec.work.foreman.rm;
 
+import org.apache.drill.exec.planner.fragment.QueryParallelizer;
 import org.apache.drill.exec.work.foreman.rm.QueryQueue.QueryQueueException;
 import org.apache.drill.exec.work.foreman.rm.QueryQueue.QueueTimeoutException;
 
@@ -42,6 +43,9 @@ public interface QueryResourceManager extends QueryResourceAllocator {
    */
 
   void setCost(double cost);
+
+
+  QueryParallelizer getParallelizer();
 
   /**
    * Admit the query into the cluster. Blocks until the query

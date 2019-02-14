@@ -34,6 +34,7 @@ import io.netty.buffer.DrillBuf;
 import org.apache.drill.exec.proto.BitControl.CustomMessage;
 import org.apache.drill.exec.proto.BitControl.FinishedReceiver;
 import org.apache.drill.exec.proto.BitControl.FragmentStatus;
+import org.apache.drill.exec.proto.BitControl.QuerySchedulingMessage;
 import org.apache.drill.exec.proto.BitControl.InitializeFragments;
 import org.apache.drill.exec.proto.BitControl.RpcType;
 import org.apache.drill.exec.proto.ExecProtos.FragmentHandle;
@@ -58,9 +59,10 @@ public class ControlTunnel {
     this.manager = manager;
   }
 
-//  public void sendQueryAdmitMessage(RpcOutcomeListener<Ack> outcomeListener, BitControl.ScheduleQueryMessage message) {
-//    SendQueue
-//  }
+  public void sendQueryAdmitMessage(RpcOutcomeListener<Ack> outcomeListener, QuerySchedulingMessage message) {
+    final SendQueryMessage queryMessage = new SendQueryMessage(outcomeListener, message);
+    manager.runCommand(queryMessage);
+  }
 
   public void sendFragments(RpcOutcomeListener<Ack> outcomeListener, InitializeFragments fragments){
     SendFragment b = new SendFragment(outcomeListener, fragments);
@@ -172,6 +174,30 @@ public class ControlTunnel {
     @Override
     public FragmentHandle getMessage() {
       return handle;
+    }
+  }
+
+  public static class SendQueryMessage extends ListeningCommand<Ack, ControlConnection, RpcType, QuerySchedulingMessage> {
+    final QuerySchedulingMessage schedulingMessage;
+
+    public SendQueryMessage(RpcOutcomeListener<Ack> listener, QuerySchedulingMessage schedulingMessage) {
+      super(listener);
+      this.schedulingMessage = schedulingMessage;
+    }
+
+    @Override
+    public void doRpcCall(RpcOutcomeListener<Ack> outcomeListener, ControlConnection connection) {
+      connection.send(outcomeListener, getRpcType(), schedulingMessage, Ack.class);
+    }
+
+    @Override
+    public RpcType getRpcType() {
+      return RpcType.REQ_SCHEDULE_QUERY_TO_QUEUE;
+    }
+
+    @Override
+    public QuerySchedulingMessage getMessage() {
+      return schedulingMessage;
     }
   }
 

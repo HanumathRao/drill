@@ -18,7 +18,10 @@
 package org.apache.drill.exec.work;
 
 import com.codahale.metrics.Gauge;
-import org.apache.drill.exec.work.scheduler.QueryScheduler;
+import org.apache.drill.exec.proto.BitControl.SchedulingMessageType;
+import org.apache.drill.exec.work.scheduler.QueueContext;
+import org.apache.drill.exec.work.scheduler.Request;
+import org.apache.drill.exec.work.scheduler.RequestCreator;
 import org.apache.drill.shaded.guava.com.google.common.base.Preconditions;
 import org.apache.drill.shaded.guava.com.google.common.collect.Lists;
 import org.apache.drill.shaded.guava.com.google.common.collect.Maps;
@@ -87,7 +90,7 @@ public class WorkManager implements AutoCloseable {
   private final WorkEventBus workBus;
   private final Executor executor;
   private final StatusThread statusThread;
-  private final QueryScheduler qLeaderThread;
+  private final Map<String, QueueContext> queueMap;
   private final Lock isEmptyLock = new ReentrantLock();
   private Condition isEmptyCondition;
 
@@ -106,7 +109,7 @@ public class WorkManager implements AutoCloseable {
     controlMessageWorker = new ControlMessageHandler(bee); // TODO getFragmentRunner(), getForemanForQueryId()
     userWorker = new UserWorker(bee); // TODO should just be an interface? addNewForeman(), getForemanForQueryId()
     statusThread = new StatusThread();
-    qLeaderThread = new QueryScheduler(dContext);
+    queueMap = new HashMap<>();
   }
 
   public void start(
@@ -427,13 +430,19 @@ public class WorkManager implements AutoCloseable {
       }
     }
 
-    public boolean scheduleQuery(DrillbitEndpoint endpoint, QueryId qryID, int queueID) {
-      return qLeaderThread.scheduleQuery(QueryScheduler.makeRequest(endpoint, qryID, queueID));
+    public boolean scheduleQuery(SchedulingMessageType type, DrillbitEndpoint endpoint, QueryId qryID, int queueID) {
+      final Request req = RequestCreator.create(queueMap.get(queueID), dContext, type, endpoint, qryID, queueID);
+      executor.execute(new SelfCleaningRunnable(req) {
+        @Override
+        protected void cleanup() {
+        }
+      });
+      return true;
     }
   }
 
   /**
-   * Periodically gather current statistics. {@link QueryManager} uses a FragmentStatusListener to
+   * Periodically gather current statistics. {@link StatusThread} uses a FragmentStatusListener to
    * maintain changes to state, and should be current. However, we want to collect current statistics
    * about RUNNING queries, such as current memory consumption, number of rows processed, and so on.
    * The FragmentStatusListener only tracks changes to state, so the statistics kept there will be

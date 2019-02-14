@@ -25,9 +25,11 @@ import org.apache.drill.common.logical.PlanProperties;
 import org.apache.drill.common.logical.PlanProperties.Generator.ResultMode;
 import org.apache.drill.common.logical.PlanProperties.PlanPropertiesBuilder;
 import org.apache.drill.common.logical.PlanProperties.PlanType;
+import org.apache.drill.exec.ExecConstants;
 import org.apache.drill.exec.ops.QueryContext;
 import org.apache.drill.exec.physical.PhysicalPlan;
 import org.apache.drill.exec.physical.base.PhysicalOperator;
+import org.apache.drill.exec.planner.cost.PrelCostEstimates;
 import org.apache.drill.exec.planner.physical.explain.PrelSequencer.OpId;
 
 import org.apache.drill.shaded.guava.com.google.common.collect.Lists;
@@ -54,7 +56,11 @@ public class PhysicalPlanCreator {
 
   public PhysicalOperator addMetadata(Prel originalPrel, PhysicalOperator op){
     op.setOperatorId(opIdMap.get(originalPrel).getAsSingleInt());
-    op.setCost(originalPrel.estimateRowCount(originalPrel.getCluster().getMetadataQuery()));
+    PrelCostEstimates costEstimates = originalPrel.getCostEstimates(originalPrel.getCluster().getPlanner(), originalPrel.getCluster().getMetadataQuery());
+    if (!op.isBufferedOperator(context)) {
+      costEstimates = new PrelCostEstimates(context.getOptions().getLong(ExecConstants.OUTPUT_BATCH_SIZE),costEstimates.getOutputRowCount());
+    }
+    op.setCost(costEstimates);
     return op;
   }
 

@@ -21,9 +21,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import org.apache.drill.common.exceptions.ExecutionSetupException;
 import org.apache.drill.common.util.DrillStringUtils;
+import org.apache.drill.common.util.function.CheckedConsumer;
 import org.apache.drill.exec.ExecConstants;
 import org.apache.drill.exec.ops.QueryContext;
 import org.apache.drill.exec.physical.MinorFragmentEndpoint;
@@ -61,7 +63,7 @@ import org.apache.drill.exec.work.foreman.ForemanSetupException;
  * parallelization for each major fragment will be determined.  Once the amount of parallelization is done, assignment
  * is done based on round robin assignment ordered by operator affinity (locality) to available execution Drillbits.
  */
-public class SimpleParallelizer implements ParallelizationParameters {
+public abstract class SimpleParallelizer implements QueryParallelizer {
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(SimpleParallelizer.class);
 
   private final long parallelizationThreshold;
@@ -69,7 +71,7 @@ public class SimpleParallelizer implements ParallelizationParameters {
   private final int maxGlobalWidth;
   private final double affinityFactor;
 
-  public SimpleParallelizer(QueryContext context) {
+  protected SimpleParallelizer(QueryContext context) {
     OptionManager optionManager = context.getOptions();
     long sliceTarget = optionManager.getOption(ExecConstants.SLICE_TARGET_OPTION);
     this.parallelizationThreshold = sliceTarget > 0 ? sliceTarget : 1;
@@ -81,7 +83,7 @@ public class SimpleParallelizer implements ParallelizationParameters {
     this.affinityFactor = optionManager.getOption(ExecConstants.AFFINITY_FACTOR_KEY).float_val.intValue();
   }
 
-  public SimpleParallelizer(long parallelizationThreshold, int maxWidthPerNode, int maxGlobalWidth, double affinityFactor) {
+  protected SimpleParallelizer(long parallelizationThreshold, int maxWidthPerNode, int maxGlobalWidth, double affinityFactor) {
     this.parallelizationThreshold = parallelizationThreshold;
     this.maxWidthPerNode = maxWidthPerNode;
     this.maxGlobalWidth = maxGlobalWidth;
@@ -108,106 +110,7 @@ public class SimpleParallelizer implements ParallelizationParameters {
     return affinityFactor;
   }
 
-  /**
-   * Generate a set of assigned fragments based on the provided fragment tree. Do not allow parallelization stages
-   * to go beyond the global max width.
-   *
-   * @param options         Option list
-   * @param foremanNode     The driving/foreman node for this query.  (this node)
-   * @param queryId         The queryId for this query.
-   * @param activeEndpoints The list of endpoints to consider for inclusion in planning this query.
-   * @param rootFragment    The root node of the PhysicalPlan that we will be parallelizing.
-   * @param session         UserSession of user who launched this query.
-   * @param queryContextInfo Info related to the context when query has started.
-   * @return The list of generated PlanFragment protobuf objects to be assigned out to the individual nodes.
-   * @throws ExecutionSetupException
-   */
-  public QueryWorkUnit getFragments(OptionList options, DrillbitEndpoint foremanNode, QueryId queryId,
-      Collection<DrillbitEndpoint> activeEndpoints, Fragment rootFragment,
-      UserSession session, QueryContextInformation queryContextInfo) throws ExecutionSetupException {
-
-    final PlanningSet planningSet = getFragmentsHelper(activeEndpoints, rootFragment);
-    return generateWorkUnit(
-        options, foremanNode, queryId, rootFragment, planningSet, session, queryContextInfo);
-  }
-
-  /**
-   * Create multiple physical plans from original query planning, it will allow execute them eventually independently
-   * @param options
-   * @param foremanNode
-   * @param queryId
-   * @param activeEndpoints
-   * @param reader
-   * @param rootFragment
-   * @param session
-   * @param queryContextInfo
-   * @return The {@link QueryWorkUnit}s.
-   * @throws ExecutionSetupException
-   */
-  public List<QueryWorkUnit> getSplitFragments(OptionList options, DrillbitEndpoint foremanNode, QueryId queryId,
-      Collection<DrillbitEndpoint> activeEndpoints, PhysicalPlanReader reader, Fragment rootFragment,
-      UserSession session, QueryContextInformation queryContextInfo) throws ExecutionSetupException {
-    // no op
-    throw new UnsupportedOperationException("Use children classes");
-  }
-
-  /**
-   * Helper method to reuse the code for QueryWorkUnit(s) generation
-   * @param activeEndpoints
-   * @param rootFragment
-   * @return A {@link PlanningSet}.
-   * @throws ExecutionSetupException
-   */
-  protected PlanningSet getFragmentsHelper(Collection<DrillbitEndpoint> activeEndpoints, Fragment rootFragment) throws ExecutionSetupException {
-
-    PlanningSet planningSet = new PlanningSet();
-
-    initFragmentWrappers(rootFragment, planningSet);
-
-    final Set<Wrapper> rootFragments = constructFragmentDependencyGraph(planningSet);
-
-    for (Wrapper wrapper : rootFragments) {
-      parallelizeFragment(wrapper, planningSet, activeEndpoints);
-    }
-    planningSet.findRootWrapper(rootFragment);
-    return planningSet;
-  }
-
-  // For every fragment, create a Wrapper in PlanningSet.
-  @VisibleForTesting
-  public void initFragmentWrappers(Fragment rootFragment, PlanningSet planningSet) {
-    planningSet.get(rootFragment);
-
-    for(ExchangeFragmentPair fragmentPair : rootFragment) {
-      initFragmentWrappers(fragmentPair.getNode(), planningSet);
-    }
-  }
-
-  /**
-   * Based on the affinity of the Exchange that separates two fragments, setup fragment dependencies.
-   *
-   * @param planningSet
-   * @return Returns a list of leaf fragments in fragment dependency graph.
-   */
-  private static Set<Wrapper> constructFragmentDependencyGraph(PlanningSet planningSet) {
-
-    // Set up dependency of fragments based on the affinity of exchange that separates the fragments.
-    for(Wrapper currentFragment : planningSet) {
-      ExchangeFragmentPair sendingXchgForCurrFrag = currentFragment.getNode().getSendingExchangePair();
-      if (sendingXchgForCurrFrag != null) {
-        ParallelizationDependency dependency = sendingXchgForCurrFrag.getExchange().getParallelizationDependency();
-        Wrapper receivingFragmentWrapper = planningSet.get(sendingXchgForCurrFrag.getNode());
-
-        //Mostly Receivers of the current fragment depend on the sender of the child fragments. However there is a special case
-        //for DeMux Exchanges where the Sender of the current fragment depends on the receiver of the parent fragment.
-        if (dependency == ParallelizationDependency.RECEIVER_DEPENDS_ON_SENDER) {
-          receivingFragmentWrapper.addFragmentDependency(currentFragment);
-        } else if (dependency == ParallelizationDependency.SENDER_DEPENDS_ON_RECEIVER) {
-          currentFragment.addFragmentDependency(receivingFragmentWrapper);
-        }
-      }
-    }
-
+  private Set<Wrapper> getRootFragments(PlanningSet planningSet) {
     //The following code gets the root fragment by removing all the dependent fragments on which root fragments depend upon.
     //This is fine because the later parallelizer code traverses from these root fragments to their respective dependent
     //fragments.
@@ -231,37 +134,140 @@ public class SimpleParallelizer implements ParallelizationParameters {
     return roots;
   }
 
+  public PlanningSet prepareFragmentTree(Fragment rootFragment) {
+    PlanningSet planningSet = new PlanningSet();
+
+    initFragmentWrappers(rootFragment, planningSet);
+
+    constructFragmentDependencyGraph(planningSet);
+
+    return planningSet;
+  }
+
+  private void collectStatistics(PlanningSet planningSet, Fragment rootFragment,
+                                 Set<Wrapper> roots) throws PhysicalOperatorSetupException {
+
+    for (Wrapper wrapper : roots) {
+      traverse(wrapper, CheckedConsumer.throwingConsumerWrapper((Wrapper fragmentWrapper) -> {
+        fragmentWrapper.getNode().getRoot().accept(new StatsCollector(planningSet), fragmentWrapper);
+      }));
+    }
+    planningSet.findRootWrapper(rootFragment);
+  }
+
+  public void parallelizeFragmentTree(Set<Wrapper> roots,
+                                      Collection<DrillbitEndpoint> activeEndpoints) throws PhysicalOperatorSetupException {
+    for (Wrapper wrapper : roots) {
+      traverse(wrapper, CheckedConsumer.throwingConsumerWrapper((Wrapper fragmentWrapper) -> {
+        fragmentWrapper.getStats()
+                       .getDistributionAffinity()
+                       .getFragmentParallelizer()
+                       .parallelizeFragment(fragmentWrapper, this, activeEndpoints);
+        fragmentWrapper.computeCpuResources();
+      }));
+    }
+  }
+
+  protected abstract void adjustMemory(PlanningSet planningSet, Set<Wrapper> roots,
+                              Collection<DrillbitEndpoint> activeEndpoints) throws PhysicalOperatorSetupException;
+
+  @Override
+  public final QueryWorkUnit generateWorkUnits(OptionList options, DrillbitEndpoint foremanNode, QueryId queryId,
+                                               Collection<DrillbitEndpoint> activeEndpoints, Fragment rootFragment,
+                                               UserSession session, QueryContextInformation queryContextInfo) throws ExecutionSetupException {
+    PlanningSet planningSet = prepareFragmentTree(rootFragment);
+
+    Set<Wrapper> rootFragments = getRootFragments(planningSet);
+
+    collectStatistics(planningSet, rootFragment, rootFragments);
+
+    parallelizeFragmentTree(rootFragments, activeEndpoints);
+
+    adjustMemory(planningSet, rootFragments, activeEndpoints);
+
+    return generateWorkUnit(options, foremanNode, queryId, rootFragment, planningSet, session, queryContextInfo);
+  }
+
+  /**
+   * Create multiple physical plans from original query planning, it will allow execute them eventually independently
+   * @param options
+   * @param foremanNode
+   * @param queryId
+   * @param activeEndpoints
+   * @param reader
+   * @param rootFragment
+   * @param session
+   * @param queryContextInfo
+   * @return The {@link QueryWorkUnit}s.
+   * @throws ExecutionSetupException
+   */
+  public List<QueryWorkUnit> getSplitFragments(OptionList options, DrillbitEndpoint foremanNode, QueryId queryId,
+      Collection<DrillbitEndpoint> activeEndpoints, PhysicalPlanReader reader, Fragment rootFragment,
+      UserSession session, QueryContextInformation queryContextInfo) throws ExecutionSetupException {
+    // no op
+    throw new UnsupportedOperationException("Use children classes");
+  }
+
+
+
+  // For every fragment, create a Wrapper in PlanningSet.
+  @VisibleForTesting
+  public void initFragmentWrappers(Fragment rootFragment, PlanningSet planningSet) {
+    planningSet.get(rootFragment);
+
+    for(ExchangeFragmentPair fragmentPair : rootFragment) {
+      initFragmentWrappers(fragmentPair.getNode(), planningSet);
+    }
+  }
+
+  /**
+   * Based on the affinity of the Exchange that separates two fragments, setup fragment dependencies.
+   *
+   * @param planningSet
+   * @return Returns a list of leaf fragments in fragment dependency graph.
+   */
+  private void constructFragmentDependencyGraph(PlanningSet planningSet) {
+
+    // Set up dependency of fragments based on the affinity of exchange that separates the fragments.
+    for(Wrapper currentFragment : planningSet) {
+      ExchangeFragmentPair sendingXchgForCurrFrag = currentFragment.getNode().getSendingExchangePair();
+      if (sendingXchgForCurrFrag != null) {
+        ParallelizationDependency dependency = sendingXchgForCurrFrag.getExchange().getParallelizationDependency();
+        Wrapper receivingFragmentWrapper = planningSet.get(sendingXchgForCurrFrag.getNode());
+
+        //Mostly Receivers of the current fragment depend on the sender of the child fragments. However there is a special case
+        //for DeMux Exchanges where the Sender of the current fragment depends on the receiver of the parent fragment.
+        if (dependency == ParallelizationDependency.RECEIVER_DEPENDS_ON_SENDER) {
+          receivingFragmentWrapper.addFragmentDependency(currentFragment);
+        } else if (dependency == ParallelizationDependency.SENDER_DEPENDS_ON_RECEIVER) {
+          currentFragment.addFragmentDependency(receivingFragmentWrapper);
+        }
+      }
+    }
+  }
+
+
   /**
    * Helper method for parallelizing a given fragment. Dependent fragments are parallelized first before
    * parallelizing the given fragment.
    */
-  private void parallelizeFragment(Wrapper fragmentWrapper, PlanningSet planningSet,
-      Collection<DrillbitEndpoint> activeEndpoints) throws PhysicalOperatorSetupException {
-    // If the fragment is already parallelized, return.
+  protected void traverse(Wrapper fragmentWrapper, Consumer<Wrapper> operation) throws PhysicalOperatorSetupException {
     if (fragmentWrapper.isEndpointsAssignmentDone()) {
       return;
     }
 
-    // First parallelize fragments on which this fragment depends on.
     final List<Wrapper> fragmentDependencies = fragmentWrapper.getFragmentDependencies();
     if (fragmentDependencies != null && fragmentDependencies.size() > 0) {
       for(Wrapper dependency : fragmentDependencies) {
-        parallelizeFragment(dependency, planningSet, activeEndpoints);
+        traverse(dependency, operation);
       }
     }
-
-    // Find stats. Stats include various factors including cost of physical operators, parallelizability of
-    // work in physical operator and affinity of physical operator to certain nodes.
-    fragmentWrapper.getNode().getRoot().accept(new StatsCollector(planningSet), fragmentWrapper);
-
-    fragmentWrapper.getStats().getDistributionAffinity()
-        .getFragmentParallelizer()
-        .parallelizeFragment(fragmentWrapper, this, activeEndpoints);
+    operation.accept(fragmentWrapper);
   }
 
   protected QueryWorkUnit generateWorkUnit(OptionList options, DrillbitEndpoint foremanNode, QueryId queryId,
-      Fragment rootNode, PlanningSet planningSet,
-      UserSession session, QueryContextInformation queryContextInfo) throws ExecutionSetupException {
+                                           Fragment rootNode, PlanningSet planningSet, UserSession session,
+                                           QueryContextInformation queryContextInfo) throws ExecutionSetupException {
     List<MinorFragmentDefn> fragmentDefns = new ArrayList<>( );
 
     MinorFragmentDefn rootFragmentDefn = null;
