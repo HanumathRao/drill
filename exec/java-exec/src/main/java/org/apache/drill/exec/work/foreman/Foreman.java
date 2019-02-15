@@ -568,7 +568,7 @@ public class Foreman implements Runnable {
   }
 
   private QueryWorkUnit getQueryWorkUnit(final PhysicalPlan plan,
-                                         QueryResourceManager rm) throws ExecutionSetupException {
+                                         final QueryResourceManager rm) throws ExecutionSetupException {
 
     final PhysicalOperator rootOperator = plan.getSortedOperators(false).iterator().next();
 
