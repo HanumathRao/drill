@@ -51,6 +51,8 @@ public class QueuedQueryParallelizer extends SimpleParallelizer {
         operators.entrySet().stream().forEach((entry) -> entry.getValue().addAll(calculator.getBufferedOperators(entry.getKey())));
       }));
     }
+    //queryrm.selectQueue( pass the max node Resource) returns queue configuration.
+
 
   }
 }

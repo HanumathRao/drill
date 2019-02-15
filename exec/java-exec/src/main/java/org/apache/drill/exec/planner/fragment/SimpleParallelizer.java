@@ -144,21 +144,22 @@ public abstract class SimpleParallelizer implements QueryParallelizer {
     return planningSet;
   }
 
-  private void collectStatistics(PlanningSet planningSet, Fragment rootFragment,
-                                 Set<Wrapper> roots) throws PhysicalOperatorSetupException {
+//  private void collectStatistics(PlanningSet planningSet, Fragment rootFragment,
+//                                 Set<Wrapper> roots) throws PhysicalOperatorSetupException {
+//
+//    for (Wrapper wrapper : roots) {
+//      traverse(wrapper, CheckedConsumer.throwingConsumerWrapper((Wrapper fragmentWrapper) -> {
+//        fragmentWrapper.getNode().getRoot().accept(new StatsCollector(planningSet), fragmentWrapper);
+//      }));
+//    }
+//    planningSet.findRootWrapper(rootFragment);
+//  }
 
+  public void collectStatsAndParallelizeFragments(PlanningSet planningSet, Set<Wrapper> roots, Fragment rootFragment,
+                                                  Collection<DrillbitEndpoint> activeEndpoints) throws PhysicalOperatorSetupException {
     for (Wrapper wrapper : roots) {
       traverse(wrapper, CheckedConsumer.throwingConsumerWrapper((Wrapper fragmentWrapper) -> {
         fragmentWrapper.getNode().getRoot().accept(new StatsCollector(planningSet), fragmentWrapper);
-      }));
-    }
-    planningSet.findRootWrapper(rootFragment);
-  }
-
-  public void parallelizeFragmentTree(Set<Wrapper> roots,
-                                      Collection<DrillbitEndpoint> activeEndpoints) throws PhysicalOperatorSetupException {
-    for (Wrapper wrapper : roots) {
-      traverse(wrapper, CheckedConsumer.throwingConsumerWrapper((Wrapper fragmentWrapper) -> {
         fragmentWrapper.getStats()
                        .getDistributionAffinity()
                        .getFragmentParallelizer()
@@ -166,10 +167,11 @@ public abstract class SimpleParallelizer implements QueryParallelizer {
         fragmentWrapper.computeCpuResources();
       }));
     }
+    planningSet.findRootWrapper(rootFragment);
   }
 
   protected abstract void adjustMemory(PlanningSet planningSet, Set<Wrapper> roots,
-                              Collection<DrillbitEndpoint> activeEndpoints) throws PhysicalOperatorSetupException;
+                                       Collection<DrillbitEndpoint> activeEndpoints) throws PhysicalOperatorSetupException;
 
   @Override
   public final QueryWorkUnit generateWorkUnits(OptionList options, DrillbitEndpoint foremanNode, QueryId queryId,
@@ -179,9 +181,9 @@ public abstract class SimpleParallelizer implements QueryParallelizer {
 
     Set<Wrapper> rootFragments = getRootFragments(planningSet);
 
-    collectStatistics(planningSet, rootFragment, rootFragments);
+//    collectStatistics(planningSet, rootFragment, rootFragments);
 
-    parallelizeFragmentTree(rootFragments, activeEndpoints);
+    collectStatsAndParallelizeFragments(planningSet, rootFragments, rootFragment, activeEndpoints);
 
     adjustMemory(planningSet, rootFragments, activeEndpoints);
 

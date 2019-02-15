@@ -31,7 +31,7 @@ public interface Token<T> {
   long timeElapsed();
 
   /**
-   * checks if the validity for this token is expired.
+   * checks the expiration of the token.
    * @param timeOutValue timeout value beyond which this
    *                     token is considered expired.
    * @return true/false based on the timeup of this token.

@@ -58,7 +58,7 @@ public class PhysicalPlanCreator {
     op.setOperatorId(opIdMap.get(originalPrel).getAsSingleInt());
     PrelCostEstimates costEstimates = originalPrel.getCostEstimates(originalPrel.getCluster().getPlanner(), originalPrel.getCluster().getMetadataQuery());
     if (!op.isBufferedOperator(context)) {
-      costEstimates = new PrelCostEstimates(context.getOptions().getLong(ExecConstants.OUTPUT_BATCH_SIZE),costEstimates.getOutputRowCount());
+      costEstimates = new PrelCostEstimates(context.getOptions().getLong(ExecConstants.OUTPUT_BATCH_SIZE), costEstimates.getOutputRowCount());
     }
     op.setCost(costEstimates);
     return op;
