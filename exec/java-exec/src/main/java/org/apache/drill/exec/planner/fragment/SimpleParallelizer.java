@@ -110,7 +110,7 @@ public abstract class SimpleParallelizer implements QueryParallelizer {
     return affinityFactor;
   }
 
-  private Set<Wrapper> getRootFragments(PlanningSet planningSet) {
+  public Set<Wrapper> getRootFragments(PlanningSet planningSet) {
     //The following code gets the root fragment by removing all the dependent fragments on which root fragments depend upon.
     //This is fine because the later parallelizer code traverses from these root fragments to their respective dependent
     //fragments.
@@ -139,7 +139,7 @@ public abstract class SimpleParallelizer implements QueryParallelizer {
 
     initFragmentWrappers(rootFragment, planningSet);
 
-    constructFragmentDependencyGraph(planningSet);
+    constructFragmentDependencyGraph(rootFragment, planningSet);
 
     return planningSet;
   }
@@ -167,11 +167,11 @@ public abstract class SimpleParallelizer implements QueryParallelizer {
         fragmentWrapper.computeCpuResources();
       }));
     }
-    planningSet.findRootWrapper(rootFragment);
+//    planningSet.findRootWrapper(rootFragment);
   }
 
-  protected abstract void adjustMemory(PlanningSet planningSet, Set<Wrapper> roots,
-                                       Collection<DrillbitEndpoint> activeEndpoints) throws PhysicalOperatorSetupException;
+  public abstract void adjustMemory(PlanningSet planningSet, Set<Wrapper> roots,
+                                    Collection<DrillbitEndpoint> activeEndpoints) throws PhysicalOperatorSetupException;
 
   @Override
   public final QueryWorkUnit generateWorkUnits(OptionList options, DrillbitEndpoint foremanNode, QueryId queryId,
@@ -228,7 +228,7 @@ public abstract class SimpleParallelizer implements QueryParallelizer {
    * @param planningSet
    * @return Returns a list of leaf fragments in fragment dependency graph.
    */
-  private void constructFragmentDependencyGraph(PlanningSet planningSet) {
+  private void constructFragmentDependencyGraph(Fragment rootFragment, PlanningSet planningSet) {
 
     // Set up dependency of fragments based on the affinity of exchange that separates the fragments.
     for(Wrapper currentFragment : planningSet) {
@@ -246,6 +246,7 @@ public abstract class SimpleParallelizer implements QueryParallelizer {
         }
       }
     }
+    planningSet.findRootWrapper(rootFragment);
   }
 
 
@@ -254,9 +255,6 @@ public abstract class SimpleParallelizer implements QueryParallelizer {
    * parallelizing the given fragment.
    */
   protected void traverse(Wrapper fragmentWrapper, Consumer<Wrapper> operation) throws PhysicalOperatorSetupException {
-    if (fragmentWrapper.isEndpointsAssignmentDone()) {
-      return;
-    }
 
     final List<Wrapper> fragmentDependencies = fragmentWrapper.getFragmentDependencies();
     if (fragmentDependencies != null && fragmentDependencies.size() > 0) {

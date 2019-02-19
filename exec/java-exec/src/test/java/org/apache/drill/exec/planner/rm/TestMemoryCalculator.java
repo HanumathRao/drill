@@ -19,35 +19,44 @@ package org.apache.drill.exec.planner.rm;
 
 
 import org.apache.drill.PlanTestBase;
-import org.apache.drill.categories.PlannerTest;
+import org.apache.drill.exec.ExecConstants;
 import org.apache.drill.exec.ops.QueryContext;
 import org.apache.drill.exec.planner.PhysicalPlanReader;
 import org.apache.drill.exec.planner.cost.NodeResource;
 import org.apache.drill.exec.planner.fragment.Fragment;
-import org.apache.drill.exec.planner.fragment.MemoryCalculator;
 import org.apache.drill.exec.planner.fragment.PlanningSet;
 import org.apache.drill.exec.planner.fragment.QueuedQueryParallelizer;
 import org.apache.drill.exec.planner.fragment.SimpleParallelizer;
 import org.apache.drill.exec.planner.fragment.Wrapper;
 import org.apache.drill.exec.pop.PopUnitTestBase;
-import org.apache.drill.exec.proto.CoordinationProtos;
+import org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpoint;
 import org.apache.drill.exec.proto.UserBitShared;
 import org.apache.drill.exec.proto.UserProtos;
 import org.apache.drill.exec.rpc.user.UserSession;
 import org.apache.drill.exec.server.DrillbitContext;
+import org.apache.drill.shaded.guava.com.google.common.collect.Iterables;
+import org.apache.drill.test.ClientFixture;
+import org.apache.drill.test.ClusterFixture;
+import org.apache.drill.test.ClusterFixtureBuilder;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@Category(PlannerTest.class)
 public class TestMemoryCalculator extends PlanTestBase {
+
+  private static final long DEFAULT_SLICE_TARGET = 100000L;
+  private static final long DEFAULT_BATCH_SIZE = 16*1024*1024;
+
   private static final UserSession session = UserSession.Builder.newBuilder()
     .withCredentials(UserBitShared.UserCredentials.newBuilder()
       .setUserName("foo")
@@ -55,13 +64,21 @@ public class TestMemoryCalculator extends PlanTestBase {
     .withUserProperties(UserProtos.UserProperties.getDefaultInstance())
     .withOptionManager(bits[0].getContext().getOptionManager())
     .build();
-  private static final CoordinationProtos.DrillbitEndpoint N1_EP1 = newDrillbitEndpoint("node1", 30010);
 
-  private static final CoordinationProtos.DrillbitEndpoint newDrillbitEndpoint(String address, int port) {
-    return CoordinationProtos.DrillbitEndpoint.newBuilder().setAddress(address).setControlPort(port).build();
+  private static final DrillbitEndpoint N1_EP1 = newDrillbitEndpoint("node1", 30010);
+  private static final DrillbitEndpoint N1_EP2 = newDrillbitEndpoint("node2", 30011);
+  private static final DrillbitEndpoint N1_EP3 = newDrillbitEndpoint("node3", 30012);
+  private static final DrillbitEndpoint N1_EP4 = newDrillbitEndpoint("node4", 30013);
+
+  private static final DrillbitEndpoint[] nodeList = {N1_EP1, N1_EP2, N1_EP3, N1_EP4};
+
+  private static final DrillbitEndpoint newDrillbitEndpoint(String address, int port) {
+    return DrillbitEndpoint.newBuilder().setAddress(address).setControlPort(port).build();
   }
 
-  private final Wrapper newWrapper(Fragment rootFragment, Map<CoordinationProtos.DrillbitEndpoint, NodeResource> resourceMap, List<CoordinationProtos.DrillbitEndpoint> endpoints) {
+  private final Wrapper newWrapper(Fragment rootFragment,
+                                   Map<DrillbitEndpoint, NodeResource> resourceMap,
+                                   List<DrillbitEndpoint> endpoints) {
     final Wrapper fragmentWrapper = mock(Wrapper.class);
 
     when(fragmentWrapper.getAssignedEndpoints()).thenReturn(endpoints);
@@ -71,43 +88,116 @@ public class TestMemoryCalculator extends PlanTestBase {
     return fragmentWrapper;
   }
 
-  @Test
-  public void TestProjectAndScan() throws Exception {
-    List<CoordinationProtos.DrillbitEndpoint> activeEndpoints = new ArrayList<>();
-    activeEndpoints.add(N1_EP1);
-    String plan = getPlanInString("EXPLAIN PLAN FOR SELECT * from cp.`employee.json`", JSON_FORMAT);
-    final DrillbitContext drillbitContext = getDrillbitContext();
-    final QueryContext queryContext = new QueryContext(session, drillbitContext, UserBitShared.QueryId.getDefaultInstance());
-    final PhysicalPlanReader planReader = drillbitContext.getPlanReader();
-    Fragment rootFragment = PopUnitTestBase.getRootFragmentFromPlanString(planReader, plan);
-    final PlanningSet planningSet = new PlanningSet();
-    Map<CoordinationProtos.DrillbitEndpoint, NodeResource> resources = activeEndpoints.stream().collect(Collectors.toMap(x ->x, x -> NodeResource.create()));
-    Wrapper fragmentWrapper = newWrapper(rootFragment, resources, activeEndpoints);
-    SimpleParallelizer parallelizer = new QueuedQueryParallelizer(queryContext);
-    parallelizer.initFragmentWrappers(rootFragment, planningSet);
-    parallelizer.prepareFragmentTree(rootFragment);
-    MemoryCalculator memoryCalculator = new MemoryCalculator(planningSet, queryContext);
-    rootFragment.getRoot().accept(memoryCalculator, fragmentWrapper);
-    System.out.println(fragmentWrapper.getResourceMap());
+  private final Wrapper newWrapper( Wrapper rootFragment,
+                                    Map<DrillbitEndpoint, NodeResource> resourceMap,
+                                    List<DrillbitEndpoint> endpoints) {
+    final Wrapper mockWrapper = mock(Wrapper.class);
+    List<Wrapper> mockdependencies = new ArrayList<>();
+
+    for (Wrapper dependency : rootFragment.getFragmentDependencies()) {
+      mockdependencies.add(newWrapper(dependency, resourceMap, endpoints));
+    }
+
+    when(mockWrapper.getNode()).thenReturn(rootFragment.getNode());
+    when(mockWrapper.getAssignedEndpoints()).thenReturn(endpoints);
+    when(mockWrapper.getResourceMap()).thenReturn(resourceMap);
+    when(mockWrapper.getWidth()).thenReturn(endpoints.size());
+    when(mockWrapper.getFragmentDependencies()).thenReturn(mockdependencies);
+    return mockWrapper;
+  }
+
+  private String getPlanForQuery(String query) throws Exception {
+    return getPlanForQuery(query, DEFAULT_BATCH_SIZE);
+  }
+
+  private String getPlanForQuery(String query, long outputBatchSize) throws Exception {
+    return getPlanForQuery(query, outputBatchSize, DEFAULT_SLICE_TARGET);
+  }
+
+  private String getPlanForQuery(String query, long outputBatchSize, long slice_target) throws Exception {
+    ClusterFixtureBuilder builder = ClusterFixture.builder(dirTestWatcher)
+      .setOptionDefault(ExecConstants.OUTPUT_BATCH_SIZE, outputBatchSize)
+      .setOptionDefault(ExecConstants.SLICE_TARGET, slice_target);
+    String plan;
+
+    try (ClusterFixture cluster = builder.build();
+         ClientFixture client = cluster.clientFixture()) {
+      plan = client.queryBuilder()
+        .sql(query)
+        .explainJson();
+    }
+    return plan;
+  }
+
+  private List<DrillbitEndpoint> getEndpoints(int totalMinorFragments,
+                                              Set<DrillbitEndpoint> notIn) {
+    List<DrillbitEndpoint> endpoints = new ArrayList<>();
+    Iterator drillbits = Iterables.cycle(nodeList).iterator();
+
+    while(totalMinorFragments-- > 0) {
+      DrillbitEndpoint dbit = (DrillbitEndpoint) drillbits.next();
+      if (!notIn.contains(dbit)) {
+        endpoints.add(dbit);
+      }
+    }
+    return endpoints;
+  }
+
+  private Fragment getRootFragmentFromPlan(DrillbitContext context, String plan) throws Exception {
+    final PhysicalPlanReader planReader = context.getPlanReader();
+    return PopUnitTestBase.getRootFragmentFromPlanString(planReader, plan);
   }
 
   @Test
-  public void TestGroupByProjectAndScan() throws Exception {
-    List<CoordinationProtos.DrillbitEndpoint> activeEndpoints = new ArrayList<>();
-    activeEndpoints.add(N1_EP1);
-    String plan = getPlanInString("EXPLAIN PLAN FOR SELECT dept_id, count(*) from cp.`employee.json` group by dept_id", JSON_FORMAT);
+  public void TestSingleMajorFragmentWithProjectAndScan() throws Exception {
+    List<DrillbitEndpoint> activeEndpoints = getEndpoints(2, new HashSet<>());
     final DrillbitContext drillbitContext = getDrillbitContext();
-    final QueryContext queryContext = new QueryContext(session, drillbitContext, UserBitShared.QueryId.getDefaultInstance());
-    final PhysicalPlanReader planReader = drillbitContext.getPlanReader();
-    Fragment rootFragment = PopUnitTestBase.getRootFragmentFromPlanString(planReader, plan);
-    final PlanningSet planningSet = new PlanningSet();
-    Map<CoordinationProtos.DrillbitEndpoint, NodeResource> resources = activeEndpoints.stream().collect(Collectors.toMap(x ->x, x -> NodeResource.create()));
-    Wrapper fragmentWrapper = newWrapper(rootFragment, resources, activeEndpoints);
-    SimpleParallelizer parallelizer = new QueuedQueryParallelizer(queryContext);
-    parallelizer.initFragmentWrappers(rootFragment, planningSet);
-    parallelizer.prepareFragmentTree(rootFragment);
-    MemoryCalculator memoryCalculator = new MemoryCalculator(planningSet, queryContext);
-    rootFragment.getRoot().accept(memoryCalculator, fragmentWrapper);
-    System.out.println(fragmentWrapper.getResourceMap());
+    try(QueryContext queryContext = new QueryContext(session, drillbitContext, UserBitShared.QueryId.getDefaultInstance())) {
+      Fragment rootFragment = getRootFragmentFromPlan(drillbitContext, getPlanForQuery("SELECT * from cp.`tpch/nation.parquet`", 10));
+      Map<DrillbitEndpoint, NodeResource> resources = activeEndpoints.stream().collect(Collectors.toMap(x -> x, x -> NodeResource.create()));
+      SimpleParallelizer parallelizer = new QueuedQueryParallelizer(queryContext);
+      PlanningSet planningSet = parallelizer.prepareFragmentTree(rootFragment);
+      Wrapper fragmentWrapper = newWrapper(planningSet.getRootWrapper(), resources, activeEndpoints);
+      Set<Wrapper> roots = new HashSet<>();
+      roots.add(fragmentWrapper);
+      parallelizer.adjustMemory(planningSet, roots, activeEndpoints);
+      assertTrue(Iterables.all(resources.entrySet(), (e) -> e.getValue().getMemory() == 30));
+    }
+  }
+
+
+  @Test
+  public void TestSingleMajorFragmentWithGroupByProjectAndScan() throws Exception {
+    List<DrillbitEndpoint> activeEndpoints = getEndpoints(2, new HashSet<>());
+    final DrillbitContext drillbitContext = getDrillbitContext();
+    try (QueryContext queryContext = new QueryContext(session, drillbitContext, UserBitShared.QueryId.getDefaultInstance())) {
+      Fragment rootFragment = getRootFragmentFromPlan(drillbitContext, getPlanForQuery("SELECT dept_id, count(*) from cp.`tpch/lineitem.parquet` group by dept_id", 10));
+      Map<DrillbitEndpoint, NodeResource> resources = activeEndpoints.stream().collect(Collectors.toMap(x -> x, x -> NodeResource.create()));
+      SimpleParallelizer parallelizer = new QueuedQueryParallelizer(queryContext);
+      PlanningSet planningSet = parallelizer.prepareFragmentTree(rootFragment);
+      Wrapper fragmentWrapper = newWrapper(planningSet.getRootWrapper(), resources, activeEndpoints);
+      Set<Wrapper> roots = new HashSet<>();
+      roots.add(fragmentWrapper);
+      parallelizer.adjustMemory(planningSet, roots, activeEndpoints);
+      assertTrue(Iterables.all(resources.entrySet(), (e) -> e.getValue().getMemory() == 529570));
+    }
+  }
+
+
+  @Test
+  public void TestTwoMajorFragmentWithSortyProjectAndScan() throws Exception {
+    List<DrillbitEndpoint> activeEndpoints = getEndpoints(2, new HashSet<>());
+    final DrillbitContext drillbitContext = getDrillbitContext();
+    try (QueryContext queryContext = new QueryContext(session, drillbitContext, UserBitShared.QueryId.getDefaultInstance())) {
+      Fragment rootFragment = getRootFragmentFromPlan(drillbitContext, getPlanForQuery("SELECT * from cp.`tpch/lineitem.parquet` order by dept_id", 10, 2));
+      Map<DrillbitEndpoint, NodeResource> resources = activeEndpoints.stream().collect(Collectors.toMap(x -> x, x -> NodeResource.create()));
+      SimpleParallelizer parallelizer = new QueuedQueryParallelizer(queryContext);
+      PlanningSet planningSet = parallelizer.prepareFragmentTree(rootFragment);
+      Wrapper fragmentWrapper = newWrapper(planningSet.getRootWrapper(), resources, activeEndpoints);
+      Set<Wrapper> roots = new HashSet<>();
+      roots.add(fragmentWrapper);
+      parallelizer.adjustMemory(planningSet, roots, activeEndpoints);
+      assertTrue(Iterables.all(resources.entrySet(), (e) -> e.getValue().getMemory() == 481490));
+    }
   }
 }

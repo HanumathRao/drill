@@ -50,25 +50,32 @@ public class MemoryCalculator extends AbstractOpWrapperVisitor<Void, RuntimeExce
                                                                                Collectors.summingInt(x -> 1)));
   }
 
-  private void merge(Wrapper currFrag, Map<DrillbitEndpoint, Integer> minorFragsPerDrillBit, Function<Integer, Integer> getMemory) {
+  private void merge(Wrapper currFrag,
+                     Map<DrillbitEndpoint, Integer> minorFragsPerDrillBit,
+                     Function<Integer, Integer> getMemory) {
+
     NodeResource.merge(currFrag.getResourceMap(),
                        minorFragsPerDrillBit.entrySet()
-                                            .stream().collect(Collectors.toMap((Map.Entry<DrillbitEndpoint, Integer> x) -> x.getKey(),
-                                                                               (Map.Entry<DrillbitEndpoint, Integer> x) -> NodeResource.create(0,
-                                                                                                                          getMemory.apply(x.getValue())))));
+                                            .stream()
+                                            .collect(Collectors.toMap((x) -> x.getKey(),
+                                                                      (x) -> NodeResource.create(0,
+                                                                                                  getMemory.apply(x.getValue())))));
   }
 
   @Override
   public Void visitSendingExchange(Exchange exchange, Wrapper fragment) throws RuntimeException {
     Wrapper receivingFragment = planningSet.get(fragment.getNode().getSendingExchangePair().getNode());
-    merge(fragment, getMinorFragCountPerDrillbit(fragment), (x) -> exchange.getSenderMemory(receivingFragment.getWidth(), x));
+    merge(fragment,
+          getMinorFragCountPerDrillbit(fragment),
+          (x) -> exchange.getSenderMemory(receivingFragment.getWidth(), x));
     return visitOp(exchange, fragment);
   }
 
   @Override
   public Void visitReceivingExchange(Exchange exchange, Wrapper fragment) throws RuntimeException {
-    Wrapper receivingFragment = planningSet.get(fragment.getNode().getSendingExchangePair().getNode());
-    merge(fragment, getMinorFragCountPerDrillbit(fragment), (x) -> exchange.getReceiverMemory(receivingFragment.getWidth(), x));
+    merge(fragment,
+          getMinorFragCountPerDrillbit(fragment),
+          (x) -> exchange.getReceiverMemory(fragment.getWidth(), fragment.getNode().getReceivingExchangePairs().size()));
     return null;
   }
 
@@ -81,9 +88,13 @@ public class MemoryCalculator extends AbstractOpWrapperVisitor<Void, RuntimeExce
     int memoryCost = (int)Math.ceil(op.getCost().getMemoryCost());
     if (op.isBufferedOperator(queryContext)) {
       int memoryCostPerMinorFrag = (int)Math.ceil(memoryCost/fragment.getWidth());
-      merge(fragment, getMinorFragCountPerDrillbit(fragment), (x) -> memoryCostPerMinorFrag * x);
+      merge(fragment,
+            getMinorFragCountPerDrillbit(fragment),
+            (x) -> memoryCostPerMinorFrag * x);
     } else {
-      merge(fragment, getMinorFragCountPerDrillbit(fragment), (x) -> memoryCost * x);
+      merge(fragment,
+            getMinorFragCountPerDrillbit(fragment),
+            (x) -> memoryCost * x);
     }
     for (PhysicalOperator child : op) {
       child.accept(this, fragment);

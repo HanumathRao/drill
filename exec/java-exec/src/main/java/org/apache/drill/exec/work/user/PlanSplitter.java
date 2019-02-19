@@ -134,13 +134,13 @@ public class PlanSplitter {
         }
       }
     } else {
-//      final QueryWorkUnit queryWorkUnit = parallelizer.getFragments(queryContext.getOptions().getOptionList(), queryContext.getCurrentEndpoint(),
-//          queryId, queryContext.getActiveEndpoints(), rootFragment,
-//          queryContext.getSession(), queryContext.getQueryContextInfo());
-//      planner.visitPhysicalPlan(queryWorkUnit);
-//      queryWorkUnit.applyPlan(dContext.getPlanReader());
-//      fragments.add(queryWorkUnit.getRootFragment());
-//      fragments.addAll(queryWorkUnit.getFragments());
+      final QueryWorkUnit queryWorkUnit = parallelizer.generateWorkUnits(queryContext.getOptions().getOptionList(), queryContext.getCurrentEndpoint(),
+          queryId, queryContext.getActiveEndpoints(), rootFragment,
+          queryContext.getSession(), queryContext.getQueryContextInfo());
+      planner.visitPhysicalPlan(queryWorkUnit);
+      queryWorkUnit.applyPlan(dContext.getPlanReader());
+      fragments.add(queryWorkUnit.getRootFragment());
+      fragments.addAll(queryWorkUnit.getFragments());
     }
     return fragments;
   }

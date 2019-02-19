@@ -20,6 +20,7 @@ package org.apache.drill.exec.planner.fragment.contrib;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.drill.common.exceptions.ExecutionSetupException;
 import org.apache.drill.common.util.DrillStringUtils;
@@ -82,6 +83,12 @@ public class SplittingParallelizer extends DefaultQueryParallelizer {
       UserSession session, QueryContextInformation queryContextInfo) throws ExecutionSetupException {
 
     final PlanningSet planningSet = this.prepareFragmentTree(rootFragment);
+
+    Set<Wrapper> rootFragments = getRootFragments(planningSet);
+
+    collectStatsAndParallelizeFragments(planningSet, rootFragments, rootFragment, activeEndpoints);
+
+    adjustMemory(planningSet, rootFragments, activeEndpoints);
 
     return generateWorkUnits(
         options, foremanNode, queryId, reader, rootFragment, planningSet, session, queryContextInfo);

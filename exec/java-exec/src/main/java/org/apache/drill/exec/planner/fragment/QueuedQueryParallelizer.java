@@ -38,17 +38,24 @@ public class QueuedQueryParallelizer extends SimpleParallelizer {
     this.queryContext = queryContext;
   }
 
-  protected void adjustMemory(PlanningSet planningSet, Set<Wrapper> roots,
+  public void adjustMemory(PlanningSet planningSet, Set<Wrapper> roots,
                               final Collection<DrillbitEndpoint> activeEndpoints) throws PhysicalOperatorSetupException {
-    final Map<DrillbitEndpoint, NodeResource> totalNodeResources = activeEndpoints.stream().collect(Collectors.toMap(x ->x, x -> NodeResource.create()));
-    final Map<DrillbitEndpoint, List<PhysicalOperator>> operators = activeEndpoints.stream().collect(Collectors.toMap(x -> x, x -> new ArrayList<>()));
+    final Map<DrillbitEndpoint, NodeResource> totalNodeResources =
+            activeEndpoints.stream().collect(Collectors.toMap(x ->x,
+                                                              x -> NodeResource.create()));
+    final Map<DrillbitEndpoint, List<PhysicalOperator>> operators =
+            activeEndpoints.stream().collect(Collectors.toMap(x -> x,
+                                                              x -> new ArrayList<>()));
 
     for (Wrapper wrapper : roots) {
       traverse(wrapper, CheckedConsumer.throwingConsumerWrapper((Wrapper fragment) -> {
         MemoryCalculator calculator = new MemoryCalculator(planningSet, queryContext);
         fragment.getNode().getRoot().accept(calculator, fragment);
         NodeResource.merge(totalNodeResources, fragment.getResourceMap());
-        operators.entrySet().stream().forEach((entry) -> entry.getValue().addAll(calculator.getBufferedOperators(entry.getKey())));
+        operators.entrySet()
+                  .stream()
+                  .forEach((entry) -> entry.getValue()
+                                           .addAll(calculator.getBufferedOperators(entry.getKey())));
       }));
     }
     //queryrm.selectQueue( pass the max node Resource) returns queue configuration.
