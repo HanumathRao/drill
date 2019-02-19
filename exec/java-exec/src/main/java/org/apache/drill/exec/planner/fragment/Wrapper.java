@@ -223,6 +223,6 @@ public class Wrapper {
   }
 
   public Map<DrillbitEndpoint, NodeResource> getResourceMap() {
-    return this.nodeResourceMap;
+    return nodeResourceMap;
   }
 }

@@ -33,7 +33,7 @@ public class DefaultQueryParallelizer extends SimpleParallelizer {
     super(parallelizationThreshold, maxWidthPerNode, maxGlobalWidth, affinityFactor);
   }
 
-  protected void adjustMemory(PlanningSet planningSet, Set<Wrapper> roots,
+  public void adjustMemory(PlanningSet planningSet, Set<Wrapper> roots,
                               Collection<CoordinationProtos.DrillbitEndpoint> activeEndpoints) {
 
   }

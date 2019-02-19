@@ -45,6 +45,10 @@ public class NodeResource {
     this.memory += other.memory;
   }
 
+  public int getMemory() {
+    return memory;
+  }
+
   public static Map<DrillbitEndpoint, NodeResource> merge(Map<DrillbitEndpoint, NodeResource> to,
                                                           Map<DrillbitEndpoint, NodeResource> from) {
     to.entrySet().stream().forEach((toEntry) -> toEntry.getValue().add(from.get(toEntry.getKey())));
