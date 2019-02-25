@@ -18,23 +18,43 @@
 package org.apache.drill.exec.planner.fragment;
 
 import org.apache.drill.exec.ops.QueryContext;
-import org.apache.drill.exec.proto.CoordinationProtos;
+import org.apache.drill.exec.physical.base.PhysicalOperator;
+import org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpoint;
+import org.apache.drill.exec.util.MemoryAllocationUtilities;
 
 import java.util.Collection;
 import java.util.Set;
+import java.util.List;
+import java.util.function.BiFunction;
 
 public class DefaultQueryParallelizer extends SimpleParallelizer {
+  private final boolean enableMemoryPlanning;
+  private final QueryContext queryContext;
 
-  public DefaultQueryParallelizer(QueryContext queryContext) {
+  public DefaultQueryParallelizer(boolean memoryPlanning, QueryContext queryContext) {
     super(queryContext);
+    this.enableMemoryPlanning = memoryPlanning;
+    this.queryContext = queryContext;
   }
 
-  public DefaultQueryParallelizer(long parallelizationThreshold, int maxWidthPerNode, int maxGlobalWidth, double affinityFactor) {
+  public DefaultQueryParallelizer(boolean memoryPlanning, long parallelizationThreshold, int maxWidthPerNode,
+                                  int maxGlobalWidth, double affinityFactor) {
     super(parallelizationThreshold, maxWidthPerNode, maxGlobalWidth, affinityFactor);
+    this.enableMemoryPlanning = memoryPlanning;
+    this.queryContext = null;
   }
 
   public void adjustMemory(PlanningSet planningSet, Set<Wrapper> roots,
-                              Collection<CoordinationProtos.DrillbitEndpoint> activeEndpoints) {
+                           Collection<DrillbitEndpoint> activeEndpoints) {
+    if (!enableMemoryPlanning) {
+      return;
+    }
+    List<PhysicalOperator> bufferedOpers = planningSet.getRootWrapper().getNode().getBufferedOperators();
+    MemoryAllocationUtilities.setupBufferedOpsMemoryAllocations(enableMemoryPlanning, bufferedOpers, queryContext);
+  }
 
+  @Override
+  protected BiFunction<DrillbitEndpoint, PhysicalOperator, Long> getMemory() {
+    return (endpoint, operator) -> operator.getMaxAllocation();
   }
 }

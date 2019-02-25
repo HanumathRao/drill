@@ -21,20 +21,12 @@ import org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpoint;
 import java.util.Map;
 
 public class NodeResource {
-  private int cpu;
-  private int memory;
+  private long cpu;
+  private long memory;
 
-  public NodeResource(int cpu, int memory) {
+  public NodeResource(long cpu, long memory) {
     this.cpu = cpu;
     this.memory = memory;
-  }
-
-  public void setMemory(int memory) {
-    this.memory = memory;
-  }
-
-  public void setCpu(int cpu) {
-    this.cpu = cpu;
   }
 
   public void add(NodeResource other) {
@@ -45,7 +37,7 @@ public class NodeResource {
     this.memory += other.memory;
   }
 
-  public int getMemory() {
+  public long getMemory() {
     return memory;
   }
 
@@ -66,11 +58,11 @@ public class NodeResource {
     return create(0,0);
   }
 
-  public static NodeResource create(int cpu) {
+  public static NodeResource create(long cpu) {
     return create(cpu,0);
   }
 
-  public static NodeResource create(int cpu, int memory) {
+  public static NodeResource create(long cpu, long memory) {
     return new NodeResource(cpu, memory);
   }
 }

@@ -89,6 +89,7 @@ import org.apache.drill.shaded.guava.com.google.common.collect.Lists;
 public class TestPartitionSender extends PlanTestBase {
 
   private static final SimpleParallelizer PARALLELIZER = new DefaultQueryParallelizer(
+      false,
       1 /*parallelizationThreshold (slice_count)*/,
       6 /*maxWidthPerNode*/,
       1000 /*maxGlobalWidth*/,

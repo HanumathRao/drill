@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 import org.apache.drill.common.exceptions.ExecutionSetupException;
@@ -144,18 +145,7 @@ public abstract class SimpleParallelizer implements QueryParallelizer {
     return planningSet;
   }
 
-//  private void collectStatistics(PlanningSet planningSet, Fragment rootFragment,
-//                                 Set<Wrapper> roots) throws PhysicalOperatorSetupException {
-//
-//    for (Wrapper wrapper : roots) {
-//      traverse(wrapper, CheckedConsumer.throwingConsumerWrapper((Wrapper fragmentWrapper) -> {
-//        fragmentWrapper.getNode().getRoot().accept(new StatsCollector(planningSet), fragmentWrapper);
-//      }));
-//    }
-//    planningSet.findRootWrapper(rootFragment);
-//  }
-
-  public void collectStatsAndParallelizeFragments(PlanningSet planningSet, Set<Wrapper> roots, Fragment rootFragment,
+  public void collectStatsAndParallelizeFragments(PlanningSet planningSet, Set<Wrapper> roots,
                                                   Collection<DrillbitEndpoint> activeEndpoints) throws PhysicalOperatorSetupException {
     for (Wrapper wrapper : roots) {
       traverse(wrapper, CheckedConsumer.throwingConsumerWrapper((Wrapper fragmentWrapper) -> {
@@ -167,7 +157,6 @@ public abstract class SimpleParallelizer implements QueryParallelizer {
         fragmentWrapper.computeCpuResources();
       }));
     }
-//    planningSet.findRootWrapper(rootFragment);
   }
 
   public abstract void adjustMemory(PlanningSet planningSet, Set<Wrapper> roots,
@@ -181,9 +170,7 @@ public abstract class SimpleParallelizer implements QueryParallelizer {
 
     Set<Wrapper> rootFragments = getRootFragments(planningSet);
 
-//    collectStatistics(planningSet, rootFragment, rootFragments);
-
-    collectStatsAndParallelizeFragments(planningSet, rootFragments, rootFragment, activeEndpoints);
+    collectStatsAndParallelizeFragments(planningSet, rootFragments, activeEndpoints);
 
     adjustMemory(planningSet, rootFragments, activeEndpoints);
 
@@ -265,6 +252,8 @@ public abstract class SimpleParallelizer implements QueryParallelizer {
     operation.accept(fragmentWrapper);
   }
 
+  protected abstract BiFunction<DrillbitEndpoint, PhysicalOperator, Long> getMemory();
+
   protected QueryWorkUnit generateWorkUnit(OptionList options, DrillbitEndpoint foremanNode, QueryId queryId,
                                            Fragment rootNode, PlanningSet planningSet, UserSession session,
                                            QueryContextInformation queryContextInfo) throws ExecutionSetupException {
@@ -289,7 +278,7 @@ public abstract class SimpleParallelizer implements QueryParallelizer {
 
       // Create a minorFragment for each major fragment.
       for (int minorFragmentId = 0; minorFragmentId < wrapper.getWidth(); minorFragmentId++) {
-        IndexedFragmentNode iNode = new IndexedFragmentNode(minorFragmentId, wrapper);
+        IndexedFragmentNode iNode = new IndexedFragmentNode(minorFragmentId, wrapper, getMemory());
         wrapper.resetAllocation();
         PhysicalOperator op = physicalOperatorRoot.accept(Materializer.INSTANCE, iNode);
         Preconditions.checkArgument(op instanceof FragmentRoot);

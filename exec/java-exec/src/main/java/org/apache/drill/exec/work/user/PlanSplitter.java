@@ -113,7 +113,7 @@ public class PlanSplitter {
     final PhysicalOperator rootOperator = plan.getSortedOperators(false).iterator().next();
 
     final Fragment rootFragment = rootOperator.accept(MakeFragmentsVisitor.INSTANCE, null);
-    final SimpleParallelizer parallelizer = new SplittingParallelizer(queryContext);
+    final SimpleParallelizer parallelizer = new SplittingParallelizer(plan.getProperties().hasResourcePlan, queryContext);
 
     List<PlanFragment> fragments = Lists.newArrayList();
 

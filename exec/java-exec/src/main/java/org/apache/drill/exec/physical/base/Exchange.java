@@ -78,9 +78,9 @@ public interface Exchange extends PhysicalOperator {
    */
   Receiver getReceiver(int minorFragmentId);
 
-  int getSenderMemory(int receiverCount, int senderCount);
+  long getSenderMemory(int receiverCount, int senderCount);
 
-  int getReceiverMemory(int receiverCount, int senderCount);
+  long getReceiverMemory(int receiverCount, int senderCount);
 
   /**
    * Provide parallelization parameters for sender side of the exchange. Output includes min width,

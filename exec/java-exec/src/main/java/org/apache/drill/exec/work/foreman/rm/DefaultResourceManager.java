@@ -48,7 +48,7 @@ public class DefaultResourceManager implements ResourceManager {
       if (plan == null || plan.getProperties().hasResourcePlan) {
         return;
       }
-      MemoryAllocationUtilities.setupBufferedOpsMemoryAllocations(plan, queryContext);
+      MemoryAllocationUtilities.setupBufferedMemoryAllocations(plan, queryContext);
     }
 
     @Override
@@ -76,8 +76,8 @@ public class DefaultResourceManager implements ResourceManager {
     }
 
     @Override
-    public QueryParallelizer getParallelizer() {
-      return new DefaultQueryParallelizer(this.getQueryContext());
+    public QueryParallelizer getParallelizer(boolean memoryPlanning){
+      return new DefaultQueryParallelizer(memoryPlanning, this.getQueryContext());
     }
 
     @Override

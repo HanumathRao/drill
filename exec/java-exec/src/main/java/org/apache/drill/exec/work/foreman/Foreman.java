@@ -406,14 +406,7 @@ public class Foreman implements Runnable {
   private void runPhysicalPlan(final PhysicalPlan plan, Pointer<String> textPlan) throws ExecutionSetupException {
     validatePlan(plan);
 
-    queryRM.visitAbstractPlan(plan);
-    //queryRM should also provide an interface to get the current Selected queue.
-    //queryRM.getSelectedQueue() -- This should either return a QueueProperties for the selected Queue or null.
-    //If null is returned then optimizer should have method to compute the MRB required by the plan.
-    //If null then queryRM should have another method for getting the selectedQueue given the MRB count as well. This might result in Queue not selected also if so then it
-    //should return which is the nearest Queue which would have satisfied and it's properties.
-    //If null use the above information and try to downgrade the resource consumption for this plan.
-    //Once we have selected the queue, pick the leader and send a schedule message to the queue.
+//    queryRM.visitAbstractPlan(plan);
     final QueryWorkUnit work = getQueryWorkUnit(plan, queryRM);
     if (enableRuntimeFilter) {
       runtimeFilterRouter = new RuntimeFilterRouter(work, drillbitContext);
@@ -422,7 +415,7 @@ public class Foreman implements Runnable {
     if (textPlan != null) {
       queryManager.setPlanText(textPlan.value);
     }
-    queryRM.visitPhysicalPlan(work);
+//    queryRM.visitPhysicalPlan(work);
     queryRM.setCost(plan.totalCost());
     queryManager.setTotalCost(plan.totalCost());
     work.applyPlan(drillbitContext.getPlanReader());
@@ -574,11 +567,11 @@ public class Foreman implements Runnable {
 
     final Fragment rootFragment = rootOperator.accept(MakeFragmentsVisitor.INSTANCE, null);
 
-    return rm.getParallelizer().generateWorkUnits(queryContext.getOptions().getOptionList(),
-                                                  queryContext.getCurrentEndpoint(),
-                                                  queryId, queryContext.getOnlineEndpoints(),
-                                                  rootFragment, initiatingClient.getSession(),
-                                                  queryContext.getQueryContextInfo());
+    return rm.getParallelizer(plan.getProperties().hasResourcePlan).generateWorkUnits(queryContext.getOptions().getOptionList(),
+                                                                        queryContext.getCurrentEndpoint(),
+                                                                        queryId, queryContext.getOnlineEndpoints(),
+                                                                        rootFragment, initiatingClient.getSession(),
+                                                                        queryContext.getQueryContextInfo());
   }
 
   private void logWorkUnit(QueryWorkUnit queryWorkUnit) {
