@@ -83,6 +83,7 @@ public class TestLocalExchange extends PlanTestBase {
       .build();
 
   private static final SimpleParallelizer PARALLELIZER = new DefaultQueryParallelizer(
+      false,
       1 /*parallelizationThreshold (slice_count)*/,
       6 /*maxWidthPerNode*/,
       1000 /*maxGlobalWidth*/,

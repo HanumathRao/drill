@@ -101,10 +101,12 @@ public class Wrapper {
     return maxAllocation;
   }
 
-  public void addAllocation(PhysicalOperator pop) {
-    initialAllocation += pop.getInitialAllocation();
-//    logger.debug("Incrementing initialAllocation by {} to {}. Pop: {}", pop.getInitialAllocation(), initialAllocation, pop);
-    maxAllocation += pop.getMaxAllocation();
+  public void addInitialAllocation(long memory) {
+    initialAllocation += memory;
+  }
+
+  public void addMaxAllocation(long memory) {
+    maxAllocation += memory;
   }
 
   private class AssignEndpointsToScanAndStore extends AbstractPhysicalVisitor<Void, List<DrillbitEndpoint>, PhysicalOperatorSetupException>{

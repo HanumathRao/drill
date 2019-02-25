@@ -38,6 +38,7 @@ import org.apache.drill.shaded.guava.com.google.common.collect.Iterables;
 import org.apache.drill.test.ClientFixture;
 import org.apache.drill.test.ClusterFixture;
 import org.apache.drill.test.ClusterFixtureBuilder;
+import org.junit.AfterClass;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -45,10 +46,12 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -75,27 +78,25 @@ public class TestMemoryCalculator extends PlanTestBase {
   private static final DrillbitEndpoint newDrillbitEndpoint(String address, int port) {
     return DrillbitEndpoint.newBuilder().setAddress(address).setControlPort(port).build();
   }
+  private static final DrillbitContext drillbitContext = getDrillbitContext();
+  private static final QueryContext queryContext = new QueryContext(session, drillbitContext,
+                                                                    UserBitShared.QueryId.getDefaultInstance());
 
-  private final Wrapper newWrapper(Fragment rootFragment,
-                                   Map<DrillbitEndpoint, NodeResource> resourceMap,
-                                   List<DrillbitEndpoint> endpoints) {
-    final Wrapper fragmentWrapper = mock(Wrapper.class);
-
-    when(fragmentWrapper.getAssignedEndpoints()).thenReturn(endpoints);
-    when(fragmentWrapper.getNode()).thenReturn(rootFragment);
-    when(fragmentWrapper.getResourceMap()).thenReturn(resourceMap);
-    when(fragmentWrapper.getWidth()).thenReturn(endpoints.size());
-    return fragmentWrapper;
+  @AfterClass
+  public static void close() throws Exception {
+    queryContext.close();
   }
 
-  private final Wrapper newWrapper( Wrapper rootFragment,
+  private final Wrapper mockWrapper(Wrapper rootFragment,
                                     Map<DrillbitEndpoint, NodeResource> resourceMap,
-                                    List<DrillbitEndpoint> endpoints) {
+                                    List<DrillbitEndpoint> endpoints,
+                                    Map<Fragment, Wrapper> originalToMockWrapper ) {
     final Wrapper mockWrapper = mock(Wrapper.class);
+    originalToMockWrapper.put(rootFragment.getNode(), mockWrapper);
     List<Wrapper> mockdependencies = new ArrayList<>();
 
     for (Wrapper dependency : rootFragment.getFragmentDependencies()) {
-      mockdependencies.add(newWrapper(dependency, resourceMap, endpoints));
+      mockdependencies.add(mockWrapper(dependency, resourceMap, endpoints, originalToMockWrapper));
     }
 
     when(mockWrapper.getNode()).thenReturn(rootFragment.getNode());
@@ -103,7 +104,22 @@ public class TestMemoryCalculator extends PlanTestBase {
     when(mockWrapper.getResourceMap()).thenReturn(resourceMap);
     when(mockWrapper.getWidth()).thenReturn(endpoints.size());
     when(mockWrapper.getFragmentDependencies()).thenReturn(mockdependencies);
+    when(mockWrapper.isEndpointsAssignmentDone()).thenReturn(true);
     return mockWrapper;
+  }
+
+  private final PlanningSet mockPlanningSet(PlanningSet planningSet,
+                                       Map<DrillbitEndpoint, NodeResource> resourceMap,
+                                       List<DrillbitEndpoint> endpoints) {
+    Map<Fragment, Wrapper> wrapperToMockWrapper = new HashMap<>();
+    Wrapper rootFragment = mockWrapper( planningSet.getRootWrapper(), resourceMap,
+                                        endpoints, wrapperToMockWrapper);
+    PlanningSet mockPlanningSet = mock(PlanningSet.class);
+    when(mockPlanningSet.getRootWrapper()).thenReturn(rootFragment);
+    when(mockPlanningSet.get(any(Fragment.class))).thenAnswer(invocation -> {
+      return wrapperToMockWrapper.get(invocation.getArgument(0));
+    });
+    return mockPlanningSet;
   }
 
   private String getPlanForQuery(String query) throws Exception {
@@ -114,7 +130,8 @@ public class TestMemoryCalculator extends PlanTestBase {
     return getPlanForQuery(query, outputBatchSize, DEFAULT_SLICE_TARGET);
   }
 
-  private String getPlanForQuery(String query, long outputBatchSize, long slice_target) throws Exception {
+  private String getPlanForQuery(String query, long outputBatchSize,
+                                 long slice_target) throws Exception {
     ClusterFixtureBuilder builder = ClusterFixture.builder(dirTestWatcher)
       .setOptionDefault(ExecConstants.OUTPUT_BATCH_SIZE, outputBatchSize)
       .setOptionDefault(ExecConstants.SLICE_TARGET, slice_target);
@@ -143,61 +160,68 @@ public class TestMemoryCalculator extends PlanTestBase {
     return endpoints;
   }
 
-  private Fragment getRootFragmentFromPlan(DrillbitContext context, String plan) throws Exception {
+  private Set<Wrapper> createSet(Wrapper... wrappers) {
+    Set<Wrapper> setOfWrappers = new HashSet<>();
+    for (Wrapper wrapper : wrappers) {
+      setOfWrappers.add(wrapper);
+    }
+    return setOfWrappers;
+  }
+
+  private Fragment getRootFragmentFromPlan(DrillbitContext context,
+                                           String plan) throws Exception {
     final PhysicalPlanReader planReader = context.getPlanReader();
     return PopUnitTestBase.getRootFragmentFromPlanString(planReader, plan);
+  }
+
+  private PlanningSet preparePlanningSet(List<DrillbitEndpoint> activeEndpoints, long slice_target,
+                                         Map<DrillbitEndpoint, NodeResource> resources, String sql,
+                                         SimpleParallelizer parallelizer) throws Exception {
+    Fragment rootFragment = getRootFragmentFromPlan(drillbitContext, getPlanForQuery(sql, 10, slice_target));
+    return mockPlanningSet(parallelizer.prepareFragmentTree(rootFragment), resources, activeEndpoints);
   }
 
   @Test
   public void TestSingleMajorFragmentWithProjectAndScan() throws Exception {
     List<DrillbitEndpoint> activeEndpoints = getEndpoints(2, new HashSet<>());
-    final DrillbitContext drillbitContext = getDrillbitContext();
-    try(QueryContext queryContext = new QueryContext(session, drillbitContext, UserBitShared.QueryId.getDefaultInstance())) {
-      Fragment rootFragment = getRootFragmentFromPlan(drillbitContext, getPlanForQuery("SELECT * from cp.`tpch/nation.parquet`", 10));
-      Map<DrillbitEndpoint, NodeResource> resources = activeEndpoints.stream().collect(Collectors.toMap(x -> x, x -> NodeResource.create()));
-      SimpleParallelizer parallelizer = new QueuedQueryParallelizer(queryContext);
-      PlanningSet planningSet = parallelizer.prepareFragmentTree(rootFragment);
-      Wrapper fragmentWrapper = newWrapper(planningSet.getRootWrapper(), resources, activeEndpoints);
-      Set<Wrapper> roots = new HashSet<>();
-      roots.add(fragmentWrapper);
-      parallelizer.adjustMemory(planningSet, roots, activeEndpoints);
-      assertTrue(Iterables.all(resources.entrySet(), (e) -> e.getValue().getMemory() == 30));
-    }
+    Map<DrillbitEndpoint, NodeResource> resources = activeEndpoints.stream()
+                                                                   .collect(Collectors.toMap(x -> x,
+                                                                            x -> NodeResource.create()));
+    String sql = "SELECT * from cp.`tpch/nation.parquet`";
+
+    SimpleParallelizer parallelizer = new QueuedQueryParallelizer(true, queryContext);
+    PlanningSet planningSet = preparePlanningSet(activeEndpoints, DEFAULT_SLICE_TARGET, resources, sql, parallelizer);
+    parallelizer.adjustMemory(planningSet, createSet(planningSet.getRootWrapper()), activeEndpoints);
+    assertTrue("memory requirement is different", Iterables.all(resources.entrySet(), (e) -> e.getValue().getMemory() == 30));
   }
 
 
   @Test
   public void TestSingleMajorFragmentWithGroupByProjectAndScan() throws Exception {
     List<DrillbitEndpoint> activeEndpoints = getEndpoints(2, new HashSet<>());
-    final DrillbitContext drillbitContext = getDrillbitContext();
-    try (QueryContext queryContext = new QueryContext(session, drillbitContext, UserBitShared.QueryId.getDefaultInstance())) {
-      Fragment rootFragment = getRootFragmentFromPlan(drillbitContext, getPlanForQuery("SELECT dept_id, count(*) from cp.`tpch/lineitem.parquet` group by dept_id", 10));
-      Map<DrillbitEndpoint, NodeResource> resources = activeEndpoints.stream().collect(Collectors.toMap(x -> x, x -> NodeResource.create()));
-      SimpleParallelizer parallelizer = new QueuedQueryParallelizer(queryContext);
-      PlanningSet planningSet = parallelizer.prepareFragmentTree(rootFragment);
-      Wrapper fragmentWrapper = newWrapper(planningSet.getRootWrapper(), resources, activeEndpoints);
-      Set<Wrapper> roots = new HashSet<>();
-      roots.add(fragmentWrapper);
-      parallelizer.adjustMemory(planningSet, roots, activeEndpoints);
-      assertTrue(Iterables.all(resources.entrySet(), (e) -> e.getValue().getMemory() == 529570));
-    }
+    Map<DrillbitEndpoint, NodeResource> resources = activeEndpoints.stream()
+                                                                   .collect(Collectors.toMap(x -> x,
+                                                                             x -> NodeResource.create()));
+    String sql = "SELECT dept_id, count(*) from cp.`tpch/lineitem.parquet` group by dept_id";
+
+    SimpleParallelizer parallelizer = new QueuedQueryParallelizer(true, queryContext);
+    PlanningSet planningSet = preparePlanningSet(activeEndpoints, DEFAULT_SLICE_TARGET, resources, sql, parallelizer);
+    parallelizer.adjustMemory(planningSet, createSet(planningSet.getRootWrapper()), activeEndpoints);
+    assertTrue("memory requirement is different", Iterables.all(resources.entrySet(), (e) -> e.getValue().getMemory() == 529570));
   }
 
 
   @Test
   public void TestTwoMajorFragmentWithSortyProjectAndScan() throws Exception {
     List<DrillbitEndpoint> activeEndpoints = getEndpoints(2, new HashSet<>());
-    final DrillbitContext drillbitContext = getDrillbitContext();
-    try (QueryContext queryContext = new QueryContext(session, drillbitContext, UserBitShared.QueryId.getDefaultInstance())) {
-      Fragment rootFragment = getRootFragmentFromPlan(drillbitContext, getPlanForQuery("SELECT * from cp.`tpch/lineitem.parquet` order by dept_id", 10, 2));
-      Map<DrillbitEndpoint, NodeResource> resources = activeEndpoints.stream().collect(Collectors.toMap(x -> x, x -> NodeResource.create()));
-      SimpleParallelizer parallelizer = new QueuedQueryParallelizer(queryContext);
-      PlanningSet planningSet = parallelizer.prepareFragmentTree(rootFragment);
-      Wrapper fragmentWrapper = newWrapper(planningSet.getRootWrapper(), resources, activeEndpoints);
-      Set<Wrapper> roots = new HashSet<>();
-      roots.add(fragmentWrapper);
-      parallelizer.adjustMemory(planningSet, roots, activeEndpoints);
-      assertTrue(Iterables.all(resources.entrySet(), (e) -> e.getValue().getMemory() == 481490));
-    }
+    Map<DrillbitEndpoint, NodeResource> resources = activeEndpoints.stream()
+                                                                   .collect(Collectors.toMap(x -> x,
+                                                                            x -> NodeResource.create()));
+    String sql = "SELECT * from cp.`tpch/lineitem.parquet` order by dept_id";
+
+    SimpleParallelizer parallelizer = new QueuedQueryParallelizer(true, queryContext);
+    PlanningSet planningSet = preparePlanningSet(activeEndpoints, 2, resources, sql, parallelizer);
+    parallelizer.adjustMemory(planningSet, createSet(planningSet.getRootWrapper()), activeEndpoints);
+    assertTrue("memory requirement is different", Iterables.all(resources.entrySet(), (e) -> e.getValue().getMemory() == 481490));
   }
 }

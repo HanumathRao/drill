@@ -134,12 +134,12 @@ public abstract class AbstractExchange extends AbstractSingle implements Exchang
   }
 
   @Override
-  public int getSenderMemory(int receivers, int senders) {
+  public long getSenderMemory(int receivers, int senders) {
     return 0;
   }
 
   @Override
-  public int getReceiverMemory(int receivers, int senders) {
+  public long getReceiverMemory(int receivers, int senders) {
     return 0;
   }
 }

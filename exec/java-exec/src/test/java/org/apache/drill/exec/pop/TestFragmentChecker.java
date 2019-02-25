@@ -53,7 +53,7 @@ public class TestFragmentChecker extends PopUnitTestBase{
   private void print(String fragmentFile, int bitCount, int expectedFragmentCount) throws Exception {
     PhysicalPlanReader ppr = PhysicalPlanReaderTestFactory.defaultPhysicalPlanReader(CONFIG);
     Fragment fragmentRoot = getRootFragment(ppr, fragmentFile);
-    SimpleParallelizer par = new DefaultQueryParallelizer(1000*1000, 5, 10, 1.2);
+    SimpleParallelizer par = new DefaultQueryParallelizer(false, 1000*1000, 5, 10, 1.2);
     List<DrillbitEndpoint> endpoints = Lists.newArrayList();
     DrillbitEndpoint localBit = null;
     for(int i =0; i < bitCount; i++) {

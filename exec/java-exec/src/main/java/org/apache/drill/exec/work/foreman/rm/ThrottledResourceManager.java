@@ -293,8 +293,8 @@ public class ThrottledResourceManager extends AbstractResourceManager {
     }
 
     @Override
-    public QueryParallelizer getParallelizer() {
-      return new QueuedQueryParallelizer(this.getQueryContext());
+    public QueryParallelizer getParallelizer(boolean enableMemoryPlanning) {
+      return new QueuedQueryParallelizer(enableMemoryPlanning, this.getQueryContext());
     }
 
     @Override

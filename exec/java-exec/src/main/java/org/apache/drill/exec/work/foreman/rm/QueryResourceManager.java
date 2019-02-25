@@ -44,8 +44,14 @@ public interface QueryResourceManager extends QueryResourceAllocator {
 
   void setCost(double cost);
 
-
-  QueryParallelizer getParallelizer();
+  /**
+   * Create a parallelizer to parallelize each major fragment of the query into
+   * many minor fragments. The parallelizer encapsulates the logic of how much
+   * memory and parallelism is required for the query.
+   * @param memoryPlanning memory planning needs to be done during parallelization
+   * @return
+   */
+  QueryParallelizer getParallelizer(boolean memoryPlanning);
 
   /**
    * Admit the query into the cluster. Blocks until the query

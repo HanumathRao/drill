@@ -17,16 +17,20 @@
  */
 package org.apache.drill.exec.planner.fragment;
 
+import org.apache.calcite.util.Pair;
 import org.apache.drill.exec.ops.QueryContext;
 import org.apache.drill.exec.physical.base.Exchange;
 import org.apache.drill.exec.physical.base.PhysicalOperator;
+import org.apache.drill.exec.physical.config.AbstractMuxExchange;
 import org.apache.drill.exec.planner.AbstractOpWrapperVisitor;
 import org.apache.drill.exec.planner.cost.NodeResource;
 import org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpoint;
+import org.apache.drill.shaded.guava.com.google.common.base.Preconditions;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.HashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -35,7 +39,7 @@ import java.util.stream.Collectors;
 public class MemoryCalculator extends AbstractOpWrapperVisitor<Void, RuntimeException> {
 
   private final PlanningSet planningSet;
-  private final Map<DrillbitEndpoint, List<PhysicalOperator>> bufferedOperators;
+  private final Map<DrillbitEndpoint, List<Pair<PhysicalOperator, Long>>> bufferedOperators;
   private final QueryContext queryContext;
 
   public MemoryCalculator(PlanningSet planningSet, QueryContext context) {
@@ -52,14 +56,14 @@ public class MemoryCalculator extends AbstractOpWrapperVisitor<Void, RuntimeExce
 
   private void merge(Wrapper currFrag,
                      Map<DrillbitEndpoint, Integer> minorFragsPerDrillBit,
-                     Function<Integer, Integer> getMemory) {
+                     Function<Entry<DrillbitEndpoint, Integer>, Long> getMemory) {
 
     NodeResource.merge(currFrag.getResourceMap(),
                        minorFragsPerDrillBit.entrySet()
                                             .stream()
                                             .collect(Collectors.toMap((x) -> x.getKey(),
                                                                       (x) -> NodeResource.create(0,
-                                                                                                  getMemory.apply(x.getValue())))));
+                                                                                                  getMemory.apply(x)))));
   }
 
   @Override
@@ -67,34 +71,65 @@ public class MemoryCalculator extends AbstractOpWrapperVisitor<Void, RuntimeExce
     Wrapper receivingFragment = planningSet.get(fragment.getNode().getSendingExchangePair().getNode());
     merge(fragment,
           getMinorFragCountPerDrillbit(fragment),
-          (x) -> exchange.getSenderMemory(receivingFragment.getWidth(), x));
+          (x) -> exchange.getSenderMemory(receivingFragment.getWidth(), x.getValue()));
     return visitOp(exchange, fragment);
   }
 
   @Override
   public Void visitReceivingExchange(Exchange exchange, Wrapper fragment) throws RuntimeException {
+
+    final List<Fragment.ExchangeFragmentPair> receivingExchangePairs = fragment.getNode().getReceivingExchangePairs();
+    final Map<DrillbitEndpoint, Integer> sendingFragsPerDrillBit = new HashMap<>();
+
+    for(Fragment.ExchangeFragmentPair pair : receivingExchangePairs) {
+      if (pair.getExchange() == exchange) {
+        Wrapper sendingFragment = planningSet.get(pair.getNode());
+        Preconditions.checkArgument(sendingFragment.isEndpointsAssignmentDone());
+        for (DrillbitEndpoint endpoint : sendingFragment.getAssignedEndpoints()) {
+          sendingFragsPerDrillBit.putIfAbsent(endpoint, 0);
+          sendingFragsPerDrillBit.put(endpoint, sendingFragsPerDrillBit.get(endpoint)+1);
+        }
+      }
+    }
+    final int totalSendingFrags = sendingFragsPerDrillBit.entrySet().stream()
+                                                         .mapToInt((x) -> x.getValue()).reduce(0, (x, y) -> x+y);
     merge(fragment,
           getMinorFragCountPerDrillbit(fragment),
-          (x) -> exchange.getReceiverMemory(fragment.getWidth(), fragment.getNode().getReceivingExchangePairs().size()));
+          (x) -> exchange.getReceiverMemory(fragment.getWidth(),
+            exchange instanceof AbstractMuxExchange ? sendingFragsPerDrillBit.get(x.getKey()) : totalSendingFrags));
     return null;
   }
 
-  public List<PhysicalOperator> getBufferedOperators(DrillbitEndpoint endpoint) {
+  public List<Pair<PhysicalOperator, Long>> getBufferedOperators(DrillbitEndpoint endpoint) {
     return this.bufferedOperators.getOrDefault(endpoint, new ArrayList<>());
   }
 
   @Override
   public Void visitOp(PhysicalOperator op, Wrapper fragment) {
-    int memoryCost = (int)Math.ceil(op.getCost().getMemoryCost());
+    long memoryCost = (int)Math.ceil(op.getCost().getMemoryCost());
     if (op.isBufferedOperator(queryContext)) {
-      int memoryCostPerMinorFrag = (int)Math.ceil(memoryCost/fragment.getWidth());
+      long memoryCostPerMinorFrag = (int)Math.ceil(memoryCost/fragment.getWidth());
+      Map<DrillbitEndpoint, Integer> drillbitEndpointMinorFragMap = getMinorFragCountPerDrillbit(fragment);
+
+      Map<DrillbitEndpoint,
+          Pair<PhysicalOperator, Long>> bufferedOperatorsPerDrillbit =
+                              drillbitEndpointMinorFragMap.entrySet().stream()
+                                                          .collect(Collectors.toMap((x) -> x.getKey(),
+                                                                              (x) -> Pair.of(op,
+                                                                                memoryCostPerMinorFrag * x.getValue())));
+      bufferedOperatorsPerDrillbit.entrySet().forEach((x) -> {
+        bufferedOperators.putIfAbsent(x.getKey(), new ArrayList<>());
+        bufferedOperators.get(x.getKey()).add(x.getValue());
+      });
+
       merge(fragment,
-            getMinorFragCountPerDrillbit(fragment),
-            (x) -> memoryCostPerMinorFrag * x);
+            drillbitEndpointMinorFragMap,
+            (x) -> memoryCostPerMinorFrag * x.getValue());
+
     } else {
       merge(fragment,
             getMinorFragCountPerDrillbit(fragment),
-            (x) -> memoryCost * x);
+            (x) -> memoryCost * x.getValue());
     }
     for (PhysicalOperator child : op) {
       child.accept(this, fragment);

@@ -61,8 +61,8 @@ public class SplittingParallelizer extends DefaultQueryParallelizer {
 
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(SplittingParallelizer.class);
 
-  public SplittingParallelizer(QueryContext context) {
-    super(context);
+  public SplittingParallelizer(boolean doMemoryPlanning, QueryContext context) {
+    super(doMemoryPlanning, context);
   }
 
   /**
@@ -86,7 +86,7 @@ public class SplittingParallelizer extends DefaultQueryParallelizer {
 
     Set<Wrapper> rootFragments = getRootFragments(planningSet);
 
-    collectStatsAndParallelizeFragments(planningSet, rootFragments, rootFragment, activeEndpoints);
+    collectStatsAndParallelizeFragments(planningSet, rootFragments, activeEndpoints);
 
     adjustMemory(planningSet, rootFragments, activeEndpoints);
 
@@ -181,7 +181,7 @@ public class SplittingParallelizer extends DefaultQueryParallelizer {
         MinorFragmentDefn rootFragment = null;
         FragmentRoot rootOperator = null;
 
-        IndexedFragmentNode iNode = new IndexedFragmentNode(minorFragmentId, wrapper);
+        IndexedFragmentNode iNode = new IndexedFragmentNode(minorFragmentId, wrapper, getMemory());
         wrapper.resetAllocation();
         // two visitors here
         // 1. To remove exchange

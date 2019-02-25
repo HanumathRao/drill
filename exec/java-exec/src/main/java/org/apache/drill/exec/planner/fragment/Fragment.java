@@ -17,9 +17,11 @@
  */
 package org.apache.drill.exec.planner.fragment;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import org.apache.drill.exec.physical.base.AbstractPhysicalVisitor;
 import org.apache.drill.exec.physical.base.Exchange;
 import org.apache.drill.exec.physical.base.PhysicalOperator;
 import org.apache.drill.exec.work.foreman.ForemanSetupException;
@@ -78,13 +80,27 @@ public class Fragment implements Iterable<Fragment.ExchangeFragmentPair> {
     return null;
   }
 
+  public List<PhysicalOperator> getBufferedOperators() {
+    List<PhysicalOperator> bufferedOps = new ArrayList<>();
+    root.accept(new BufferedOpFinder(), bufferedOps);
+    return bufferedOps;
+  }
+
+  protected static class BufferedOpFinder extends AbstractPhysicalVisitor<Void, List<PhysicalOperator>, RuntimeException> {
+    @Override
+    public Void visitOp(PhysicalOperator op, List<PhysicalOperator> value)
+      throws RuntimeException {
+      if (op.isBufferedOperator(null)) {
+        value.add(op);
+      }
+      visitChildren(op, value);
+      return null;
+    }
+  }
+
   public ExchangeFragmentPair getSendingExchangePair() {
     return sendingExchange;
   }
-
-//  public <T, V> T accept(FragmentVisitor<T, V> visitor, V extra) {
-//    return visitor.visit(this, extra);
-//  }
 
   public class ExchangeFragmentPair {
     private Exchange exchange;
@@ -172,5 +188,4 @@ public class Fragment implements Iterable<Fragment.ExchangeFragmentPair> {
     return "FragmentNode [root=" + root + ", sendingExchange=" + sendingExchange + ", receivingExchangePairs="
         + receivingExchangePairs + "]";
   }
-
 }
