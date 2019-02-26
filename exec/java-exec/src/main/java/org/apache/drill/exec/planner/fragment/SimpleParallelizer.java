@@ -149,6 +149,7 @@ public abstract class SimpleParallelizer implements QueryParallelizer {
                                                   Collection<DrillbitEndpoint> activeEndpoints) throws PhysicalOperatorSetupException {
     for (Wrapper wrapper : roots) {
       traverse(wrapper, CheckedConsumer.throwingConsumerWrapper((Wrapper fragmentWrapper) -> {
+        if (fragmentWrapper.isEndpointsAssignmentDone()) return;
         fragmentWrapper.getNode().getRoot().accept(new StatsCollector(planningSet), fragmentWrapper);
         fragmentWrapper.getStats()
                        .getDistributionAffinity()
