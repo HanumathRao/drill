@@ -149,7 +149,9 @@ public abstract class SimpleParallelizer implements QueryParallelizer {
                                                   Collection<DrillbitEndpoint> activeEndpoints) throws PhysicalOperatorSetupException {
     for (Wrapper wrapper : roots) {
       traverse(wrapper, CheckedConsumer.throwingConsumerWrapper((Wrapper fragmentWrapper) -> {
-        if (fragmentWrapper.isEndpointsAssignmentDone()) return;
+        if (fragmentWrapper.isEndpointsAssignmentDone()) {
+          return;
+        }
         fragmentWrapper.getNode().getRoot().accept(new StatsCollector(planningSet), fragmentWrapper);
         fragmentWrapper.getStats()
                        .getDistributionAffinity()
@@ -279,7 +281,8 @@ public abstract class SimpleParallelizer implements QueryParallelizer {
 
       // Create a minorFragment for each major fragment.
       for (int minorFragmentId = 0; minorFragmentId < wrapper.getWidth(); minorFragmentId++) {
-        IndexedFragmentNode iNode = new IndexedFragmentNode(minorFragmentId, wrapper, getMemory());
+        IndexedFragmentNode iNode = new IndexedFragmentNode(minorFragmentId, wrapper,
+          (fragmentWrapper, minorFragment) -> fragmentWrapper.getAssignedEndpoint(minorFragment), getMemory());
         wrapper.resetAllocation();
         PhysicalOperator op = physicalOperatorRoot.accept(Materializer.INSTANCE, iNode);
         Preconditions.checkArgument(op instanceof FragmentRoot);

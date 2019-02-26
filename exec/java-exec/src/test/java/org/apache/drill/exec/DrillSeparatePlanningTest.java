@@ -103,9 +103,10 @@ public class DrillSeparatePlanningTest extends ClusterTest {
     QueryPlanFragments planFragments = getFragmentsHelper(query);
 
     assertNotNull(planFragments);
-    assertTrue((planFragments.getFragmentsCount() > 1));
+    System.out.println(planFragments.getFragmentsCount());
+    assertTrue(planFragments.getFragmentsCount() > 1);
 
-    for ( PlanFragment planFragment : planFragments.getFragmentsList()) {
+    for (PlanFragment planFragment : planFragments.getFragmentsList()) {
       assertTrue(planFragment.getLeafFragment());
     }
 
