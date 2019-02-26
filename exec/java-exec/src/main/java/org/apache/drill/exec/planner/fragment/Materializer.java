@@ -165,6 +165,7 @@ public class Materializer extends AbstractPhysicalVisitor<PhysicalOperator, Mate
 
   public static class IndexedFragmentNode{
     private final Wrapper info;
+    private final BiFunction<Wrapper, Integer, DrillbitEndpoint> endpoint;
     private final int minorFragmentId;
     private final BiFunction<DrillbitEndpoint, PhysicalOperator, Long> memoryPerOperPerDrillbit;
     SubScan subScan = null;
@@ -172,9 +173,11 @@ public class Materializer extends AbstractPhysicalVisitor<PhysicalOperator, Mate
     private final Deque<UnnestPOP> unnest = new ArrayDeque<>();
 
     public IndexedFragmentNode(int minorFragmentId, Wrapper info,
+                               BiFunction<Wrapper, Integer, DrillbitEndpoint> wrapperToEndpoint,
                                BiFunction<DrillbitEndpoint, PhysicalOperator, Long> memoryReqs) {
       super();
       this.info = info;
+      this.endpoint = wrapperToEndpoint;
       this.minorFragmentId = minorFragmentId;
       this.memoryPerOperPerDrillbit = memoryReqs;
     }
@@ -193,7 +196,7 @@ public class Materializer extends AbstractPhysicalVisitor<PhysicalOperator, Mate
 
     public void addAllocation(PhysicalOperator pop) {
       info.addInitialAllocation(pop.getInitialAllocation());
-      info.addMaxAllocation(memoryPerOperPerDrillbit.apply(info.getAssignedEndpoint(minorFragmentId), pop));
+      info.addMaxAllocation(memoryPerOperPerDrillbit.apply(this.endpoint.apply(info, minorFragmentId), pop));
     }
 
     public void addUnnest(UnnestPOP unnest) {
