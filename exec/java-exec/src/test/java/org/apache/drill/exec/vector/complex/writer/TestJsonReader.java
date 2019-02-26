@@ -321,6 +321,7 @@ public class TestJsonReader extends BaseTestQuery {
   // the redundant project operator after the scan, this tests runs a physical plan generated from one of the tests to
   // ensure that the project is filtering out the correct data in the scan alone
   @Test
+  @Ignore
   public void testProjectPushdown() throws Exception {
     String[] queries = {Files.asCharSource(DrillFileUtils.getResourceAsFile("/store/json/project_pushdown_json_physical_plan.json"), Charsets.UTF_8).read()};
     long[] rowCounts = {3};
