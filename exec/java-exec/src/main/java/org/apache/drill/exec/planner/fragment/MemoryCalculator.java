@@ -35,10 +35,17 @@ import java.util.HashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-
+/**
+ * A visitor to compute memory requirements for each operator in a minor fragment.
+ * This visitor will be called for each major fragment. It traverses the physical operators
+ * in that major fragment and computes the memory for each operator per each minor fragment.
+ * The minor fragment memory resources are further grouped into per Drillbit resource
+ * requirements.
+ */
 public class MemoryCalculator extends AbstractOpWrapperVisitor<Void, RuntimeException> {
 
   private final PlanningSet planningSet;
+  // List of all the buffered operators and their memory requirement per drillbit.
   private final Map<DrillbitEndpoint, List<Pair<PhysicalOperator, Long>>> bufferedOperators;
   private final QueryContext queryContext;
 
@@ -48,12 +55,17 @@ public class MemoryCalculator extends AbstractOpWrapperVisitor<Void, RuntimeExce
     this.queryContext = context;
   }
 
+  // Helper method to compute the minor fragment count per drillbit. This method returns
+  // a map with key as DrillbitEndpoint and value as the width (i.e #minorFragments)
+  // per Drillbit.
   private Map<DrillbitEndpoint, Integer> getMinorFragCountPerDrillbit(Wrapper currFragment) {
       return currFragment.getAssignedEndpoints().stream()
                                                 .collect(Collectors.groupingBy(Function.identity(),
                                                                                Collectors.summingInt(x -> 1)));
   }
 
+  // Helper method to merge the memory computations for each operator given memory per operator
+  // and the number of minor fragments per Drillbit.
   private void merge(Wrapper currFrag,
                      Map<DrillbitEndpoint, Integer> minorFragsPerDrillBit,
                      Function<Entry<DrillbitEndpoint, Integer>, Long> getMemory) {
@@ -71,6 +83,7 @@ public class MemoryCalculator extends AbstractOpWrapperVisitor<Void, RuntimeExce
     Wrapper receivingFragment = planningSet.get(fragment.getNode().getSendingExchangePair().getNode());
     merge(fragment,
           getMinorFragCountPerDrillbit(fragment),
+          // get the memory requirements for the sender operator.
           (x) -> exchange.getSenderMemory(receivingFragment.getWidth(), x.getValue()));
     return visitOp(exchange, fragment);
   }
@@ -96,6 +109,8 @@ public class MemoryCalculator extends AbstractOpWrapperVisitor<Void, RuntimeExce
     merge(fragment,
           getMinorFragCountPerDrillbit(fragment),
           (x) -> exchange.getReceiverMemory(fragment.getWidth(),
+            // If the exchange is a MuxExchange then the sending fragments are from that particular drillbit otherwise
+            // sending fragments are from across the cluster.
             exchange instanceof AbstractMuxExchange ? sendingFragsPerDrillBit.get(x.getKey()) : totalSendingFrags));
     return null;
   }
@@ -108,6 +123,10 @@ public class MemoryCalculator extends AbstractOpWrapperVisitor<Void, RuntimeExce
   public Void visitOp(PhysicalOperator op, Wrapper fragment) {
     long memoryCost = (int)Math.ceil(op.getCost().getMemoryCost());
     if (op.isBufferedOperator(queryContext)) {
+      // If the operator is a buffered operator then get the memory estimates of the optimizer.
+      // The memory estimates of the optimizer are for the whole operator spread across all the
+      // minor fragments. Divide this memory estimation by fragment width to get the memory
+      // requirement per minor fragment.
       long memoryCostPerMinorFrag = (int)Math.ceil(memoryCost/fragment.getWidth());
       Map<DrillbitEndpoint, Integer> drillbitEndpointMinorFragMap = getMinorFragCountPerDrillbit(fragment);
 
@@ -127,6 +146,7 @@ public class MemoryCalculator extends AbstractOpWrapperVisitor<Void, RuntimeExce
             (x) -> memoryCostPerMinorFrag * x.getValue());
 
     } else {
+      // Memory requirement for the non-buffered operators is just the batch size.
       merge(fragment,
             getMinorFragCountPerDrillbit(fragment),
             (x) -> memoryCost * x.getValue());

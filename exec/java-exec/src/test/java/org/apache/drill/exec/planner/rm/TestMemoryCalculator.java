@@ -25,7 +25,7 @@ import org.apache.drill.exec.planner.PhysicalPlanReader;
 import org.apache.drill.exec.planner.cost.NodeResource;
 import org.apache.drill.exec.planner.fragment.Fragment;
 import org.apache.drill.exec.planner.fragment.PlanningSet;
-import org.apache.drill.exec.planner.fragment.QueuedQueryParallelizer;
+import org.apache.drill.exec.planner.fragment.QueueQueryParallelizer;
 import org.apache.drill.exec.planner.fragment.SimpleParallelizer;
 import org.apache.drill.exec.planner.fragment.Wrapper;
 import org.apache.drill.exec.pop.PopUnitTestBase;
@@ -189,7 +189,7 @@ public class TestMemoryCalculator extends PlanTestBase {
                                                                             x -> NodeResource.create()));
     String sql = "SELECT * from cp.`tpch/nation.parquet`";
 
-    SimpleParallelizer parallelizer = new QueuedQueryParallelizer(true, queryContext);
+    SimpleParallelizer parallelizer = new QueueQueryParallelizer(true, queryContext);
     PlanningSet planningSet = preparePlanningSet(activeEndpoints, DEFAULT_SLICE_TARGET, resources, sql, parallelizer);
     parallelizer.adjustMemory(planningSet, createSet(planningSet.getRootWrapper()), activeEndpoints);
     assertTrue("memory requirement is different", Iterables.all(resources.entrySet(), (e) -> e.getValue().getMemory() == 30));
@@ -204,7 +204,7 @@ public class TestMemoryCalculator extends PlanTestBase {
                                                                              x -> NodeResource.create()));
     String sql = "SELECT dept_id, count(*) from cp.`tpch/lineitem.parquet` group by dept_id";
 
-    SimpleParallelizer parallelizer = new QueuedQueryParallelizer(true, queryContext);
+    SimpleParallelizer parallelizer = new QueueQueryParallelizer(true, queryContext);
     PlanningSet planningSet = preparePlanningSet(activeEndpoints, DEFAULT_SLICE_TARGET, resources, sql, parallelizer);
     parallelizer.adjustMemory(planningSet, createSet(planningSet.getRootWrapper()), activeEndpoints);
     assertTrue("memory requirement is different", Iterables.all(resources.entrySet(), (e) -> e.getValue().getMemory() == 529570));
@@ -219,7 +219,7 @@ public class TestMemoryCalculator extends PlanTestBase {
                                                                             x -> NodeResource.create()));
     String sql = "SELECT * from cp.`tpch/lineitem.parquet` order by dept_id";
 
-    SimpleParallelizer parallelizer = new QueuedQueryParallelizer(true, queryContext);
+    SimpleParallelizer parallelizer = new QueueQueryParallelizer(true, queryContext);
     PlanningSet planningSet = preparePlanningSet(activeEndpoints, 2, resources, sql, parallelizer);
     parallelizer.adjustMemory(planningSet, createSet(planningSet.getRootWrapper()), activeEndpoints);
     assertTrue("memory requirement is different", Iterables.all(resources.entrySet(), (e) -> e.getValue().getMemory() == 481490));

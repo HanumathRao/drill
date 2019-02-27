@@ -51,6 +51,10 @@ public class Wrapper {
   private boolean endpointsAssigned;
   private long initialAllocation = 0;
   private long maxAllocation = 0;
+  // Resources (i.e memory and cpu) are stored per drillbit in this map.
+  // A Drillbit can have n number of minor fragments then the NodeResource
+  // contains cumulative resources required for all the minor fragments
+  // for that major fragment on that Drillbit.
   private Map<DrillbitEndpoint, NodeResource> nodeResourceMap;
 
   // List of fragments this particular fragment depends on for determining its parallelization and endpoint assignments.
@@ -128,7 +132,6 @@ public class Wrapper {
 
     @Override
     public Void visitSubScan(SubScan subScan, List<DrillbitEndpoint> value) throws PhysicalOperatorSetupException {
-      // TODO - implement this
       return visitOp(subScan, value);
     }
 
@@ -207,6 +210,11 @@ public class Wrapper {
     return ImmutableList.copyOf(fragmentDependencies);
   }
 
+  /**
+   * Compute the cpu resources required for all the minor fragments of this major fragment.
+   * This information is stored per DrillbitEndpoint. It is assumed that this function is
+   * called only once.
+   */
   public void computeCpuResources() {
     Preconditions.checkArgument(nodeResourceMap == null);
     BinaryOperator<NodeResource> merge = (first, second) -> {

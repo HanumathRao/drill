@@ -20,9 +20,17 @@ package org.apache.drill.exec.planner.cost;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 
+/**
+ * Cost estimates per physical relation. These cost estimations are computed
+ * during physical planning by the optimizer. These are also used post physical
+ * planning to compute memory requirements in minor fragment generation phase.
+ *
+ */
 @JsonTypeName("cost-estimates")
 public class PrelCostEstimates {
+  // memory requirement for an operator.
   private final double memoryCost;
+  // number of rows that are output by this operator.
   private final double outputRowCount;
 
   public static PrelCostEstimates ZERO_COST = new PrelCostEstimates(0,0);

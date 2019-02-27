@@ -21,11 +21,7 @@ import org.apache.drill.exec.planner.fragment.QueryParallelizer;
 import org.apache.drill.exec.work.foreman.rm.QueryQueue.QueryQueueException;
 import org.apache.drill.exec.work.foreman.rm.QueryQueue.QueueTimeoutException;
 
-/**
- * Extends a {@link QueryResourceAllocator} to provide queueing support.
- */
-
-public interface QueryResourceManager extends QueryResourceAllocator {
+public interface QueryResourceManager {
 
   /**
    * Hint that this resource manager queues. Allows the Foreman
@@ -46,12 +42,12 @@ public interface QueryResourceManager extends QueryResourceAllocator {
 
   /**
    * Create a parallelizer to parallelize each major fragment of the query into
-   * many minor fragments. The parallelizer encapsulates the logic of how much
+   * n minor fragments. The parallelizer encapsulates the logic of how much
    * memory and parallelism is required for the query.
-   * @param memoryPlanning memory planning needs to be done during parallelization
+   * @param doMemoryPlanning planning needs to be done during parallelization
    * @return
    */
-  QueryParallelizer getParallelizer(boolean memoryPlanning);
+  QueryParallelizer getParallelizer(boolean doMemoryPlanning);
 
   /**
    * Admit the query into the cluster. Blocks until the query

@@ -34,27 +34,52 @@ import java.util.ArrayList;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
-public class QueuedQueryParallelizer extends SimpleParallelizer {
+/**
+ * Paralellizer specialized for managing resources for a query based on Queues. This parallelizer
+ * does not deal with increase/decrease of the parallelization of a query plan based on the current
+ * cluster state. However, the memory assignment for each operator, minor fragment and major
+ * fragment is based on the cluster state and provided queue configuration.
+ */
+public class QueueQueryParallelizer extends SimpleParallelizer {
   private final boolean enableMemoryPlanning;
   private final QueryContext queryContext;
   private final Map<DrillbitEndpoint, Map<PhysicalOperator, Long>> operators;
 
-  public QueuedQueryParallelizer(boolean memoryPlanning, QueryContext queryContext) {
+  public QueueQueryParallelizer(boolean memoryPlanning, QueryContext queryContext) {
     super(queryContext);
     this.enableMemoryPlanning = memoryPlanning;
     this.queryContext = queryContext;
     this.operators = new HashMap<>();
   }
 
+  // return the memory computed for a physical operator on a drillbitendpoint.
   public BiFunction<DrillbitEndpoint, PhysicalOperator, Long> getMemory() {
-    return (x, y) -> operators.get(x).get(y);
+    return (endpoint, operator) -> operators.get(endpoint).get(operator);
   }
 
+  /**
+   * Function called by the SimpleParallelizer to adjust the memory post parallelization.
+   * The overall logic is to traverse the fragment tree and call the MemoryCalculator on
+   * each major fragment. Once the memory is computed, resource requirement are accumulated
+   * per drillbit.
+   *
+   * The total resource requirements are used to select a queue. If the selected queue's
+   * resource limit is more/less than the query's requirement than the memory will be re-adjusted.
+   *
+   * @param planningSet context of the fragments.
+   * @param roots root fragments.
+   * @param activeEndpoints currently active endpoints.
+   * @throws PhysicalOperatorSetupException
+   */
   public void adjustMemory(PlanningSet planningSet, Set<Wrapper> roots,
                            Collection<DrillbitEndpoint> activeEndpoints) throws PhysicalOperatorSetupException {
+
+    // total node resources for the query plan maintained per drillbit.
     final Map<DrillbitEndpoint, NodeResource> totalNodeResources =
             activeEndpoints.stream().collect(Collectors.toMap(x ->x,
                                                               x -> NodeResource.create()));
+
+    // list of the physical operators and their memory requirements per drillbit.
     final Map<DrillbitEndpoint, List<Pair<PhysicalOperator, Long>>> operators =
             activeEndpoints.stream().collect(Collectors.toMap(x -> x,
                                                               x -> new ArrayList<>()));
@@ -81,10 +106,18 @@ public class QueuedQueryParallelizer extends SimpleParallelizer {
   }
 
 
+  /**
+   * Helper method to adjust the memory for the buffered operators.
+   * @param memoryPerOperator list of physical operators per drillbit
+   * @param nodeResourceMap resources per drillbit.
+   * @param nodeLimit permissible node limit.
+   * @return list of operators which contain adjusted memory limits.
+   */
   private Map<DrillbitEndpoint, List<Pair<PhysicalOperator, Long>>>
       adjustMemoryForOperators(Map<DrillbitEndpoint, List<Pair<PhysicalOperator, Long>>> memoryPerOperator,
                                Map<DrillbitEndpoint, NodeResource> nodeResourceMap, int nodeLimit) {
 
+    // Get the physical operators which are above the node memory limit.
     Map<DrillbitEndpoint, List<Pair<PhysicalOperator, Long>>> onlyMemoryAboveLimitOperators = new HashMap<>();
     memoryPerOperator.entrySet().stream().forEach((entry) -> {
       onlyMemoryAboveLimitOperators.putIfAbsent(entry.getKey(), new ArrayList<>());
@@ -93,17 +126,23 @@ public class QueuedQueryParallelizer extends SimpleParallelizer {
       }
     });
 
+
+    // Compute the total memory required by the physical operators on the drillbits which are above node limit.
+    // Then use the total memory to adjust the memory requirement based on the permissible node limit.
     Map<DrillbitEndpoint, List<Pair<PhysicalOperator, Long>>> memoryAdjustedDrillbits = new HashMap<>();
     onlyMemoryAboveLimitOperators.entrySet().stream().forEach(
       entry -> {
         Long totalMemory = entry.getValue().stream().map(operatorMemory -> operatorMemory.getValue()).reduce(0L, (x,y) -> x+ y);
         List<Pair<PhysicalOperator, Long>> adjustedMemory = entry.getValue().stream().map(operatorMemory -> {
+          // formula to adjust the memory is (optimalMemory / totalMemory(this is for all the operators)) * permissible_node_limit.
           return Pair.of(operatorMemory.getKey(), (long) Math.ceil(operatorMemory.getValue()/totalMemory * nodeLimit));
         }).collect(Collectors.toList());
         memoryAdjustedDrillbits.put(entry.getKey(), adjustedMemory);
       }
     );
 
+    // Get all the operations on drillbits which were adjusted for memory and merge them with operators which are not
+    // adjusted for memory.
     Map<DrillbitEndpoint, List<Pair<PhysicalOperator, Long>>> allDrillbits = new HashMap<>();
     memoryPerOperator.entrySet().stream().filter((entry) -> !memoryAdjustedDrillbits.containsKey(entry.getKey())).forEach(
       operatorMemory -> {
@@ -117,6 +156,8 @@ public class QueuedQueryParallelizer extends SimpleParallelizer {
       }
     );
 
+    // At this point allDrillbits contains the operators on all drillbits. The memory also is adjusted based on the nodeLimit and
+    // the ratio of their requirements.
     return allDrillbits;
   }
 }

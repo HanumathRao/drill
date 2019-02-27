@@ -27,6 +27,11 @@ import java.util.Set;
 import java.util.List;
 import java.util.function.BiFunction;
 
+/**
+ * Non RM version of the parallelizer. The parallelization logic is fully inherited from SimpleParallelizer.
+ * The memory computation of the operators is based on the earlier logic to assign memory for the buffered
+ * operators.
+ */
 public class DefaultQueryParallelizer extends SimpleParallelizer {
   private final boolean enableMemoryPlanning;
   private final QueryContext queryContext;

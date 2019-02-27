@@ -145,10 +145,21 @@ public abstract class SimpleParallelizer implements QueryParallelizer {
     return planningSet;
   }
 
+  /**
+   * Traverse all the major fragments and parallelize each major fragment based on
+   * collected stats. The children fragments are parallelized before a parent
+   * fragment.
+   * @param planningSet Set of all major fragments and their context.
+   * @param roots Root nodes of the plan.
+   * @param activeEndpoints currently active drillbit endpoints.
+   * @throws PhysicalOperatorSetupException
+   */
   public void collectStatsAndParallelizeFragments(PlanningSet planningSet, Set<Wrapper> roots,
                                                   Collection<DrillbitEndpoint> activeEndpoints) throws PhysicalOperatorSetupException {
     for (Wrapper wrapper : roots) {
       traverse(wrapper, CheckedConsumer.throwingConsumerWrapper((Wrapper fragmentWrapper) -> {
+        // If this fragment is already parallelized then no need do it again.
+        // This happens in the case of fragments which have MUX operators.
         if (fragmentWrapper.isEndpointsAssignmentDone()) {
           return;
         }
@@ -157,6 +168,7 @@ public abstract class SimpleParallelizer implements QueryParallelizer {
                        .getDistributionAffinity()
                        .getFragmentParallelizer()
                        .parallelizeFragment(fragmentWrapper, this, activeEndpoints);
+        //consolidate the cpu resources required by this major fragment per drillbit.
         fragmentWrapper.computeCpuResources();
       }));
     }
@@ -165,6 +177,27 @@ public abstract class SimpleParallelizer implements QueryParallelizer {
   public abstract void adjustMemory(PlanningSet planningSet, Set<Wrapper> roots,
                                     Collection<DrillbitEndpoint> activeEndpoints) throws PhysicalOperatorSetupException;
 
+  /**
+   * The starting function for the whole parallelization and memory computation logic.
+   * 1) Initially a fragment tree is prepared which contains a wrapper for each fragment.
+   *    The topology of this tree is same as that of the major fragment tree.
+   * 2) Traverse this fragment tree to collect stats for each major fragment and then
+   *    parallelize each fragment. At this stage minor fragments are not created but all
+   *    the required information to create minor fragment are computed.
+   * 3) Memory is computed for each operator and for the minor fragment.
+   * 4) Lastly all the above computed information is used to create the minor fragments
+   *    for each major fragment.
+   *
+   * @param options List of options set by the user.
+   * @param foremanNode foreman node for this query plan.
+   * @param queryId  Query ID.
+   * @param activeEndpoints currently active endpoins on which this plan will run.
+   * @param rootFragment Root major fragment.
+   * @param session session context.
+   * @param queryContextInfo query context.
+   * @return
+   * @throws ExecutionSetupException
+   */
   @Override
   public final QueryWorkUnit generateWorkUnits(OptionList options, DrillbitEndpoint foremanNode, QueryId queryId,
                                                Collection<DrillbitEndpoint> activeEndpoints, Fragment rootFragment,
@@ -241,8 +274,8 @@ public abstract class SimpleParallelizer implements QueryParallelizer {
 
 
   /**
-   * Helper method for parallelizing a given fragment. Dependent fragments are parallelized first before
-   * parallelizing the given fragment.
+   * Helper method to call operation on each fragment. Traversal calls operation on child fragments before
+   * calling it on the parent fragment.
    */
   protected void traverse(Wrapper fragmentWrapper, Consumer<Wrapper> operation) throws PhysicalOperatorSetupException {
 
@@ -255,6 +288,7 @@ public abstract class SimpleParallelizer implements QueryParallelizer {
     operation.accept(fragmentWrapper);
   }
 
+  // A function which returns the memory assigned for a particular physical operator.
   protected abstract BiFunction<DrillbitEndpoint, PhysicalOperator, Long> getMemory();
 
   protected QueryWorkUnit generateWorkUnit(OptionList options, DrillbitEndpoint foremanNode, QueryId queryId,
@@ -288,20 +322,20 @@ public abstract class SimpleParallelizer implements QueryParallelizer {
         Preconditions.checkArgument(op instanceof FragmentRoot);
         FragmentRoot root = (FragmentRoot) op;
 
-        FragmentHandle handle = FragmentHandle //
-            .newBuilder() //
-            .setMajorFragmentId(wrapper.getMajorFragmentId()) //
-            .setMinorFragmentId(minorFragmentId) //
-            .setQueryId(queryId) //
+        FragmentHandle handle = FragmentHandle
+            .newBuilder()
+            .setMajorFragmentId(wrapper.getMajorFragmentId())
+            .setMinorFragmentId(minorFragmentId)
+            .setQueryId(queryId)
             .build();
 
-        PlanFragment fragment = PlanFragment.newBuilder() //
-            .setForeman(foremanNode) //
-            .setHandle(handle) //
-            .setAssignment(wrapper.getAssignedEndpoint(minorFragmentId)) //
-            .setLeafFragment(isLeafFragment) //
+        PlanFragment fragment = PlanFragment.newBuilder()
+            .setForeman(foremanNode)
+            .setHandle(handle)
+            .setAssignment(wrapper.getAssignedEndpoint(minorFragmentId))
+            .setLeafFragment(isLeafFragment)
             .setContext(queryContextInfo)
-            .setMemInitial(wrapper.getInitialAllocation())//
+            .setMemInitial(wrapper.getInitialAllocation())
             .setMemMax(wrapper.getMaxAllocation())
             .setCredentials(session.getCredentials())
             .addAllCollector(CountRequiredFragments.getCollectors(root))
