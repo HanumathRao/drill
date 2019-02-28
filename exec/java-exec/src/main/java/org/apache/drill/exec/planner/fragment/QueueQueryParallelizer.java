@@ -24,6 +24,7 @@ import org.apache.drill.exec.physical.PhysicalOperatorSetupException;
 import org.apache.drill.exec.physical.base.PhysicalOperator;
 import org.apache.drill.exec.planner.cost.NodeResource;
 import org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpoint;
+import org.apache.drill.exec.util.MemoryAllocationUtilities;
 
 import java.util.Map;
 import java.util.HashMap;
@@ -54,7 +55,14 @@ public class QueueQueryParallelizer extends SimpleParallelizer {
 
   // return the memory computed for a physical operator on a drillbitendpoint.
   public BiFunction<DrillbitEndpoint, PhysicalOperator, Long> getMemory() {
-    return (endpoint, operator) -> operators.get(endpoint).get(operator);
+    return (endpoint, operator) -> {
+      if (enableMemoryPlanning) {
+        return operators.get(endpoint).get(operator);
+      }
+      else {
+        return operator.getMaxAllocation();
+      }
+    };
   }
 
   /**
@@ -74,6 +82,11 @@ public class QueueQueryParallelizer extends SimpleParallelizer {
   public void adjustMemory(PlanningSet planningSet, Set<Wrapper> roots,
                            Collection<DrillbitEndpoint> activeEndpoints) throws PhysicalOperatorSetupException {
 
+    if (!enableMemoryPlanning) {
+      List<PhysicalOperator> bufferedOpers = planningSet.getRootWrapper().getNode().getBufferedOperators();
+      MemoryAllocationUtilities.setupBufferedOpsMemoryAllocations(enableMemoryPlanning, bufferedOpers, queryContext);
+      return;
+    }
     // total node resources for the query plan maintained per drillbit.
     final Map<DrillbitEndpoint, NodeResource> totalNodeResources =
             activeEndpoints.stream().collect(Collectors.toMap(x ->x,
@@ -116,7 +129,6 @@ public class QueueQueryParallelizer extends SimpleParallelizer {
   private Map<DrillbitEndpoint, List<Pair<PhysicalOperator, Long>>>
       adjustMemoryForOperators(Map<DrillbitEndpoint, List<Pair<PhysicalOperator, Long>>> memoryPerOperator,
                                Map<DrillbitEndpoint, NodeResource> nodeResourceMap, int nodeLimit) {
-
     // Get the physical operators which are above the node memory limit.
     Map<DrillbitEndpoint, List<Pair<PhysicalOperator, Long>>> onlyMemoryAboveLimitOperators = new HashMap<>();
     memoryPerOperator.entrySet().stream().forEach((entry) -> {

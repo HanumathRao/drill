@@ -294,7 +294,8 @@ public class ThrottledResourceManager extends AbstractResourceManager {
 
     @Override
     public QueryParallelizer getParallelizer(boolean enableMemoryPlanning) {
-      return new QueueQueryParallelizer(enableMemoryPlanning, this.getQueryContext());
+      // currently memory planning is disabled. Enable it once the RM functionality is fully implemented.
+      return new QueueQueryParallelizer(false & enableMemoryPlanning, this.getQueryContext());
     }
 
     @Override

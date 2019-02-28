@@ -20,6 +20,10 @@ package org.apache.drill.exec.planner.cost;
 import org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpoint;
 import java.util.Map;
 
+/**
+ * This class abstracts the resources like cpu and memory used up by the operators.
+ * In future network resources can also be incorporated if required.
+ */
 public class NodeResource {
   private long cpu;
   private long memory;
@@ -41,6 +45,7 @@ public class NodeResource {
     return memory;
   }
 
+  // A utility function to merge the node resources from one drillbit map to other drillbit map.
   public static Map<DrillbitEndpoint, NodeResource> merge(Map<DrillbitEndpoint, NodeResource> to,
                                                           Map<DrillbitEndpoint, NodeResource> from) {
     to.entrySet().stream().forEach((toEntry) -> toEntry.getValue().add(from.get(toEntry.getKey())));
