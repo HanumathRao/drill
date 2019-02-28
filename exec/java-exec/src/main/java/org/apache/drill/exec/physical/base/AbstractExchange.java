@@ -132,4 +132,14 @@ public abstract class AbstractExchange extends AbstractSingle implements Exchang
   public ParallelizationDependency getParallelizationDependency() {
     return ParallelizationDependency.RECEIVER_DEPENDS_ON_SENDER;
   }
+
+  @Override
+  public long getSenderMemory(int receivers, int senders) {
+    return 0;
+  }
+
+  @Override
+  public long getReceiverMemory(int receivers, int senders) {
+    return 0;
+  }
 }

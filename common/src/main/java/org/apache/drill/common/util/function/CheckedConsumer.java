@@ -15,15 +15,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.drill.exec.planner.cost;
+package org.apache.drill.common.util.function;
 
-import org.apache.calcite.plan.RelOptCost;
+import java.util.function.Consumer;
 
+@FunctionalInterface
+public interface CheckedConsumer<T, E extends Throwable> {
+  void accept(T t) throws E;
 
-public interface DrillRelOptCost extends RelOptCost {
+  static <T> Consumer<T> throwingConsumerWrapper(
+    CheckedConsumer<T, Exception> throwingConsumer) {
 
-  double getNetwork();
-
-  double getMemory();
-
+    return i -> {
+      try {
+        throwingConsumer.accept(i);
+      } catch (Exception ex) {
+        throw new RuntimeException(ex);
+      }
+    };
+  }
 }
+
