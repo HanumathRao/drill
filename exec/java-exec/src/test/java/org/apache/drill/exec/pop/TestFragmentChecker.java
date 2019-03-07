@@ -65,7 +65,7 @@ public class TestFragmentChecker extends PopUnitTestBase{
     }
 
     final QueryContextInformation queryContextInfo = Utilities.createQueryContextInfo("dummySchemaName", "938ea2d9-7cb9-4baf-9414-a5a0b7777e8e");
-    QueryWorkUnit qwu = par.generateWorkUnits(new OptionList(), localBit, QueryId.getDefaultInstance(), endpoints, fragmentRoot,
+    QueryWorkUnit qwu = par.generateWorkUnit(new OptionList(), localBit, QueryId.getDefaultInstance(), endpoints, fragmentRoot,
         UserSession.Builder.newBuilder().withCredentials(UserBitShared.UserCredentials.newBuilder().setUserName("foo").build()).build(),
         queryContextInfo);
     qwu.applyPlan(ppr);

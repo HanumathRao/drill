@@ -134,7 +134,7 @@ public class PlanSplitter {
         }
       }
     } else {
-      final QueryWorkUnit queryWorkUnit = parallelizer.generateWorkUnits(queryContext.getOptions().getOptionList(), queryContext.getCurrentEndpoint(),
+      final QueryWorkUnit queryWorkUnit = parallelizer.generateWorkUnit(queryContext.getOptions().getOptionList(), queryContext.getCurrentEndpoint(),
           queryId, queryContext.getActiveEndpoints(), rootFragment,
           queryContext.getSession(), queryContext.getQueryContextInfo());
       planner.visitPhysicalPlan(queryWorkUnit);

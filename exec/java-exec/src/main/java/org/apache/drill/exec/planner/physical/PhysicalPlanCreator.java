@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.drill.common.logical.PlanProperties;
 import org.apache.drill.common.logical.PlanProperties.Generator.ResultMode;
 import org.apache.drill.common.logical.PlanProperties.PlanPropertiesBuilder;
@@ -29,6 +30,7 @@ import org.apache.drill.exec.ExecConstants;
 import org.apache.drill.exec.ops.QueryContext;
 import org.apache.drill.exec.physical.PhysicalPlan;
 import org.apache.drill.exec.physical.base.PhysicalOperator;
+import org.apache.drill.exec.planner.cost.DrillCostBase;
 import org.apache.drill.exec.planner.cost.PrelCostEstimates;
 import org.apache.drill.exec.planner.physical.explain.PrelSequencer.OpId;
 
@@ -56,12 +58,22 @@ public class PhysicalPlanCreator {
 
   public PhysicalOperator addMetadata(Prel originalPrel, PhysicalOperator op){
     op.setOperatorId(opIdMap.get(originalPrel).getAsSingleInt());
-    PrelCostEstimates costEstimates = originalPrel.getCostEstimates(originalPrel.getCluster().getPlanner(), originalPrel.getCluster().getMetadataQuery());
-    if (!op.isBufferedOperator(context)) {
-      costEstimates = new PrelCostEstimates(context.getOptions().getLong(ExecConstants.OUTPUT_BATCH_SIZE), costEstimates.getOutputRowCount());
-    }
-    op.setCost(costEstimates);
+    op.setCost(getPrelCostEstimates(originalPrel, op));
     return op;
+  }
+
+  private PrelCostEstimates getPrelCostEstimates(Prel originalPrel, PhysicalOperator op) {
+    final RelMetadataQuery mq = originalPrel.getCluster().getMetadataQuery();
+    final double estimatedRowCount = originalPrel.estimateRowCount(mq);
+    final DrillCostBase costBase = (DrillCostBase) originalPrel.computeSelfCost(originalPrel.getCluster().getPlanner(),
+      mq);
+    final PrelCostEstimates costEstimates;
+    if (!op.isBufferedOperator(context)) {
+      costEstimates = new PrelCostEstimates(context.getOptions().getLong(ExecConstants.OUTPUT_BATCH_SIZE), estimatedRowCount);
+    } else {
+      costEstimates = new PrelCostEstimates(costBase.getMemory(), estimatedRowCount);
+    }
+    return costEstimates;
   }
 
   public PhysicalPlan build(Prel rootPrel, boolean forceRebuild) {

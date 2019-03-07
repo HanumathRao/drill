@@ -132,8 +132,8 @@ public abstract class AbstractExchange extends AbstractSingle implements Exchang
   }
 
   // Memory requirement of the sender for the given receivers and senders in a major fragment.
-  // Currently set to zero but later once batch sizing for Exchanges is completed it will calling
-  // apropriate function.
+  // Currently set to zero but later once batch sizing for Exchanges is completed it will call
+  // appropriate function.
   @Override
   public long getSenderMemory(int receivers, int senders) {
     return 0;

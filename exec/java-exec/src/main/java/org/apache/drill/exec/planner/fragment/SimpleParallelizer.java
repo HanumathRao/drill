@@ -199,9 +199,9 @@ public abstract class SimpleParallelizer implements QueryParallelizer {
    * @throws ExecutionSetupException
    */
   @Override
-  public final QueryWorkUnit generateWorkUnits(OptionList options, DrillbitEndpoint foremanNode, QueryId queryId,
-                                               Collection<DrillbitEndpoint> activeEndpoints, Fragment rootFragment,
-                                               UserSession session, QueryContextInformation queryContextInfo) throws ExecutionSetupException {
+  public final QueryWorkUnit generateWorkUnit(OptionList options, DrillbitEndpoint foremanNode, QueryId queryId,
+                                              Collection<DrillbitEndpoint> activeEndpoints, Fragment rootFragment,
+                                              UserSession session, QueryContextInformation queryContextInfo) throws ExecutionSetupException {
     PlanningSet planningSet = prepareFragmentTree(rootFragment);
 
     Set<Wrapper> rootFragments = getRootFragments(planningSet);

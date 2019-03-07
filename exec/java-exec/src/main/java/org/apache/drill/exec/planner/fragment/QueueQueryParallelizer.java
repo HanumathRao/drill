@@ -24,7 +24,6 @@ import org.apache.drill.exec.physical.PhysicalOperatorSetupException;
 import org.apache.drill.exec.physical.base.PhysicalOperator;
 import org.apache.drill.exec.planner.cost.NodeResource;
 import org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpoint;
-import org.apache.drill.exec.util.MemoryAllocationUtilities;
 
 import java.util.Map;
 import java.util.HashMap;
@@ -42,13 +41,13 @@ import java.util.stream.Collectors;
  * fragment is based on the cluster state and provided queue configuration.
  */
 public class QueueQueryParallelizer extends SimpleParallelizer {
-  private final boolean enableMemoryPlanning;
+  private final boolean planHasMemory;
   private final QueryContext queryContext;
   private final Map<DrillbitEndpoint, Map<PhysicalOperator, Long>> operators;
 
   public QueueQueryParallelizer(boolean memoryPlanning, QueryContext queryContext) {
     super(queryContext);
-    this.enableMemoryPlanning = memoryPlanning;
+    this.planHasMemory = memoryPlanning;
     this.queryContext = queryContext;
     this.operators = new HashMap<>();
   }
@@ -56,7 +55,7 @@ public class QueueQueryParallelizer extends SimpleParallelizer {
   // return the memory computed for a physical operator on a drillbitendpoint.
   public BiFunction<DrillbitEndpoint, PhysicalOperator, Long> getMemory() {
     return (endpoint, operator) -> {
-      if (enableMemoryPlanning) {
+      if (planHasMemory) {
         return operators.get(endpoint).get(operator);
       }
       else {
@@ -82,9 +81,7 @@ public class QueueQueryParallelizer extends SimpleParallelizer {
   public void adjustMemory(PlanningSet planningSet, Set<Wrapper> roots,
                            Collection<DrillbitEndpoint> activeEndpoints) throws PhysicalOperatorSetupException {
 
-    if (enableMemoryPlanning) {
-      List<PhysicalOperator> bufferedOpers = planningSet.getRootWrapper().getNode().getBufferedOperators();
-      MemoryAllocationUtilities.setupBufferedOpsMemoryAllocations(enableMemoryPlanning, bufferedOpers, queryContext);
+    if (planHasMemory) {
       return;
     }
     // total node resources for the query plan maintained per drillbit.
@@ -109,11 +106,12 @@ public class QueueQueryParallelizer extends SimpleParallelizer {
       }));
     }
     //queryrm.selectQueue( pass the max node Resource) returns queue configuration.
-    Map<DrillbitEndpoint, List<Pair<PhysicalOperator, Long>>> memoryAdjustedOperators = adjustMemoryForOperators(operators, totalNodeResources, 10);
+    Map<DrillbitEndpoint, List<Pair<PhysicalOperator, Long>>> memoryAdjustedOperators = ensureOperatorMemoryWithinLimits(operators, totalNodeResources, 10);
     memoryAdjustedOperators.entrySet().stream().forEach((x) -> {
       Map<PhysicalOperator, Long> memoryPerOperator = x.getValue().stream()
                                                                   .collect(Collectors.toMap(operatorLongPair -> operatorLongPair.left,
-                                                                                            operatorLongPair -> operatorLongPair.right));
+                                                                                            operatorLongPair -> operatorLongPair.right,
+                                                                                            (mem_1, mem_2) -> (mem_1 + mem_2)));
       this.operators.put(x.getKey(), memoryPerOperator);
     });
   }
@@ -127,8 +125,8 @@ public class QueueQueryParallelizer extends SimpleParallelizer {
    * @return list of operators which contain adjusted memory limits.
    */
   private Map<DrillbitEndpoint, List<Pair<PhysicalOperator, Long>>>
-      adjustMemoryForOperators(Map<DrillbitEndpoint, List<Pair<PhysicalOperator, Long>>> memoryPerOperator,
-                               Map<DrillbitEndpoint, NodeResource> nodeResourceMap, int nodeLimit) {
+          ensureOperatorMemoryWithinLimits(Map<DrillbitEndpoint, List<Pair<PhysicalOperator, Long>>> memoryPerOperator,
+                                           Map<DrillbitEndpoint, NodeResource> nodeResourceMap, int nodeLimit) {
     // Get the physical operators which are above the node memory limit.
     Map<DrillbitEndpoint, List<Pair<PhysicalOperator, Long>>> onlyMemoryAboveLimitOperators = new HashMap<>();
     memoryPerOperator.entrySet().stream().forEach((entry) -> {
@@ -144,7 +142,7 @@ public class QueueQueryParallelizer extends SimpleParallelizer {
     Map<DrillbitEndpoint, List<Pair<PhysicalOperator, Long>>> memoryAdjustedDrillbits = new HashMap<>();
     onlyMemoryAboveLimitOperators.entrySet().stream().forEach(
       entry -> {
-        Long totalMemory = entry.getValue().stream().map(operatorMemory -> operatorMemory.getValue()).reduce(0L, (x,y) -> x+ y);
+        Long totalMemory = entry.getValue().stream().mapToLong(Pair::getValue).sum();
         List<Pair<PhysicalOperator, Long>> adjustedMemory = entry.getValue().stream().map(operatorMemory -> {
           // formula to adjust the memory is (optimalMemory / totalMemory(this is for all the operators)) * permissible_node_limit.
           return Pair.of(operatorMemory.getKey(), (long) Math.ceil(operatorMemory.getValue()/totalMemory * nodeLimit));

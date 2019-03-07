@@ -33,16 +33,16 @@ public class MakeFragmentsVisitor extends AbstractPhysicalVisitor<Fragment, Frag
   }
 
   @Override
-  public Fragment visitExchange(Exchange exchange, Fragment currentFragment) throws ForemanSetupException {
-    if (currentFragment == null) {
+  public Fragment visitExchange(Exchange exchange, Fragment receivingFragment) throws ForemanSetupException {
+    if (receivingFragment == null) {
       throw new ForemanSetupException("The simple fragmenter was called without a FragmentBuilder value. This will only happen if the initial call to SimpleFragmenter is by a" +
         " Exchange node.  This should never happen since an Exchange node should never be the root node of a plan.");
     }
-    Fragment childFragment = getFragmentBuilder();
-    currentFragment.addReceiveExchange(exchange, childFragment);
-    childFragment.addSendExchange(exchange, currentFragment);
-    exchange.getChild().accept(this, childFragment);
-    return childFragment;
+    Fragment sendingFragment= getNextFragment();
+    receivingFragment.addReceiveExchange(exchange, sendingFragment);
+    sendingFragment.addSendExchange(exchange, receivingFragment);
+    exchange.getChild().accept(this, sendingFragment);
+    return sendingFragment;
   }
 
   @Override
@@ -59,11 +59,11 @@ public class MakeFragmentsVisitor extends AbstractPhysicalVisitor<Fragment, Frag
     if (currentFragment != null) {
       return currentFragment;
     } else {
-      return getFragmentBuilder();
+      return getNextFragment();
     }
   }
 
-  public Fragment getFragmentBuilder() {
+  public Fragment getNextFragment() {
     return new Fragment();
   }
 

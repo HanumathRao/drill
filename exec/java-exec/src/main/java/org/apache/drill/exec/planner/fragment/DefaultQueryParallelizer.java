@@ -49,6 +49,7 @@ public class DefaultQueryParallelizer extends SimpleParallelizer {
     this.queryContext = null;
   }
 
+  @Override
   public void adjustMemory(PlanningSet planningSet, Set<Wrapper> roots,
                            Collection<DrillbitEndpoint> activeEndpoints) {
     if (planHasMemory) {

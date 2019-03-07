@@ -567,7 +567,7 @@ public class Foreman implements Runnable {
 
     final Fragment rootFragment = rootOperator.accept(MakeFragmentsVisitor.INSTANCE, null);
 
-    return rm.getParallelizer(plan.getProperties().hasResourcePlan).generateWorkUnits(queryContext.getOptions().getOptionList(),
+    return rm.getParallelizer(plan.getProperties().hasResourcePlan).generateWorkUnit(queryContext.getOptions().getOptionList(),
                                                                         queryContext.getCurrentEndpoint(),
                                                                         queryId, queryContext.getOnlineEndpoints(),
                                                                         rootFragment, initiatingClient.getSession(),

@@ -20,18 +20,12 @@ package org.apache.drill.exec.planner.physical;
 import java.io.IOException;
 import java.util.List;
 import org.apache.calcite.plan.Convention;
-import org.apache.calcite.plan.RelOptCost;
-import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.drill.exec.physical.base.PhysicalOperator;
 import org.apache.drill.exec.planner.common.DrillRelNode;
-import org.apache.drill.exec.planner.cost.DrillCostBase;
-import org.apache.drill.exec.planner.cost.PrelCostEstimates;
 import org.apache.drill.exec.planner.physical.visitor.PrelVisitor;
 import org.apache.drill.exec.record.BatchSchema.SelectionVectorMode;
-import org.apache.drill.shaded.guava.com.google.common.base.Preconditions;
 
 public interface Prel extends DrillRelNode, Iterable<Prel> {
   org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(Prel.class);
@@ -50,12 +44,6 @@ public interface Prel extends DrillRelNode, Iterable<Prel> {
   PhysicalOperator getPhysicalOperator(PhysicalPlanCreator creator) throws IOException;
 
   <T, X, E extends Throwable> T accept(PrelVisitor<T, X, E> logicalVisitor, X value) throws E;
-
-  default PrelCostEstimates getCostEstimates(RelOptPlanner planner, RelMetadataQuery mq) {
-    RelOptCost cost = this.computeSelfCost(planner, mq);
-    Preconditions.checkArgument(cost instanceof DrillCostBase);
-    return new PrelCostEstimates(((DrillCostBase)cost).getMemory(), this.estimateRowCount(mq));
-  }
 
   /**
    * Supported 'encodings' of a Prel indicates what are the acceptable modes of SelectionVector

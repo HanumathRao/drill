@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import java.util.function.BiFunction;
 
 import org.apache.drill.common.exceptions.ExecutionSetupException;
 import org.apache.drill.common.util.DrillStringUtils;
@@ -93,11 +92,6 @@ public class SplittingParallelizer extends DefaultQueryParallelizer {
 
     return generateWorkUnits(
         options, foremanNode, queryId, reader, rootFragment, planningSet, session, queryContextInfo);
-  }
-
-  @Override
-  protected BiFunction<DrillbitEndpoint, PhysicalOperator, Long> getMemory() {
-    return (endpoint, operator) -> operator.getMaxAllocation();
   }
 
   /**

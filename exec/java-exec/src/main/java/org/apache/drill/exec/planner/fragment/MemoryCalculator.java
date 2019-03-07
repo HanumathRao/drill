@@ -127,7 +127,7 @@ public class MemoryCalculator extends AbstractOpWrapperVisitor<Void, RuntimeExce
       // The memory estimates of the optimizer are for the whole operator spread across all the
       // minor fragments. Divide this memory estimation by fragment width to get the memory
       // requirement per minor fragment.
-      long memoryCostPerMinorFrag = (int)Math.ceil(memoryCost/fragment.getWidth());
+      long memoryCostPerMinorFrag = (int)Math.ceil(memoryCost/fragment.getAssignedEndpoints().size());
       Map<DrillbitEndpoint, Integer> drillbitEndpointMinorFragMap = getMinorFragCountPerDrillbit(fragment);
 
       Map<DrillbitEndpoint,
