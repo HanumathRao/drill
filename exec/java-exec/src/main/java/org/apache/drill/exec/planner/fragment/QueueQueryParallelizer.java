@@ -17,7 +17,7 @@
  */
 package org.apache.drill.exec.planner.fragment;
 
-import org.apache.calcite.util.Pair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.drill.common.util.function.CheckedConsumer;
 import org.apache.drill.exec.ops.QueryContext;
 import org.apache.drill.exec.physical.PhysicalOperatorSetupException;
@@ -109,8 +109,8 @@ public class QueueQueryParallelizer extends SimpleParallelizer {
     Map<DrillbitEndpoint, List<Pair<PhysicalOperator, Long>>> memoryAdjustedOperators = ensureOperatorMemoryWithinLimits(operators, totalNodeResources, 10);
     memoryAdjustedOperators.entrySet().stream().forEach((x) -> {
       Map<PhysicalOperator, Long> memoryPerOperator = x.getValue().stream()
-                                                                  .collect(Collectors.toMap(operatorLongPair -> operatorLongPair.left,
-                                                                                            operatorLongPair -> operatorLongPair.right,
+                                                                  .collect(Collectors.toMap(operatorLongPair -> operatorLongPair.getLeft(),
+                                                                                            operatorLongPair -> operatorLongPair.getRight(),
                                                                                             (mem_1, mem_2) -> (mem_1 + mem_2)));
       this.operators.put(x.getKey(), memoryPerOperator);
     });

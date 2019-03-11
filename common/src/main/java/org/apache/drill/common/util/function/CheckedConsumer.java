@@ -18,6 +18,7 @@
 package org.apache.drill.common.util.function;
 
 import java.util.function.Consumer;
+import org.apache.drill.common.exceptions.ErrorHelper;
 
 @FunctionalInterface
 public interface CheckedConsumer<T, E extends Throwable> {
@@ -30,7 +31,7 @@ public interface CheckedConsumer<T, E extends Throwable> {
       try {
         throwingConsumer.accept(i);
       } catch (Exception ex) {
-        throw new RuntimeException(ex);
+        ErrorHelper.sneakyThrow(ex);
       }
     };
   }

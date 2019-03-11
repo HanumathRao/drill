@@ -17,7 +17,7 @@
  */
 package org.apache.drill.exec.planner.fragment;
 
-import org.apache.calcite.util.Pair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.drill.exec.ops.QueryContext;
 import org.apache.drill.exec.physical.base.Exchange;
 import org.apache.drill.exec.physical.base.PhysicalOperator;
