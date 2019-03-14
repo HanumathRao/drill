@@ -37,6 +37,7 @@ import org.apache.drill.exec.proto.helper.QueryIdHelper;
 import org.apache.drill.exec.rpc.UserClientConnection;
 import org.apache.drill.exec.server.DrillbitContext;
 import org.apache.drill.exec.util.Pointer;
+import org.apache.drill.exec.util.memory.DefaultRMMemoryAllocationUtilities;
 import org.apache.drill.exec.work.QueryWorkUnit;
 import org.apache.drill.exec.work.foreman.rm.QueryResourceAllocator;
 
@@ -107,8 +108,7 @@ public class PlanSplitter {
       throw new IllegalStateException("Planning fragments supports only SQL or PHYSICAL QueryType");
     }
 
-    QueryResourceAllocator planner = dContext.getResourceManager().newResourceAllocator(queryContext);
-    planner.visitAbstractPlan(plan);
+    DefaultRMMemoryAllocationUtilities.planMemory(queryContext, null, plan, );
 
     final PhysicalOperator rootOperator = plan.getSortedOperators(false).iterator().next();
 
@@ -124,7 +124,7 @@ public class PlanSplitter {
           queryContext.getSession(), queryContext.getQueryContextInfo());
 
       for (QueryWorkUnit queryWorkUnit : queryWorkUnits) {
-        planner.visitPhysicalPlan(queryWorkUnit);
+//        planner.visitPhysicalPlan(queryWorkUnit);
         queryWorkUnit.applyPlan(dContext.getPlanReader());
         fragments.add(queryWorkUnit.getRootFragment());
 
@@ -137,7 +137,7 @@ public class PlanSplitter {
       final QueryWorkUnit queryWorkUnit = parallelizer.generateWorkUnit(queryContext.getOptions().getOptionList(), queryContext.getCurrentEndpoint(),
           queryId, queryContext.getActiveEndpoints(), rootFragment,
           queryContext.getSession(), queryContext.getQueryContextInfo());
-      planner.visitPhysicalPlan(queryWorkUnit);
+//      planner.visitPhysicalPlan(queryWorkUnit);
       queryWorkUnit.applyPlan(dContext.getPlanReader());
       fragments.add(queryWorkUnit.getRootFragment());
       fragments.addAll(queryWorkUnit.getFragments());

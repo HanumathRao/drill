@@ -62,12 +62,6 @@ public class DynamicResourceManager implements ResourceManager {
   }
 
   @Override
-  public synchronized QueryResourceAllocator newResourceAllocator(QueryContext queryContext) {
-    refreshRM();
-    return activeRm.newResourceAllocator(queryContext);
-  }
-
-  @Override
   public synchronized QueryResourceManager newQueryRM(Foreman foreman) {
     refreshRM();
     return activeRm.newQueryRM(foreman);

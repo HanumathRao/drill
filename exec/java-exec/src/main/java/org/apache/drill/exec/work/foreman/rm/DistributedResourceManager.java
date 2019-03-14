@@ -62,11 +62,6 @@ public class DistributedResourceManager implements ResourceManager {
   }
 
   @Override
-  public QueryResourceAllocator newResourceAllocator(QueryContext queryContext) {
-    return delegatedRM.newResourceAllocator(queryContext);
-  }
-
-  @Override
   public QueryResourceManager newQueryRM(Foreman foreman) {
     return delegatedRM.newQueryRM(foreman);
   }

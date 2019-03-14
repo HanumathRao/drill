@@ -20,7 +20,7 @@ package org.apache.drill.exec.planner.fragment;
 import org.apache.drill.exec.ops.QueryContext;
 import org.apache.drill.exec.physical.base.PhysicalOperator;
 import org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpoint;
-import org.apache.drill.exec.util.MemoryAllocationUtilities;
+import org.apache.drill.exec.util.memory.NonRMMemoryAllocationUtilities;
 
 import java.util.Collection;
 import java.util.List;
@@ -56,7 +56,7 @@ public class DefaultQueryParallelizer extends SimpleParallelizer {
       return;
     }
     List<PhysicalOperator> bufferedOpers = planningSet.getRootWrapper().getNode().getBufferedOperators();
-    MemoryAllocationUtilities.setupBufferedOpsMemoryAllocations(planHasMemory, bufferedOpers, queryContext);
+    NonRMMemoryAllocationUtilities.setupBufferedOpsMemoryAllocations(planHasMemory, bufferedOpers, queryContext);
   }
 
   @Override
