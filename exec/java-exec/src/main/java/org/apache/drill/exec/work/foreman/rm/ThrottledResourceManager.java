@@ -18,8 +18,8 @@
 package org.apache.drill.exec.work.foreman.rm;
 
 import org.apache.drill.exec.ops.QueryContext;
+import org.apache.drill.exec.planner.fragment.DefaultQueueQueryParallelizer;
 import org.apache.drill.exec.planner.fragment.QueryParallelizer;
-import org.apache.drill.exec.planner.fragment.QueueQueryParallelizer;
 import org.apache.drill.exec.server.DrillbitContext;
 import org.apache.drill.exec.work.foreman.Foreman;
 import org.apache.drill.exec.work.foreman.rm.QueryQueue.QueryQueueException;
@@ -78,7 +78,7 @@ public class ThrottledResourceManager extends AbstractResourceManager {
     @Override
     public QueryParallelizer getParallelizer(boolean planHasMemory) {
       // currently memory planning is disabled. Enable it once the RM functionality is fully implemented.
-      return new QueueQueryParallelizer(true || planHasMemory, this.queryContext);
+      return new DefaultQueueQueryParallelizer(planHasMemory, this, this.queryContext);
     }
 
     @Override
@@ -86,7 +86,7 @@ public class ThrottledResourceManager extends AbstractResourceManager {
       lease = rm.queue().enqueue(foreman.getQueryId(), queryCost);
     }
 
-    protected long queryMemoryPerNode() {
+    public long queryMemoryPerNode() {
 
       if (lease == null) {
         return rm.defaultQueryMemoryPerNode(queryCost);
@@ -95,6 +95,11 @@ public class ThrottledResourceManager extends AbstractResourceManager {
       // Use actual memory assigned to this query.
 
       return lease.queryMemoryPerNode();
+    }
+
+    @Override
+    public long minimumOperatorMemory() {
+      return rm.minimumOperatorMemory();
     }
 
     @Override

@@ -67,6 +67,16 @@ public class DefaultResourceManager implements ResourceManager {
 
     @Override
     public String queueName() { return null; }
+
+    @Override
+    public long queryMemoryPerNode() {
+      return rm.memoryPerNode;
+    }
+
+    @Override
+    public long minimumOperatorMemory() {
+      return 0;
+    }
   }
 
   public final long memoryPerNode;

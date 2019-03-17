@@ -75,6 +75,11 @@ public interface QueryResourceManager {
 
   String queueName();
 
+
+  long queryMemoryPerNode();
+
+  long minimumOperatorMemory();
+
   /**
    * Mark the query as completing, giving up its slot in the
    * cluster. Releases any lease that may be held for a system with queues.

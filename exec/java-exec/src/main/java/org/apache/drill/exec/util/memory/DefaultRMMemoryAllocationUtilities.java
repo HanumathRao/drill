@@ -1,13 +1,17 @@
 package org.apache.drill.exec.util.memory;
 
+import org.apache.drill.common.config.DrillConfig;
+import org.apache.drill.exec.ExecConstants;
+import org.apache.drill.exec.memory.RootAllocatorFactory;
 import org.apache.drill.exec.ops.QueryContext;
-import org.apache.drill.exec.physical.PhysicalPlan;
 import org.apache.drill.exec.physical.base.AbstractPhysicalVisitor;
 import org.apache.drill.exec.physical.base.FragmentRoot;
 import org.apache.drill.exec.physical.base.PhysicalOperator;
 import org.apache.drill.exec.proto.helper.QueryIdHelper;
+import org.apache.drill.exec.server.options.OptionSet;
 import org.apache.drill.exec.work.QueryWorkUnit;
-import org.apache.drill.exec.work.foreman.rm.ThrottledResourceManager;
+import org.apache.drill.exec.work.foreman.rm.QueryResourceManager;
+import org.apache.drill.shaded.guava.com.google.common.annotations.VisibleForTesting;
 import org.apache.drill.shaded.guava.com.google.common.collect.ArrayListMultimap;
 import org.apache.drill.shaded.guava.com.google.common.collect.Multimap;
 
@@ -19,15 +23,7 @@ import java.util.Map;
 public class DefaultRMMemoryAllocationUtilities {
   private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(DefaultRMMemoryAllocationUtilities.class);
 
-  public static void planMemory(QueryContext queryContext, QueryWorkUnit work, PhysicalPlan plan, ThrottledResourceManager rm) {
-    if (plan.getProperties().hasResourcePlan) {
-      logger.debug("Memory already planned.");
-      return;
-    }
-
-    // Group fragments by node.
-
-    Map<String, Collection<PhysicalOperator>> nodeMap = buildBufferedOpMap(work);
+  public static void planMemory(QueryContext queryContext, QueryResourceManager rm, Map<String, Collection<PhysicalOperator>> nodeMap) {
 
     // Memory must be symmetric to avoid bottlenecks in which one node has
     // sorts (say) with less memory than another, causing skew in data arrival
@@ -42,7 +38,7 @@ public class DefaultRMMemoryAllocationUtilities {
     // which is never parallelized.
 
     for (Map.Entry<String, Collection<PhysicalOperator>> entry : nodeMap.entrySet()) {
-      planNodeMemory(entry.getKey(), rm.defaultQueryMemoryPerNode(plan.totalCost()), queryContext, entry.getValue(), width, rm);
+      planNodeMemory(entry.getKey(), queryContext, entry.getValue(), width, rm);
     }
   }
 
@@ -117,8 +113,9 @@ public class DefaultRMMemoryAllocationUtilities {
    * @param width
    */
 
-  private static void planNodeMemory(String nodeAddr, long queryMemoryPerNode, QueryContext queryContext,
-                                     Collection<PhysicalOperator> bufferedOps, int width, ThrottledResourceManager rm) {
+  private static void planNodeMemory(String nodeAddr, QueryContext queryContext,
+                                     Collection<PhysicalOperator> bufferedOps, int width,
+                                     QueryResourceManager rm) {
 
     // If no buffering operators, nothing to plan.
 
@@ -137,7 +134,7 @@ public class DefaultRMMemoryAllocationUtilities {
     // to work around constrained memory by assuming more than we actually
     // have. This may lead to an OOM at run time.
 
-    long preferredOpMemory = queryMemoryPerNode / width;
+    long preferredOpMemory =  rm.queryMemoryPerNode()/ width;
     long perOpMemory = Math.max(preferredOpMemory, rm.minimumOperatorMemory());
     if (preferredOpMemory < perOpMemory) {
       logger.warn("Preferred per-operator memory: {}, actual amount: {}",
@@ -176,5 +173,67 @@ public class DefaultRMMemoryAllocationUtilities {
       }
       op.setMaxAllocation(alloc);
     }
+  }
+
+  /**
+   * Compute per-operator memory based on the computed per-node memory, the
+   * number of operators, and the computed number of fragments (which house
+   * the operators.) Enforces a floor on the amount of memory per operator.
+   *
+   * @param optionManager system option manager
+   * @param maxAllocPerNode computed query memory per node
+   * @param opCount number of buffering operators in this query
+   * @return the per-operator memory
+   */
+
+  public static long computeOperatorMemory(OptionSet optionManager, long maxAllocPerNode, int opCount) {
+    final long maxWidth = optionManager.getOption(ExecConstants.MAX_WIDTH_PER_NODE);
+    final double cpuLoadAverage = optionManager.getOption(ExecConstants.CPU_LOAD_AVERAGE);
+    final long maxWidthPerNode = ExecConstants.MAX_WIDTH_PER_NODE.computeMaxWidth(cpuLoadAverage, maxWidth);
+    final long maxOperatorAlloc = maxAllocPerNode / (opCount * maxWidthPerNode);
+    logger.debug("Max buffered operator alloc: {}", maxOperatorAlloc);
+
+    // User configurable option to allow forcing minimum memory.
+    // Ensure that the buffered ops receive the minimum memory needed to make progress.
+    // Without this, the math might work out to allocate too little memory.
+
+    return Math.max(maxOperatorAlloc,
+      optionManager.getOption(ExecConstants.MIN_MEMORY_PER_BUFFERED_OP));
+  }
+
+  /**
+   * Per-node memory calculations based on a number of constraints.
+   * <p>
+   * Factored out into a separate method to allow unit testing.
+   * @param config Drill config
+   * @param optionManager system options
+   * @param directMemory amount of direct memory
+   * @return memory per query per node
+   */
+
+  @VisibleForTesting
+  public static long computeQueryMemory(DrillConfig config, OptionSet optionManager, long directMemory) {
+
+    // Memory computed as a percent of total memory.
+
+    long perQueryMemory = Math.round(directMemory *
+      optionManager.getOption(ExecConstants.PERCENT_MEMORY_PER_QUERY));
+
+    // But, must allow at least the amount given explicitly for
+    // backward compatibility.
+
+    perQueryMemory = Math.max(perQueryMemory,
+      optionManager.getOption(ExecConstants.MAX_QUERY_MEMORY_PER_NODE));
+
+    // Compute again as either the total direct memory, or the
+    // configured maximum top-level allocation (10 GB).
+
+    long maxAllocPerNode = Math.min(directMemory,
+      config.getLong(RootAllocatorFactory.TOP_LEVEL_MAX_ALLOC));
+
+    // Final amount per node per query is the minimum of these two.
+
+    maxAllocPerNode = Math.min(maxAllocPerNode, perQueryMemory);
+    return maxAllocPerNode;
   }
 }
