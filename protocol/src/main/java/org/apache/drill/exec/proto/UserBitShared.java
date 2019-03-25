@@ -22276,6 +22276,15 @@ public final class UserBitShared {
      * <code>optional int64 wait_nanos = 9;</code>
      */
     long getWaitNanos();
+
+    /**
+     * <code>optional int64 memory_assigned = 10;</code>
+     */
+    boolean hasMemoryAssigned();
+    /**
+     * <code>optional int64 memory_assigned = 10;</code>
+     */
+    long getMemoryAssigned();
   }
   /**
    * Protobuf type {@code exec.shared.OperatorProfile}
@@ -22298,6 +22307,7 @@ public final class UserBitShared {
       peakLocalMemoryAllocated_ = 0L;
       metric_ = java.util.Collections.emptyList();
       waitNanos_ = 0L;
+      memoryAssigned_ = 0L;
     }
 
     @java.lang.Override
@@ -22370,6 +22380,11 @@ public final class UserBitShared {
             case 72: {
               bitField0_ |= 0x00000020;
               waitNanos_ = input.readInt64();
+              break;
+            }
+            case 80: {
+              bitField0_ |= 0x00000040;
+              memoryAssigned_ = input.readInt64();
               break;
             }
             default: {
@@ -22571,6 +22586,21 @@ public final class UserBitShared {
       return waitNanos_;
     }
 
+    public static final int MEMORY_ASSIGNED_FIELD_NUMBER = 10;
+    private long memoryAssigned_;
+    /**
+     * <code>optional int64 memory_assigned = 10;</code>
+     */
+    public boolean hasMemoryAssigned() {
+      return ((bitField0_ & 0x00000040) == 0x00000040);
+    }
+    /**
+     * <code>optional int64 memory_assigned = 10;</code>
+     */
+    public long getMemoryAssigned() {
+      return memoryAssigned_;
+    }
+
     private byte memoizedIsInitialized = -1;
     @java.lang.Override
     public final boolean isInitialized() {
@@ -22608,6 +22638,9 @@ public final class UserBitShared {
       }
       if (((bitField0_ & 0x00000020) == 0x00000020)) {
         output.writeInt64(9, waitNanos_);
+      }
+      if (((bitField0_ & 0x00000040) == 0x00000040)) {
+        output.writeInt64(10, memoryAssigned_);
       }
       unknownFields.writeTo(output);
     }
@@ -22649,6 +22682,10 @@ public final class UserBitShared {
       if (((bitField0_ & 0x00000020) == 0x00000020)) {
         size += com.google.protobuf.CodedOutputStream
           .computeInt64Size(9, waitNanos_);
+      }
+      if (((bitField0_ & 0x00000040) == 0x00000040)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeInt64Size(10, memoryAssigned_);
       }
       size += unknownFields.getSerializedSize();
       memoizedSize = size;
@@ -22700,6 +22737,11 @@ public final class UserBitShared {
         result = result && (getWaitNanos()
             == other.getWaitNanos());
       }
+      result = result && (hasMemoryAssigned() == other.hasMemoryAssigned());
+      if (hasMemoryAssigned()) {
+        result = result && (getMemoryAssigned()
+            == other.getMemoryAssigned());
+      }
       result = result && unknownFields.equals(other.unknownFields);
       return result;
     }
@@ -22746,6 +22788,11 @@ public final class UserBitShared {
         hash = (37 * hash) + WAIT_NANOS_FIELD_NUMBER;
         hash = (53 * hash) + com.google.protobuf.Internal.hashLong(
             getWaitNanos());
+      }
+      if (hasMemoryAssigned()) {
+        hash = (37 * hash) + MEMORY_ASSIGNED_FIELD_NUMBER;
+        hash = (53 * hash) + com.google.protobuf.Internal.hashLong(
+            getMemoryAssigned());
       }
       hash = (29 * hash) + unknownFields.hashCode();
       memoizedHashCode = hash;
@@ -22906,6 +22953,8 @@ public final class UserBitShared {
         }
         waitNanos_ = 0L;
         bitField0_ = (bitField0_ & ~0x00000080);
+        memoryAssigned_ = 0L;
+        bitField0_ = (bitField0_ & ~0x00000100);
         return this;
       }
 
@@ -22976,6 +23025,10 @@ public final class UserBitShared {
           to_bitField0_ |= 0x00000020;
         }
         result.waitNanos_ = waitNanos_;
+        if (((from_bitField0_ & 0x00000100) == 0x00000100)) {
+          to_bitField0_ |= 0x00000040;
+        }
+        result.memoryAssigned_ = memoryAssigned_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -23094,6 +23147,9 @@ public final class UserBitShared {
         }
         if (other.hasWaitNanos()) {
           setWaitNanos(other.getWaitNanos());
+        }
+        if (other.hasMemoryAssigned()) {
+          setMemoryAssigned(other.getMemoryAssigned());
         }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
@@ -23793,6 +23849,38 @@ public final class UserBitShared {
       public Builder clearWaitNanos() {
         bitField0_ = (bitField0_ & ~0x00000080);
         waitNanos_ = 0L;
+        onChanged();
+        return this;
+      }
+
+      private long memoryAssigned_ ;
+      /**
+       * <code>optional int64 memory_assigned = 10;</code>
+       */
+      public boolean hasMemoryAssigned() {
+        return ((bitField0_ & 0x00000100) == 0x00000100);
+      }
+      /**
+       * <code>optional int64 memory_assigned = 10;</code>
+       */
+      public long getMemoryAssigned() {
+        return memoryAssigned_;
+      }
+      /**
+       * <code>optional int64 memory_assigned = 10;</code>
+       */
+      public Builder setMemoryAssigned(long value) {
+        bitField0_ |= 0x00000100;
+        memoryAssigned_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional int64 memory_assigned = 10;</code>
+       */
+      public Builder clearMemoryAssigned() {
+        bitField0_ = (bitField0_ & ~0x00000100);
+        memoryAssigned_ = 0L;
         onChanged();
         return this;
       }
@@ -27770,64 +27858,65 @@ public final class UserBitShared {
       "d_time\030\006 \001(\003\022\023\n\013memory_used\030\007 \001(\003\022\027\n\017max" +
       "_memory_used\030\010 \001(\003\022(\n\010endpoint\030\t \001(\0132\026.e" +
       "xec.DrillbitEndpoint\022\023\n\013last_update\030\n \001(" +
-      "\003\022\025\n\rlast_progress\030\013 \001(\003\"\377\001\n\017OperatorPro" +
+      "\003\022\025\n\rlast_progress\030\013 \001(\003\"\230\002\n\017OperatorPro" +
       "file\0221\n\rinput_profile\030\001 \003(\0132\032.exec.share" +
       "d.StreamProfile\022\023\n\013operator_id\030\003 \001(\005\022\025\n\r" +
       "operator_type\030\004 \001(\005\022\023\n\013setup_nanos\030\005 \001(\003" +
       "\022\025\n\rprocess_nanos\030\006 \001(\003\022#\n\033peak_local_me" +
       "mory_allocated\030\007 \001(\003\022(\n\006metric\030\010 \003(\0132\030.e" +
       "xec.shared.MetricValue\022\022\n\nwait_nanos\030\t \001" +
-      "(\003\"B\n\rStreamProfile\022\017\n\007records\030\001 \001(\003\022\017\n\007" +
-      "batches\030\002 \001(\003\022\017\n\007schemas\030\003 \001(\003\"J\n\013Metric" +
-      "Value\022\021\n\tmetric_id\030\001 \001(\005\022\022\n\nlong_value\030\002" +
-      " \001(\003\022\024\n\014double_value\030\003 \001(\001\")\n\010Registry\022\035" +
-      "\n\003jar\030\001 \003(\0132\020.exec.shared.Jar\"/\n\003Jar\022\014\n\004" +
-      "name\030\001 \001(\t\022\032\n\022function_signature\030\002 \003(\t\"W" +
-      "\n\013SaslMessage\022\021\n\tmechanism\030\001 \001(\t\022\014\n\004data" +
-      "\030\002 \001(\014\022\'\n\006status\030\003 \001(\0162\027.exec.shared.Sas" +
-      "lStatus*5\n\nRpcChannel\022\017\n\013BIT_CONTROL\020\000\022\014" +
-      "\n\010BIT_DATA\020\001\022\010\n\004USER\020\002*V\n\tQueryType\022\007\n\003S" +
-      "QL\020\001\022\013\n\007LOGICAL\020\002\022\014\n\010PHYSICAL\020\003\022\r\n\tEXECU" +
-      "TION\020\004\022\026\n\022PREPARED_STATEMENT\020\005*\207\001\n\rFragm" +
-      "entState\022\013\n\007SENDING\020\000\022\027\n\023AWAITING_ALLOCA" +
-      "TION\020\001\022\013\n\007RUNNING\020\002\022\014\n\010FINISHED\020\003\022\r\n\tCAN" +
-      "CELLED\020\004\022\n\n\006FAILED\020\005\022\032\n\026CANCELLATION_REQ" +
-      "UESTED\020\006*\374\t\n\020CoreOperatorType\022\021\n\rSINGLE_" +
-      "SENDER\020\000\022\024\n\020BROADCAST_SENDER\020\001\022\n\n\006FILTER" +
-      "\020\002\022\022\n\016HASH_AGGREGATE\020\003\022\r\n\tHASH_JOIN\020\004\022\016\n" +
-      "\nMERGE_JOIN\020\005\022\031\n\025HASH_PARTITION_SENDER\020\006" +
-      "\022\t\n\005LIMIT\020\007\022\024\n\020MERGING_RECEIVER\020\010\022\034\n\030ORD" +
-      "ERED_PARTITION_SENDER\020\t\022\013\n\007PROJECT\020\n\022\026\n\022" +
-      "UNORDERED_RECEIVER\020\013\022\032\n\026RANGE_PARTITION_" +
-      "SENDER\020\014\022\n\n\006SCREEN\020\r\022\034\n\030SELECTION_VECTOR" +
-      "_REMOVER\020\016\022\027\n\023STREAMING_AGGREGATE\020\017\022\016\n\nT" +
-      "OP_N_SORT\020\020\022\021\n\rEXTERNAL_SORT\020\021\022\t\n\005TRACE\020" +
-      "\022\022\t\n\005UNION\020\023\022\014\n\010OLD_SORT\020\024\022\032\n\026PARQUET_RO" +
-      "W_GROUP_SCAN\020\025\022\021\n\rHIVE_SUB_SCAN\020\026\022\025\n\021SYS" +
-      "TEM_TABLE_SCAN\020\027\022\021\n\rMOCK_SUB_SCAN\020\030\022\022\n\016P" +
-      "ARQUET_WRITER\020\031\022\023\n\017DIRECT_SUB_SCAN\020\032\022\017\n\013" +
-      "TEXT_WRITER\020\033\022\021\n\rTEXT_SUB_SCAN\020\034\022\021\n\rJSON" +
-      "_SUB_SCAN\020\035\022\030\n\024INFO_SCHEMA_SUB_SCAN\020\036\022\023\n" +
-      "\017COMPLEX_TO_JSON\020\037\022\025\n\021PRODUCER_CONSUMER\020" +
-      " \022\022\n\016HBASE_SUB_SCAN\020!\022\n\n\006WINDOW\020\"\022\024\n\020NES" +
-      "TED_LOOP_JOIN\020#\022\021\n\rAVRO_SUB_SCAN\020$\022\021\n\rPC" +
-      "AP_SUB_SCAN\020%\022\022\n\016KAFKA_SUB_SCAN\020&\022\021\n\rKUD" +
-      "U_SUB_SCAN\020\'\022\013\n\007FLATTEN\020(\022\020\n\014LATERAL_JOI" +
-      "N\020)\022\n\n\006UNNEST\020*\022,\n(HIVE_DRILL_NATIVE_PAR" +
-      "QUET_ROW_GROUP_SCAN\020+\022\r\n\tJDBC_SCAN\020,\022\022\n\016" +
-      "REGEX_SUB_SCAN\020-\022\023\n\017MAPRDB_SUB_SCAN\020.\022\022\n" +
-      "\016MONGO_SUB_SCAN\020/\022\017\n\013KUDU_WRITER\0200\022\026\n\022OP" +
-      "EN_TSDB_SUB_SCAN\0201\022\017\n\013JSON_WRITER\0202\022\026\n\022H" +
-      "TPPD_LOG_SUB_SCAN\0203\022\022\n\016IMAGE_SUB_SCAN\0204\022" +
-      "\025\n\021SEQUENCE_SUB_SCAN\0205\022\023\n\017PARTITION_LIMI" +
-      "T\0206\022\023\n\017PCAPNG_SUB_SCAN\0207\022\022\n\016RUNTIME_FILT" +
-      "ER\0208\022\017\n\013ROWKEY_JOIN\0209\022\023\n\017SYSLOG_SUB_SCAN" +
-      "\020:\022\030\n\024STATISTICS_AGGREGATE\020;\022\020\n\014UNPIVOT_" +
-      "MAPS\020<\022\024\n\020STATISTICS_MERGE\020=\022\021\n\rLTSV_SUB" +
-      "_SCAN\020>*g\n\nSaslStatus\022\020\n\014SASL_UNKNOWN\020\000\022" +
-      "\016\n\nSASL_START\020\001\022\024\n\020SASL_IN_PROGRESS\020\002\022\020\n" +
-      "\014SASL_SUCCESS\020\003\022\017\n\013SASL_FAILED\020\004B.\n\033org." +
-      "apache.drill.exec.protoB\rUserBitSharedH\001"
+      "(\003\022\027\n\017memory_assigned\030\n \001(\003\"B\n\rStreamPro" +
+      "file\022\017\n\007records\030\001 \001(\003\022\017\n\007batches\030\002 \001(\003\022\017" +
+      "\n\007schemas\030\003 \001(\003\"J\n\013MetricValue\022\021\n\tmetric" +
+      "_id\030\001 \001(\005\022\022\n\nlong_value\030\002 \001(\003\022\024\n\014double_" +
+      "value\030\003 \001(\001\")\n\010Registry\022\035\n\003jar\030\001 \003(\0132\020.e" +
+      "xec.shared.Jar\"/\n\003Jar\022\014\n\004name\030\001 \001(\t\022\032\n\022f" +
+      "unction_signature\030\002 \003(\t\"W\n\013SaslMessage\022\021" +
+      "\n\tmechanism\030\001 \001(\t\022\014\n\004data\030\002 \001(\014\022\'\n\006statu" +
+      "s\030\003 \001(\0162\027.exec.shared.SaslStatus*5\n\nRpcC" +
+      "hannel\022\017\n\013BIT_CONTROL\020\000\022\014\n\010BIT_DATA\020\001\022\010\n" +
+      "\004USER\020\002*V\n\tQueryType\022\007\n\003SQL\020\001\022\013\n\007LOGICAL" +
+      "\020\002\022\014\n\010PHYSICAL\020\003\022\r\n\tEXECUTION\020\004\022\026\n\022PREPA" +
+      "RED_STATEMENT\020\005*\207\001\n\rFragmentState\022\013\n\007SEN" +
+      "DING\020\000\022\027\n\023AWAITING_ALLOCATION\020\001\022\013\n\007RUNNI" +
+      "NG\020\002\022\014\n\010FINISHED\020\003\022\r\n\tCANCELLED\020\004\022\n\n\006FAI" +
+      "LED\020\005\022\032\n\026CANCELLATION_REQUESTED\020\006*\374\t\n\020Co" +
+      "reOperatorType\022\021\n\rSINGLE_SENDER\020\000\022\024\n\020BRO" +
+      "ADCAST_SENDER\020\001\022\n\n\006FILTER\020\002\022\022\n\016HASH_AGGR" +
+      "EGATE\020\003\022\r\n\tHASH_JOIN\020\004\022\016\n\nMERGE_JOIN\020\005\022\031" +
+      "\n\025HASH_PARTITION_SENDER\020\006\022\t\n\005LIMIT\020\007\022\024\n\020" +
+      "MERGING_RECEIVER\020\010\022\034\n\030ORDERED_PARTITION_" +
+      "SENDER\020\t\022\013\n\007PROJECT\020\n\022\026\n\022UNORDERED_RECEI" +
+      "VER\020\013\022\032\n\026RANGE_PARTITION_SENDER\020\014\022\n\n\006SCR" +
+      "EEN\020\r\022\034\n\030SELECTION_VECTOR_REMOVER\020\016\022\027\n\023S" +
+      "TREAMING_AGGREGATE\020\017\022\016\n\nTOP_N_SORT\020\020\022\021\n\r" +
+      "EXTERNAL_SORT\020\021\022\t\n\005TRACE\020\022\022\t\n\005UNION\020\023\022\014\n" +
+      "\010OLD_SORT\020\024\022\032\n\026PARQUET_ROW_GROUP_SCAN\020\025\022" +
+      "\021\n\rHIVE_SUB_SCAN\020\026\022\025\n\021SYSTEM_TABLE_SCAN\020" +
+      "\027\022\021\n\rMOCK_SUB_SCAN\020\030\022\022\n\016PARQUET_WRITER\020\031" +
+      "\022\023\n\017DIRECT_SUB_SCAN\020\032\022\017\n\013TEXT_WRITER\020\033\022\021" +
+      "\n\rTEXT_SUB_SCAN\020\034\022\021\n\rJSON_SUB_SCAN\020\035\022\030\n\024" +
+      "INFO_SCHEMA_SUB_SCAN\020\036\022\023\n\017COMPLEX_TO_JSO" +
+      "N\020\037\022\025\n\021PRODUCER_CONSUMER\020 \022\022\n\016HBASE_SUB_" +
+      "SCAN\020!\022\n\n\006WINDOW\020\"\022\024\n\020NESTED_LOOP_JOIN\020#" +
+      "\022\021\n\rAVRO_SUB_SCAN\020$\022\021\n\rPCAP_SUB_SCAN\020%\022\022" +
+      "\n\016KAFKA_SUB_SCAN\020&\022\021\n\rKUDU_SUB_SCAN\020\'\022\013\n" +
+      "\007FLATTEN\020(\022\020\n\014LATERAL_JOIN\020)\022\n\n\006UNNEST\020*" +
+      "\022,\n(HIVE_DRILL_NATIVE_PARQUET_ROW_GROUP_" +
+      "SCAN\020+\022\r\n\tJDBC_SCAN\020,\022\022\n\016REGEX_SUB_SCAN\020" +
+      "-\022\023\n\017MAPRDB_SUB_SCAN\020.\022\022\n\016MONGO_SUB_SCAN" +
+      "\020/\022\017\n\013KUDU_WRITER\0200\022\026\n\022OPEN_TSDB_SUB_SCA" +
+      "N\0201\022\017\n\013JSON_WRITER\0202\022\026\n\022HTPPD_LOG_SUB_SC" +
+      "AN\0203\022\022\n\016IMAGE_SUB_SCAN\0204\022\025\n\021SEQUENCE_SUB" +
+      "_SCAN\0205\022\023\n\017PARTITION_LIMIT\0206\022\023\n\017PCAPNG_S" +
+      "UB_SCAN\0207\022\022\n\016RUNTIME_FILTER\0208\022\017\n\013ROWKEY_" +
+      "JOIN\0209\022\023\n\017SYSLOG_SUB_SCAN\020:\022\030\n\024STATISTIC" +
+      "S_AGGREGATE\020;\022\020\n\014UNPIVOT_MAPS\020<\022\024\n\020STATI" +
+      "STICS_MERGE\020=\022\021\n\rLTSV_SUB_SCAN\020>*g\n\nSasl" +
+      "Status\022\020\n\014SASL_UNKNOWN\020\000\022\016\n\nSASL_START\020\001" +
+      "\022\024\n\020SASL_IN_PROGRESS\020\002\022\020\n\014SASL_SUCCESS\020\003" +
+      "\022\017\n\013SASL_FAILED\020\004B.\n\033org.apache.drill.ex" +
+      "ec.protoB\rUserBitSharedH\001"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
@@ -27945,7 +28034,7 @@ public final class UserBitShared {
     internal_static_exec_shared_OperatorProfile_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_exec_shared_OperatorProfile_descriptor,
-        new java.lang.String[] { "InputProfile", "OperatorId", "OperatorType", "SetupNanos", "ProcessNanos", "PeakLocalMemoryAllocated", "Metric", "WaitNanos", });
+        new java.lang.String[] { "InputProfile", "OperatorId", "OperatorType", "SetupNanos", "ProcessNanos", "PeakLocalMemoryAllocated", "Metric", "WaitNanos", "MemoryAssigned", });
     internal_static_exec_shared_StreamProfile_descriptor =
       getDescriptor().getMessageTypes().get(17);
     internal_static_exec_shared_StreamProfile_fieldAccessorTable = new

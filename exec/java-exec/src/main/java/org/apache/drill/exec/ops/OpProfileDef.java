@@ -22,11 +22,13 @@ public class OpProfileDef {
   public int operatorId;
   public int operatorType;
   public int incomingCount;
+  public long memory_assigned;
 
-  public OpProfileDef(int operatorId, int operatorType, int incomingCount) {
+  public OpProfileDef(int operatorId, int operatorType, int incomingCount, long memory_assigned) {
     this.operatorId = operatorId;
     this.operatorType = operatorType;
     this.incomingCount = incomingCount;
+    this.memory_assigned = memory_assigned;
   }
   public int getOperatorId(){
     return operatorId;

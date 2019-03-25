@@ -57,6 +57,7 @@ public final class OperatorProfile implements Externalizable, Message<OperatorPr
     private long peakLocalMemoryAllocated;
     private List<MetricValue> metric;
     private long waitNanos;
+    private long memoryAssigned;
 
     public OperatorProfile()
     {
@@ -169,6 +170,19 @@ public final class OperatorProfile implements Externalizable, Message<OperatorPr
         return this;
     }
 
+    // memoryAssigned
+
+    public long getMemoryAssigned()
+    {
+        return memoryAssigned;
+    }
+
+    public OperatorProfile setMemoryAssigned(long memoryAssigned)
+    {
+        this.memoryAssigned = memoryAssigned;
+        return this;
+    }
+
     // java serialization
 
     public void readExternal(ObjectInput in) throws IOException
@@ -253,6 +267,9 @@ public final class OperatorProfile implements Externalizable, Message<OperatorPr
                 case 9:
                     message.waitNanos = input.readInt64();
                     break;
+                case 10:
+                    message.memoryAssigned = input.readInt64();
+                    break;
                 default:
                     input.handleUnknownField(number, this);
             }   
@@ -299,6 +316,9 @@ public final class OperatorProfile implements Externalizable, Message<OperatorPr
 
         if(message.waitNanos != 0)
             output.writeInt64(9, message.waitNanos, false);
+
+        if(message.memoryAssigned != 0)
+            output.writeInt64(10, message.memoryAssigned, false);
     }
 
     public String getFieldName(int number)
@@ -313,6 +333,7 @@ public final class OperatorProfile implements Externalizable, Message<OperatorPr
             case 7: return "peakLocalMemoryAllocated";
             case 8: return "metric";
             case 9: return "waitNanos";
+            case 10: return "memoryAssigned";
             default: return null;
         }
     }
@@ -334,6 +355,7 @@ public final class OperatorProfile implements Externalizable, Message<OperatorPr
         __fieldMap.put("peakLocalMemoryAllocated", 7);
         __fieldMap.put("metric", 8);
         __fieldMap.put("waitNanos", 9);
+        __fieldMap.put("memoryAssigned", 10);
     }
     
 }
