@@ -92,7 +92,7 @@ public class DrillRelMdDistinctRowCount extends RelMdDistinctRowCount{
         if (rel instanceof DrillScanRel) {
           // The existing Drill behavior is to only use this estimation for DrillScanRel and not ScanPrel.
           // TODO: We may potentially do it for ScanPrel (outside the scope of statistics)
-          return rel.estimateRowCount(mq) * 0.1;
+          return ((DrillScanRel)rel).estimateRowCount(mq) * 0.1;
         }
       }
     } else if (rel instanceof SingleRel && !DrillRelOptUtil.guessRows(rel)) {
@@ -174,7 +174,7 @@ public class DrillRelMdDistinctRowCount extends RelMdDistinctRowCount{
     }
   }
 
-  public Double getDistinctRowCount(DrillJoinRelBase joinRel, RelMetadataQuery mq, ImmutableBitSet groupKey,
+  private Double getDistinctRowCount(DrillJoinRelBase joinRel, RelMetadataQuery mq, ImmutableBitSet groupKey,
        RexNode predicate) {
     if (DrillRelOptUtil.guessRows(joinRel)) {
       return super.getDistinctRowCount(joinRel, mq, groupKey, predicate);
