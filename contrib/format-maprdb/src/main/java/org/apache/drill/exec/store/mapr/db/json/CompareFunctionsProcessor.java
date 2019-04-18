@@ -49,18 +49,20 @@ import org.ojai.types.OTimestamp;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
-class CompareFunctionsProcessor extends AbstractExprVisitor<Boolean, LogicalExpression, RuntimeException> {
+class CompareFunctionsProcessor extends AbstractExprVisitor<Boolean, List<LogicalExpression>, RuntimeException> {
 
   private String functionName;
   private Boolean success;
-  protected Value value;
+  protected List<Value> values;
   protected SchemaPath path;
 
   public CompareFunctionsProcessor(String functionName) {
     this.functionName = functionName;
     this.success = false;
-    this.value = null;
+    this.values = new ArrayList<>();
   }
 
   public static boolean isCompareFunction(String functionName) {
@@ -68,7 +70,7 @@ class CompareFunctionsProcessor extends AbstractExprVisitor<Boolean, LogicalExpr
   }
 
   @Override
-  public Boolean visitUnknown(LogicalExpression e, LogicalExpression valueArg) throws RuntimeException {
+  public Boolean visitUnknown(LogicalExpression e, List<LogicalExpression> valueArg) throws RuntimeException {
     return false;
   }
 
@@ -101,7 +103,7 @@ class CompareFunctionsProcessor extends AbstractExprVisitor<Boolean, LogicalExpr
         ZonedDateTime convertedZonedDateTime = utcZonedDateTime.withZoneSameLocal(ZoneId.systemDefault());
         long timeStamp = convertedZonedDateTime.toInstant().toEpochMilli();
 
-        this.value = KeyValueBuilder.initFrom(new OTimestamp(timeStamp));
+        this.values.add(KeyValueBuilder.initFrom(new OTimestamp(timeStamp)));
         this.path = path;
         return true;
       }
@@ -112,16 +114,19 @@ class CompareFunctionsProcessor extends AbstractExprVisitor<Boolean, LogicalExpr
   private static CompareFunctionsProcessor processWithEvaluator(FunctionCall call, CompareFunctionsProcessor evaluator) {
     String functionName = call.getName();
     LogicalExpression nameArg = call.args.get(0);
-    LogicalExpression valueArg = call.args.size() >= 2 ? call.args.get(1) : null;
-
+    List<LogicalExpression> valueArgs = new ArrayList<>();
+    for (int i=1;i<call.args.size();i++) {
+      valueArgs.add(call.args.get(i));
+    }
     if (VALUE_EXPRESSION_CLASSES.contains(nameArg.getClass())) {
-      LogicalExpression swapArg = valueArg;
-      valueArg = nameArg;
-      nameArg = swapArg;
+      LogicalExpression swapArg = nameArg;
+      nameArg = valueArgs.get(0);
+      valueArgs.clear();
+      valueArgs.add(swapArg);
       evaluator.functionName = COMPARE_FUNCTIONS_TRANSPOSE_MAP.get(functionName);
     }
     if (nameArg != null) {
-      evaluator.success = nameArg.accept(evaluator, valueArg);
+      evaluator.success = nameArg.accept(evaluator, valueArgs);
     }
 
     return evaluator;
@@ -136,8 +141,8 @@ class CompareFunctionsProcessor extends AbstractExprVisitor<Boolean, LogicalExpr
     return path;
   }
 
-  public Value getValue() {
-    return value;
+  public Value getValue(int index) {
+    return index < values.size() ? values.get(index) : null;
   }
 
   public String getFunctionName() {
@@ -145,94 +150,53 @@ class CompareFunctionsProcessor extends AbstractExprVisitor<Boolean, LogicalExpr
   }
 
   @Override
-  public Boolean visitSchemaPath(SchemaPath path, LogicalExpression valueArg) throws RuntimeException {
+  public Boolean visitSchemaPath(SchemaPath path, List<LogicalExpression> valueArgs) throws RuntimeException {
     // If valueArg is null, this might be a IS NULL/IS NOT NULL type of query
-    if (valueArg == null) {
-      this.path = path;
+    this.path = path;
+    if (valueArgs.size() == 0) {
       return true;
     }
 
-    if (valueArg instanceof QuotedString) {
-      this.value = SqlHelper.decodeStringAsValue(((QuotedString) valueArg).value);
-      this.path = path;
-      return true;
-    }
+    for (LogicalExpression valueArg : valueArgs) {
 
-    if (valueArg instanceof IntExpression) {
-      this.value = KeyValueBuilder.initFrom(((IntExpression)valueArg).getInt());
-      this.path = path;
-      return true;
+      if (valueArg instanceof QuotedString) {
+        this.values.add(SqlHelper.decodeStringAsValue(((QuotedString) valueArg).value));
+      } else if (valueArg instanceof IntExpression) {
+        this.values.add(KeyValueBuilder.initFrom(((IntExpression) valueArg).getInt()));
+      } else if (valueArg instanceof FloatExpression) {
+        this.values.add(KeyValueBuilder.initFrom(((FloatExpression) valueArg).getFloat()));
+      } else if (valueArg instanceof BooleanExpression) {
+        this.values.add(KeyValueBuilder.initFrom(((BooleanExpression) valueArg).getBoolean()));
+      } else if (valueArg instanceof Decimal28Expression) {
+        this.values.add(KeyValueBuilder.initFrom(((Decimal28Expression) valueArg).getBigDecimal()));
+      } else if (valueArg instanceof Decimal38Expression) {
+        this.values.add(KeyValueBuilder.initFrom(((Decimal38Expression) valueArg).getBigDecimal()));
+      } else if (valueArg instanceof DoubleExpression) {
+        this.values.add(KeyValueBuilder.initFrom(((DoubleExpression) valueArg).getDouble()));
+      } else if (valueArg instanceof LongExpression) {
+        this.values.add(KeyValueBuilder.initFrom(((LongExpression) valueArg).getLong()));
+      } else if (valueArg instanceof DateExpression) {
+        long d = ((DateExpression) valueArg).getDate();
+        final long MILLISECONDS_IN_A_DAY = (long) 1000 * 60 * 60 * 24;
+        int daysSinceEpoch = (int) (d / MILLISECONDS_IN_A_DAY);
+        this.values.add(KeyValueBuilder.initFrom(ODate.fromDaysSinceEpoch(daysSinceEpoch)));
+      } else if (valueArg instanceof TimeExpression) {
+        int t = ((TimeExpression) valueArg).getTime();
+        LocalTime lT = LocalTime.fromMillisOfDay(t);
+        this.values.add(KeyValueBuilder.initFrom(new OTime(lT.getHourOfDay(), lT.getMinuteOfHour(), lT.getSecondOfMinute(), lT.getMillisOfSecond())));
+      } else if (valueArg instanceof VarDecimalExpression) {
+        // MaprDB does not support decimals completely, therefore double value is used.
+        // See com.mapr.db.impl.ConditionImpl.is(FieldPath path, QueryCondition.Op op, BigDecimal value) method
+        this.values.add(KeyValueBuilder.initFrom(((VarDecimalExpression) valueArg).getBigDecimal().doubleValue()));
+      } else if (valueArg instanceof TimeStampExpression) {
+        return visitTimestampExpr(path, (TimeStampExpression) valueArg);
+      }
     }
-
-    if (valueArg instanceof FloatExpression) {
-      this.value = KeyValueBuilder.initFrom(((FloatExpression)valueArg).getFloat());
-      this.path = path;
-      return true;
-    }
-
-    if (valueArg instanceof BooleanExpression) {
-      this.value = KeyValueBuilder.initFrom(((BooleanExpression)valueArg).getBoolean());
-      this.path = path;
-      return true;
-    }
-
-    if (valueArg instanceof Decimal28Expression) {
-      this.value = KeyValueBuilder.initFrom(((Decimal28Expression)valueArg).getBigDecimal());
-      this.path = path;
-      return true;
-    }
-
-    if (valueArg instanceof Decimal38Expression) {
-      this.value = KeyValueBuilder.initFrom(((Decimal38Expression)valueArg).getBigDecimal());
-      this.path = path;
-      return true;
-    }
-
-    if (valueArg instanceof DoubleExpression) {
-      this.value = KeyValueBuilder.initFrom(((DoubleExpression)valueArg).getDouble());
-      this.path = path;
-      return true;
-    }
-
-    if (valueArg instanceof LongExpression) {
-      this.value = KeyValueBuilder.initFrom(((LongExpression)valueArg).getLong());
-      this.path = path;
-      return true;
-    }
-
-    if (valueArg instanceof DateExpression) {
-      long d = ((DateExpression)valueArg).getDate();
-      final long MILLISECONDS_IN_A_DAY  = (long)1000 * 60 * 60 * 24;
-      int daysSinceEpoch = (int)(d / MILLISECONDS_IN_A_DAY);
-      this.value = KeyValueBuilder.initFrom(ODate.fromDaysSinceEpoch(daysSinceEpoch));
-      this.path = path;
-      return true;
-    }
-
-    if (valueArg instanceof TimeExpression) {
-      int t = ((TimeExpression)valueArg).getTime();
-      LocalTime lT = LocalTime.fromMillisOfDay(t);
-      this.value = KeyValueBuilder.initFrom(new OTime(lT.getHourOfDay(), lT.getMinuteOfHour(), lT.getSecondOfMinute(), lT.getMillisOfSecond()));
-      this.path = path;
-      return true;
-    }
-
-    // MaprDB does not support decimals completely, therefore double value is used.
-    // See com.mapr.db.impl.ConditionImpl.is(FieldPath path, QueryCondition.Op op, BigDecimal value) method
-    if (valueArg instanceof VarDecimalExpression) {
-      this.value = KeyValueBuilder.initFrom(((VarDecimalExpression) valueArg).getBigDecimal().doubleValue());
-      this.path = path;
-      return true;
-    }
-
-    if (valueArg instanceof TimeStampExpression) {
-      return visitTimestampExpr(path, (TimeStampExpression) valueArg);
-    }
-    return false;
+    return values.size() > 0;
   }
 
   protected boolean visitTimestampExpr(SchemaPath path, TimeStampExpression valueArg) {
-    this.value = KeyValueBuilder.initFrom(new OTimestamp(valueArg.getTimeStamp()));
+    this.values.add(KeyValueBuilder.initFrom(new OTimestamp(valueArg.getTimeStamp())));
     this.path = path;
     return true;
   }

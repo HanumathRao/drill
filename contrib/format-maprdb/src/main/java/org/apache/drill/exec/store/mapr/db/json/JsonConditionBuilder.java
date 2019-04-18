@@ -17,6 +17,7 @@
  */
 package org.apache.drill.exec.store.mapr.db.json;
 
+import org.apache.drill.shaded.guava.com.google.common.base.Preconditions;
 import org.apache.drill.common.expression.BooleanOperator;
 import org.apache.drill.common.expression.FunctionCall;
 import org.apache.drill.common.expression.LogicalExpression;
@@ -177,7 +178,7 @@ public class JsonConditionBuilder extends AbstractExprVisitor<JsonScanSpec, Void
       CompareFunctionsProcessor processor) {
     String functionName = processor.getFunctionName();
     String fieldPath = FieldPathHelper.schemaPath2FieldPath(processor.getPath()).asPathString();
-    Value fieldValue = processor.getValue();
+    Value fieldValue = processor.getValue(0);
 
     QueryCondition cond = null;
     switch (functionName) {
@@ -240,7 +241,10 @@ public class JsonConditionBuilder extends AbstractExprVisitor<JsonScanSpec, Void
       break;
 
     case "like":
-      cond = MapRDBImpl.newCondition().like(fieldPath, fieldValue.getString());
+      Value escapeValue = processor.getValue(1);
+      Preconditions.checkArgument(escapeValue == null || escapeValue.getString().length() == 1);
+      Character escapeChar = escapeValue != null ? escapeValue.getString().charAt(0) : null;
+      cond = MapRDBImpl.newCondition().like(fieldPath, fieldValue.getString(), escapeChar);
       break;
 
     default:

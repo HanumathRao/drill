@@ -64,6 +64,7 @@ public class TestSimpleJson extends BaseJsonTest {
          DocumentStream stream = Json.newDocumentStream(in)) {
       tableCreated = true;
       tablePath = table.getPath().toUri().getPath();
+      System.out.println(tablePath);
 
       for (Document document : stream) {
        table.insert(document, "business_id");
@@ -74,9 +75,9 @@ public class TestSimpleJson extends BaseJsonTest {
 
   @AfterClass
   public static void cleanup_TestEncodedFieldPaths() throws Exception {
-    if (tableCreated) {
-      DBTests.deleteTables(TABLE_NAME);
-    }
+//    if (tableCreated) {
+//      DBTests.deleteTables(TABLE_NAME);
+//    }
   }
 
   @Test
@@ -468,6 +469,22 @@ public class TestSimpleJson extends BaseJsonTest {
     final String[] excludedPlan = {};
 
     PlanTestBase.testPlanMatchingPatterns(sql, expectedPlan, excludedPlan);
+  }
+
+  @Test
+  public void testLikeAndEscape() throws Exception {
+    final String sql = format("SELECT\n"
+            + "  _id, name, start_date, last_update\n"
+            + "FROM\n"
+            + "  %s.`%s` business\n"
+            + "_id like '1emggGHgoG6ipd#_RMb-g' escape '#'"
+    );
+
+    final String[] expectedPlan = {"JsonTableGroupScan.*condition=(_id MATCHES \"^\\\\Q1emggGHgoG6ipd\\\\E.\\\\QRMb-g\\\\E$\")].*"};
+    final String[] excludedPlan = {};
+
+    PlanTestBase.testPlanMatchingPatterns(sql, expectedPlan, excludedPlan);
+    runSQLAndVerifyCount(sql, 1);
   }
 
   @Test

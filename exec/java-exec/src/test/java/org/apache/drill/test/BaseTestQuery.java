@@ -534,6 +534,7 @@ public class BaseTestQuery extends ExecTest {
       loader.clear();
       result.release();
     }
+    printResult(results);
     return rowCount;
   }
 
