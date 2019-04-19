@@ -64,7 +64,6 @@ public class TestSimpleJson extends BaseJsonTest {
          DocumentStream stream = Json.newDocumentStream(in)) {
       tableCreated = true;
       tablePath = table.getPath().toUri().getPath();
-      System.out.println(tablePath);
 
       for (Document document : stream) {
        table.insert(document, "business_id");
@@ -75,9 +74,9 @@ public class TestSimpleJson extends BaseJsonTest {
 
   @AfterClass
   public static void cleanup_TestEncodedFieldPaths() throws Exception {
-//    if (tableCreated) {
-//      DBTests.deleteTables(TABLE_NAME);
-//    }
+    if (tableCreated) {
+      DBTests.deleteTables(TABLE_NAME);
+    }
   }
 
   @Test
